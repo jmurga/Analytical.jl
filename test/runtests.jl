@@ -2,5 +2,6 @@ using Analytical
 using Test
 
 @testset "Analytical.jl" begin
-    # Write your own tests here.
+    @test Analytical.popSize.NN == 1000
+    @test adap.gH == 200
 end
