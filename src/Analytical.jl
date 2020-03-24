@@ -33,6 +33,7 @@ mutable struct popSizeParameters
 end
 adap = parameters(-83,10,500,0.2,0.2,0.001,0.001,0.184,0.000402,0.999,0.001,0.0,500,25,10^6,0.001,501,0.00415,0.00515625,500,false)
 popSize = popSizeParameters(adap.N*2,adap.n*2)
+
 export adap
 
 ################################
@@ -64,13 +65,10 @@ function set_Lf()
 end
 
 function set_theta_f()
-#=	B = 0.999
-	x = 1000000=#
-	theta_f -> Float64
 	i(theta) = Br(adap.Lf,theta)-adap.B
 	#theta_f  = fsolve(lambda theta: Br(Lf,theta) - B,0.00001)
 	theta_f  = find_zero(i,0.00001)
-	return theta_f
+	adap.theta_f = theta_f
 end
 
 function alphaExpSimLow(pposL,pposH)
@@ -88,15 +86,17 @@ function solvEqns(params)
 end
 
 function setPpos()
+
 	sc = pyimport("scipy.optimize")
 	pposL,pposH =  sc.fsolve(solvEqns,(0.001,0.001))
+	#pposL = ppos[1]; pposH = ppos[2]
 	#pposL = find_zero(alphaExpSimTot(adap.pposL,adap.pposH)-adap.alTot,0.001)
 	#pposH =  find_zero(alphaExpSimLow(adap.pposL,adap.pposH)-adap.alLow,0.001)
-
 	if pposL < 0.0
-		pposL = 0.0
+	 	pposL = 0.0
 	end
-	if pposH < 0.0
+	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+	if (pposH < 0.0 || pposH < 1e-15)
 		pposH = 0.0
 	end
 	adap.pposL, adap.pposH = pposL, pposH
@@ -107,7 +107,6 @@ end
 ################################
 
 function pFix(gamma)
-
 	s = gamma/(popSize.NN+0.0)
 	pfix = (1.0-exp(-2.0*s))/(1.0-exp(-2.0*gamma))
 	if s >= 0.1
@@ -143,6 +142,7 @@ function fixPosSim(gamma,ppos)
 
 	return 0.745*ppos*exp(-2.0*S*u*(p0-p1)*CC^2/r^2)*pFix(gamma)
 end
+
 
 ################################
 ######    Polymorphism    ######
