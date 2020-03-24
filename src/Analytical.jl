@@ -66,6 +66,7 @@ end
 function set_theta_f()
 #=	B = 0.999
 	x = 1000000=#
+	theta_f -> Float64
 	i(theta) = Br(adap.Lf,theta)-adap.B
 	#theta_f  = fsolve(lambda theta: Br(Lf,theta) - B,0.00001)
 	theta_f  = find_zero(i,0.00001)
