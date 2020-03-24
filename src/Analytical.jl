@@ -31,7 +31,7 @@ mutable struct popSizeParameters
 	NN::Int64
 	nn::Int64
 end
-adap = parameters(-83,10,500,0.2,0.2,0.001,0.001,0.184,0.000402,0.999,0.001,0.0,500,25,10^6,0.001,501,0.00415,0.00515625,500,false)
+adap = parameters(-83,10,500,0.2,0.2,0.001,0.001,0.184,0.000402,0.999,0.001,0.0,500,250,10^6,0.001,501,0.00415,0.00515625,500,false)
 popSize = popSizeParameters(adap.N*2,adap.n*2)
 
 export adap
@@ -162,6 +162,12 @@ function DiscSFSSelNeg(ppos)
 	xa = [round(i/(NN2+0.0),digits=6) for i in 0:NN2]
 	z(x,ppos=ppos) = (1.0-ppos)*(2.0^-adap.al)*(beta^adap.al)*(-SpecialFunctions.zeta(adap.al,x+beta/2.0) + SpecialFunctions.zeta(adap.al,(2+beta)/2.0))/((-1.0+x)*x)
 	solveZ = xa .|> z
+	if (solveZ[1] == Inf || isnan(solveZ[1]))
+		solveZ[1] = 0.0
+	elseif (solveZ[lastindex(solveZ)] == Inf || isnan([lastindex(solveZ)]))
+		solveZ[lastindex(solveZ)] = 0.0
+	end
+
 	return 1.0/(popSize.NN+0.0).*solveZ
 end
 
@@ -169,12 +175,13 @@ function binomOp()
 
 	sc = pyimport("scipy.stats")
 	NN2 = convert(Int64, round(popSize.NN*adap.B, digits=0))
-	samples = permutedims([i for j in 0:NN2, i in 1:popSize.NN+1])
 
-	samplesFreqs = permutedims([round(j/(NN2+0.0),digits=6) for j in 0:NN2, i in 1:popSize.nn+1])
+	# samples = permutedims([i for j in 0:NN2, i in 1:popSize.NN])
+	samples =  permutedims([i for j in 0:NN2, i in 0:popSize.nn])
+	samplesFreqs = permutedims([round(j/(NN2+0.0),digits=8) for j in 0:NN2, i in 0:popSize.nn])
 
 	#return samples,popSize.NN,samplesFreqs
-	return sc.binom.pmf(samples,popSize.NN,samplesFreqs)
+	return sc.binom.pmf(samples,popSize.nn,samplesFreqs)
 end
 
 function cumulativeSfs(sfsTemp)
