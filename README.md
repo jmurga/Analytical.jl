@@ -5,3 +5,12 @@
 Extended ABC-MK calculations accounting for background selection and weak adaptation based on Julia language.
 
 Included in this repository are the scripts used to simulate and infer parameters from ABC software.
+
+Debian imaging including *julia* and all packages need to run the estimations. It also includes *jupyterlab* and several data science python packages. To run the images (jupyter notebook will start on localhost:8888):
+
+```bash
+# Run docker bash interactive session
+docker run -i -t -p 8888:8888 -v ${HOME}/<anyData>:/data/<anyData> -e HOSTID=$(id -u) jmurga/uab-bioinformatics
+# Run only jupyter notebook from docker image
+docker run -i -t -p 8888:8888 uab/bioinfo /bin/bash -c "jupyter notebook --ip='*' --port=8888 --no-browser"
+```
