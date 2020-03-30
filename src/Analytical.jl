@@ -6,6 +6,8 @@ using SpecialFunctions
 using Distributions
 using Roots
 
+include("features.jl")
+
 @with_kw mutable struct parameters
 	gam_neg::Int64             = -83
 	gL::Int64                  = 10
@@ -41,7 +43,7 @@ export adap, binomOp
 ###### Solving parameters ######
 ################################
 
-function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=0.999,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false)
+function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=0.999,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,binomial=true)
 
 	adap.gam_neg           = gam_neg
 	adap.gL                = gL
@@ -68,9 +70,9 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 	adap.NN = N*2
 	adap.nn = n*2
 	# adap.bn = Analytical.binomOp()
-	adap.bn = binomOp()
-
-	return(println("Parameters changed to gam_neg:",adap.gam_neg,"gL",adap.gL," gH:",adap.gH," alLow:",adap.alLow," alTot:",adap.alTot," theta_f:",adap.theta_f,"theta_mid_neutral:",adap.theta_mid_neutral," al:",adap.al," be:",adap.be," B:",adap.B," pposL:",adap.pposL," pposH:",adap.pposH,"N:",adap.N," n:",adap.n," Lf:",adap.Lf," L_mid:",adap.L_mid," rho:",adap.rho," al2:",adap.al2," be2:",adap.be2," TE:",adap.TE," ABC:",adap.ABC))
+	if binomial == true
+		adap.bn = binomOp()
+	end
 end
 
 function Br(Lmax::Int64,theta::Float64)
@@ -100,11 +102,11 @@ function set_theta_f()
 	adap.theta_f = theta_f
 end
 
-function alphaExpSimLow(pposL,pposH)
+function alphaExpSimLow(pposL::Float64,pposH::Float64)
 	return fixPosSim(adap.gL,0.5*pposL)/(fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH) + fixNegB(0.5*pposL+0.5*pposH))
 end
 
-function alphaExpSimTot(pposL,pposH)
+function alphaExpSimTot(pposL::Float64,pposH::Float64)
 	return (fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH))/(fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH)+fixNegB(0.5*pposL+0.5*pposH))
 end
 
@@ -117,7 +119,7 @@ end
 function setPpos()
 
 	sc          = pyimport("scipy.optimize")
-	pposL,pposH =  sc.fsolve(solvEqns,(0.001,0.001))
+	pposL,pposH = sc.fsolve(solvEqns,(0.001,0.001))
 
 	if pposL < 0.0
 	 	pposL = 0.0
@@ -131,18 +133,18 @@ end
 
 function binomOp()
 
-	NN2          = convert(Int64, round(adap.NN*adap.B, digits=0))
-	samples      =  [i for i in 0:adap.nn, j in 0:NN2]
-	samplesFreqs = [j for i in 0:adap.nn, j in 0:NN2]
-	samplesFreqs = samplesFreqs/NN2
+    NN2          = convert(Int64, round(adap.NN*adap.B, digits=0))
+    samples      =  [i for i in 0:adap.nn]
+    samplesFreqs = [j for j in 0:NN2]
+    samplesFreqs = samplesFreqs/NN2
 
-	f(x) = Distributions.Binomial(adap.nn,x)
-	z    = samplesFreqs .|> f
+    f(x) = Distributions.Binomial(adap.nn,x)
+    z    = samplesFreqs .|> f
 
-	out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
-	out  = Distributions.pdf.(z,samples)
-
-	return out
+    # out  = Array{Float64}(undef,(nn+1,NN))
+    out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
+    out  = Distributions.pdf.(permutedims(z),samples)
+    return out
 end
 
 ################################
@@ -214,10 +216,10 @@ end
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
 
-function DiscSFSSelPosDown(gammaValue, ppos)
+function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
-		out = zeros(Float64,51)
+		out = zeros(Float64,adap.nn)
 	else
 		S        = abs(adap.gam_neg/(1.0*adap.NN))
 		r        =adap.rho/(2.0*adap.NN)
@@ -247,7 +249,7 @@ function DiscSFSSelPosDown(gammaValue, ppos)
 end
 
 ######Slightly deleterious######
-function DiscSFSSelNegDown(ppos)
+function DiscSFSSelNegDown(ppos::Float64)
 	out = adap.B*(adap.theta_mid_neutral)*0.745*(adap.bn*DiscSFSSelNeg(ppos))
 	return out[2:lastindex(out)-1]
 end
@@ -291,8 +293,58 @@ end
 ################################
 function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 
-	if nopos == true
+	if nopos == "pos"
 
+		# Fixation
+		fN    = adap.B*fixNeut()
+		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+		fPosL = fixPosSim(gammaL,0.5*pposL)
+		fPosH = fixPosSim(gammaH,0.5*pposH)
+
+		# Polymorphism
+		neut = cumulativeSfs(DiscSFSNeutDown())
+		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
+		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
+		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+
+		# Outputs
+		ret = Array{Float64}(undef, adap.nn - 1)
+		sel = Array{Float64}(undef, adap.nn - 1)
+		for i in 1:length(ret)
+			sel[i] = (selH[i]+selL[i])+selN[i]
+			ret[i] = float(1.0 - (fN/(fPosL + fPosH+  fNeg+0.0))* sel[i]/neut[i])
+		end
+		return (ret)
+	elseif nopos == "nopos"
+		# Fixation
+		fN    = adap.B*fixNeut()
+		fNNopos = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+
+		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+		fNegNopos  = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosL = fixPosSim(gammaL,0.5*pposL)
+		fPosLNopos = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosH = fixPosSim(gammaH,0.5*pposH)
+		fPosHNopos =  fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+
+		# Polymorphism
+		neut = cumulativeSfs(DiscSFSNeutDown())
+		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
+		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
+		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+
+		# Outputs
+		ret = Array{Float64}(undef, adap.nn - 1)
+		retNopos = Array{Float64}(undef, adap.nn - 1)
+		sel = Array{Float64}(undef, adap.nn - 1)
+		selNopos = Array{Float64}(undef, adap.nn - 1)
+		for i in 1:length(ret)
+			selNopos[i] = selN[i]
+			retNopos[i] = float(1.0 - (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0))* selNopos[i]/neut[i])
+		end
+
+		return (retNopos)
+	else
 		# Fixation
 		fN    = adap.B*fixNeut()
 		fNNopos = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
@@ -325,29 +377,60 @@ function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 
 		return (ret,retNopos)
 
-	else
-		# Fixation
-		fN    = adap.B*fixNeut()
-		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-		fPosL = fixPosSim(gammaL,0.5*pposL)
-		fPosH = fixPosSim(gammaH,0.5*pposH)
-
-		# Polymorphism
-		neut = cumulativeSfs(DiscSFSNeutDown())
-		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
-		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
-		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
-
-		# Outputs
-		ret = Array{Float64}(undef, adap.nn - 1)
-		sel = Array{Float64}(undef, adap.nn - 1)
-		for i in 1:length(ret)
-			sel[i] = (selH[i]+selL[i])+selN[i]
-			ret[i] = float(1.0 - (fN/(fPosL + fPosH+  fNeg+0.0))* sel[i]/neut[i])
-		end
-		return (ret)
 	end
 end
+
+function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
+
+		file = h5open(fileName, "cw")
+		group = g_create(file, simulationName)
+		d_write(group, "alphaPos", alphaPos)
+		d_write(group, "alphaNopos", alphaNopos)
+		close(file)
+
+end
+
+
+################################
+######## Old functions  ########
+################################
+
+#
+# function setPpos_nlsolve()
+#
+# 	function f!(F,x)
+# 		F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
+# 		F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
+# 	end
+#
+# 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+# 	pposL,pposH = nlsolve(f!,[ 0.001; 0.001]).zero
+#
+# 	if pposL < 0.0
+# 	 	pposL = 0.0
+# 	end
+# 	if (pposH < 0.0 || pposH < 9e-15)
+# 		pposH = 0.0
+# 	end
+# 	adap.pposL,adap.pposH = pposL, pposH
+# end
+
+# function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
+#
+# 	if isfile(fileName)
+# 		jldopen(fileName, "a+") do file
+# 			group = JLD2.Group(file, simulationName*string(rand(Int64)))
+# 			group["alphaPos"] = alphaPos
+# 			group["alphaNopos"] = alphaNopos
+# 		end
+# 	else
+# 		jldopen(fileName, "w") do file
+# 			group = JLD2.Group(file, simulationName*string(rand(Int64)))
+# 			group["alphaPos"] = alphaPos
+# 			group["alphaNopos"] = alphaNopos
+# 		end
+# 	end
+# end
 
 # function alphaByFrequenciesNoPositive(gammaL,gammaH,pposL,pposH)
 #
@@ -387,12 +470,6 @@ end
 # end
 
 
-
-################################
-#### Old functions equations ###
-################################
-
-
 #
 # alphaExpSimLow(pposL,pposH) = fixPosSim(adap.gL,0.5*pposL)/(fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH) + fixNegB(0.5*pposL+0.5*pposH))
 #
@@ -408,5 +485,18 @@ end
 # 	samplesFreqs = samplesFreqs./NN2
 #
 # 	return sc.binom.pmf(samples,adap.nn,samplesFreqs)
+# 	NN2          = convert(Int64, round(adap.NN*adap.B, digits=0))
+# 	samples      =  [i for i in 0:adap.nn, j in 0:NN2]
+# 	samplesFreqs = [j for i in 0:adap.nn, j in 0:NN2]
+# 	samplesFreqs = samplesFreqs/NN2
+#
+# 	f(x) = Distributions.Binomial(adap.nn,x)
+# 	z    = samplesFreqs .|> f
+#
+# 	out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
+# 	out  = Distributions.pdf.(z,samples)
+#
+# 	return out
 # end
+
 end # module
