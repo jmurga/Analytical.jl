@@ -5,6 +5,7 @@ using PyCall
 using SpecialFunctions
 using Distributions
 using Roots
+using HDF5
 
 include("features.jl")
 

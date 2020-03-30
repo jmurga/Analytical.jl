@@ -32,7 +32,7 @@ RUN echo "export PATH="/root/julia-1.0.5/bin:$PATH"" >> /root/.bashrc
 
 RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","SpecialFunctions","Distributions","Roots","PyPlot","IJulia"])'
 
-ADD alxCalcJulia.ipynb  /analysis/alxCalcJulia.ipynb
+ADD BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
 ADD alphaCalc.jl  /analysis/alphaCalc.jl
 RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 
