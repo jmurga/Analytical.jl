@@ -13,6 +13,6 @@ Debian imaging including *julia* and all packages need to run the estimations. I
 docker pull jmurga/mktest
 # Run docker bash interactive session
 docker run -i -t -p 8888:8888 -v ${HOME}/<anyData>:/data/<anyData> -e HOSTID=$(id -u) jmurga/mktest
-# Run only jupyter notebook from docker image
-docker run -i -t -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter notebook --ip='*' --port=8888 --no-browser"
+# Run only jupyter notebook from docker image. Change the port if 8888 is already used 
+docker run -i -t -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
