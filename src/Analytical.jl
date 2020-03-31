@@ -200,6 +200,7 @@ end
 function DiscSFSNeutDown()
 
 	NN2 = convert(Int64,round(adap.NN*adap.B))
+
 	function neutralSfs(i)
 		if i > 0 && i < NN2
 			 return 1.0/(i)
@@ -223,8 +224,8 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		out = zeros(Float64,adap.nn)
 	else
 		S        = abs(adap.gam_neg/(1.0*adap.NN))
-		r        =adap.rho/(2.0*adap.NN)
-		u        =adap.theta_f/(2.0*adap.NN)
+		r        = adap.rho/(2.0*adap.NN)
+		u        = adap.theta_f/(2.0*adap.NN)
 		s        = gammaValue/(adap.NN*1.0)
 		p0       = SpecialFunctions.polygamma(1,(s+S)/r)
 		p1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
@@ -318,28 +319,19 @@ function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 		return (ret)
 	elseif nopos == "nopos"
 		# Fixation
-		fN    = adap.B*fixNeut()
-		fNNopos = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-
-		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-		fNegNopos  = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosL = fixPosSim(gammaL,0.5*pposL)
-		fPosLNopos = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosH = fixPosSim(gammaH,0.5*pposH)
-		fPosHNopos =  fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fNNopos    = adap.B*fixNeut()*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fNegNopos  = adap.B*fixNegB(0.5*pposH+0.5*pposL)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosLNopos = fixPosSim(gammaL,0.5*pposL)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosHNopos = fixPosSim(gammaH,0.5*pposH)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
 
 		# Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
-		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
-		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		# Outputs
-		ret = Array{Float64}(undef, adap.nn - 1)
 		retNopos = Array{Float64}(undef, adap.nn - 1)
-		sel = Array{Float64}(undef, adap.nn - 1)
 		selNopos = Array{Float64}(undef, adap.nn - 1)
-		for i in 1:length(ret)
+		for i in 1:length(retNopos)
 			selNopos[i] = selN[i]
 			retNopos[i] = float(1.0 - (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0))* selNopos[i]/neut[i])
 		end
@@ -347,14 +339,13 @@ function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 		return (retNopos)
 	else
 		# Fixation
-		fN    = adap.B*fixNeut()
-		fNNopos = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-
-		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+		fN         = adap.B*fixNeut()
+		fNNopos    = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fNeg       = adap.B*fixNegB(0.5*pposH+0.5*pposL)
 		fNegNopos  = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosL = fixPosSim(gammaL,0.5*pposL)
+		fPosL      = fixPosSim(gammaL,0.5*pposL)
 		fPosLNopos = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosH = fixPosSim(gammaH,0.5*pposH)
+		fPosH      = fixPosSim(gammaH,0.5*pposH)
 		fPosHNopos =  fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
 
 		# Polymorphism
@@ -364,33 +355,32 @@ function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		# Outputs
-		ret = Array{Float64}(undef, adap.nn - 1)
+		ret      = Array{Float64}(undef, adap.nn - 1)
 		retNopos = Array{Float64}(undef, adap.nn - 1)
-		sel = Array{Float64}(undef, adap.nn - 1)
+		sel      = Array{Float64}(undef, adap.nn - 1)
 		selNopos = Array{Float64}(undef, adap.nn - 1)
+
 		for i in 1:length(ret)
-			sel[i] = (selH[i]+selL[i])+selN[i]
-			ret[i] = float(1.0 - (fN/(fPosL + fPosH+  fNeg+0.0))* sel[i]/neut[i])
+			sel[i]      = (selH[i]+selL[i])+selN[i]
+			ret[i]      = float(1.0 - (fN/(fPosL + fPosH+  fNeg+0.0))* sel[i]/neut[i])
 
 			selNopos[i] = selN[i]
 			retNopos[i] = float(1.0 - (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0))* selNopos[i]/neut[i])
 		end
 
 		return (ret,retNopos)
-
 	end
 end
 
 function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
 
-		file = h5open(fileName, "cw")
-		group = g_create(file, simulationName)
+		file  = h5open(fileName, "cw")
+		group = g_create(file, simulationName*string(rand(Int64)))
 		d_write(group, "alphaPos", alphaPos)
 		d_write(group, "alphaNopos", alphaNopos)
 		close(file)
 
 end
-
 
 ################################
 ######## Old functions  ########
