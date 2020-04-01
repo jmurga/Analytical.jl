@@ -27,7 +27,7 @@ include("features.jl")
 	Lf::Int64                  = 10^6
 	L_mid::Int64               = 501
 	rho::Float64               = 0.001
-	al2::Float64               =  0.0415
+	al2::Float64               = 0.0415
 	be2::Float64               = 0.00515625
 	TE::Float64                = 5.0
 	ABC::Bool                  = false
@@ -379,9 +379,17 @@ function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
 		d_write(group, "alphaPos", alphaPos)
 		d_write(group, "alphaNopos", alphaNopos)
 		close(file)
-
 end
 
+
+function summaryDb(fileName,simulationName,alphaPos,alphaNopos)
+
+		file  = h5open(fileName, "cw")
+		group = g_create(file, simulationName*string(rand(Int64)))
+		d_write(group, "alphaPos", alphaPos)
+		d_write(group, "alphaNopos", alphaNopos)
+		close(file)
+end
 ################################
 ######## Old functions  ########
 ################################
