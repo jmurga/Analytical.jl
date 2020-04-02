@@ -90,7 +90,7 @@ end
 function set_Lf()
 
 	i(L)   = Br(L,theta_f,adap,adap)-B
-	tmpLf  = find_zero(i,100)
+	tmpLf  = Roots.find_zero(i,100)
 	Lf     = convert(Int64,round(tmpLf))
 
 	return Lf
@@ -120,7 +120,8 @@ end
 function setPpos()
 
 	sc          = pyimport("scipy.optimize")
-	pposL,pposH = sc.fsolve(solvEqns,(0.001,0.001))
+	# pposL,pposH = sc.fsolve(solvEqns,(0.001,0.001))
+	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
 
 	if pposL < 0.0
 	 	pposL = 0.0
@@ -293,7 +294,7 @@ end
 ################################
 ###    Summary statistics    ###
 ################################
-function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
+function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,nopos::String)
 
 	if nopos == "pos"
 
@@ -372,24 +373,20 @@ function alphaByFrequencies(gammaL,gammaH,pposL,pposH,nopos)
 	end
 end
 
-function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
+function summaryStatistics(fileName::String,simulationName::String,alphaPos::Array{Float64},alphaNopos::Array{Float64})
 
 		file  = h5open(fileName, "cw")
 		group = g_create(file, simulationName*string(rand(Int64)))
 		d_write(group, "alphaPos", alphaPos)
 		d_write(group, "alphaNopos", alphaNopos)
 		close(file)
+
+		f = open("test.csv", "a+");
+		CSV.write(f, A; delim = ',')
+
 end
 
 
-function summaryDb(fileName,simulationName,alphaPos,alphaNopos)
-
-		file  = h5open(fileName, "cw")
-		group = g_create(file, simulationName*string(rand(Int64)))
-		d_write(group, "alphaPos", alphaPos)
-		d_write(group, "alphaNopos", alphaNopos)
-		close(file)
-end
 ################################
 ######## Old functions  ########
 ################################
@@ -403,7 +400,7 @@ end
 # 	end
 #
 # 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-# 	pposL,pposH = nlsolve(f!,[ 0.001; 0.001]).zero
+# 	pposL,pposH = nlsolve(f!,[ 0.0; 0.0]).zero
 #
 # 	if pposL < 0.0
 # 	 	pposL = 0.0

@@ -5,6 +5,11 @@ using Parameters
 # using SpecialFunctions
 using Distributions
 using StatsBase
+using StatsPlots
+using RCall
+using GZip
+using DelimitedFiles
+
 # using Roots
 # using HDF5
 
@@ -32,11 +37,9 @@ end
 
 abcParameters = abcParams()
 
-
 Bfile  = test.Bfile
 nsims = test.nsims
-if 'SLURM_ARRAY_TASK_ID' in os.environ:
-	test.task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+
 
 function alphaF(d::Int64,d0::Int64,p::Int64,p0::Int64):
 	if  d==0 or p0 == 0:
@@ -104,6 +107,36 @@ function simulate()
 	# For each B value in B_values, sample a polymorphic site with same B.
 	# If site is NS, sample from NS frequency spectrum.
 	sum_stats = [1,2,5,10,20,50,100,200,500,1000] .- 1
+end
+
+function installABCreg(mainPath::String)
+	clone = `git clone https://github.com/molpopgen/ABCreg.git $mainPath/`
+	make = `cd $mainPath/ABCreg/src && make`
+	addPath = `echo 'export PATH="$mainPath/ABCreg/src:$PATH"' >> $mainPath/.bashrc`
+	s = `source $mainPath/.bashrc`
+	run(clone)
+	run(make)
+	run(addPath)
+	run(s)
+end
+
+function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, output::String, path::String,tolerance::Float64, regressionMode::String)
+
+		reg = `reg -p $prior -d $data -P $nparams -S $nsummaries -b $output -$regressionMode -t $tolerance`
+		run(reg)
+
+		# openFiles(f) = GZip.open(DelimitedFiles.readdlm,path*f)
+		# estimates = files .|> openFiles .|> map
+
+		bMap(z)=R"m =  $z[which.max(predict(locfit::locfit(~$z,as.data.frame($z)),newdata=$z))]"[1]
+
+		files = filter(x -> occursin(output,x), readdir(path))
+		estimates = Array{Float64}(undef,length(files))
+		for i in 0:length(files)-1
+			f = GZip.open(DelimitedFiles.readdlm, path*output*"."*string(i)*".tangent.post.gz")
+			estimates[i+1] = bMap(f)
+		end
+		return estimates
 end
 
 end #end module
