@@ -33,6 +33,7 @@ using DelimitedFiles
 	gerp_control::Bool     = false
 	Brange::Array{Float64} = Array{Float64}(undef,10)
 	task_id::Int64         = 1
+	ABCreg::String         = ""
 end
 
 abcParameters = abcParams()
@@ -109,34 +110,35 @@ function simulate()
 	sum_stats = [1,2,5,10,20,50,100,200,500,1000] .- 1
 end
 
-function installABCreg(mainPath::String)
-	clone = `git clone https://github.com/molpopgen/ABCreg.git $mainPath/`
-	make = `cd $mainPath/ABCreg/src && make`
-	addPath = `echo 'export PATH="$mainPath/ABCreg/src:$PATH"' >> $mainPath/.bashrc`
-	s = `source $mainPath/.bashrc`
+function installABCreg(path::String)
+	clone = `git clone https://github.com/molpopgen/ABCreg.git $path/ABCreg`
+	make = `make -C $path/ABCreg/src`
 	run(clone)
 	run(make)
-	run(addPath)
-	run(s)
+
+	abcParameters.ABCreg = path * "/ABCreg/src/reg"
 end
 
-function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, output::String, path::String,tolerance::Float64, regressionMode::String)
+function meanQ(x)
+	m = mean(x)
+	q = Statistics.quantile(x[:,1],[0.05,0.95])
+	return m,q
+end
 
-		reg = `reg -p $prior -d $data -P $nparams -S $nsummaries -b $output -$regressionMode -t $tolerance`
-		run(reg)
+function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath::String)
 
-		# openFiles(f) = GZip.open(DelimitedFiles.readdlm,path*f)
-		# estimates = files .|> openFiles .|> map
+	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath$outputPrefix -$regressionMode -t $tolerance`
+	run(reg)
 
-		bMap(z)=R"m =  $z[which.max(predict(locfit::locfit(~$z,as.data.frame($z)),newdata=$z))]"[1]
+	files = filter(x -> occursin(outputPrefix,x), readdir(ouputPath))
+	openFiles(f) = GZip.open(DelimitedFiles.readdlm,outputPath*f)
 
-		files = filter(x -> occursin(output,x), readdir(path))
-		estimates = Array{Float64}(undef,length(files))
-		for i in 0:length(files)-1
-			f = GZip.open(DelimitedFiles.readdlm, path*output*"."*string(i)*".tangent.post.gz")
-			estimates[i+1] = bMap(f)
-		end
-		return estimates
+	estimates = Array{Float64}(undef,length(files))
+	estimates = files .|> openFiles .|> meanQ
+
+	results = Dict(zip(files, estimates))
+
+	return results
 end
 
 end #end module

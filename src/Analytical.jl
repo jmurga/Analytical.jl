@@ -123,6 +123,14 @@ function setPpos()
 	# pposL,pposH = sc.fsolve(solvEqns,(0.001,0.001))
 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
 
+	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+	# function f!(F,x)
+	# 	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
+	# 	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
+	# end
+	#
+	# pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
+
 	if pposL < 0.0
 	 	pposL = 0.0
 	end
@@ -391,7 +399,6 @@ end
 ######## Old functions  ########
 ################################
 
-#
 # function setPpos_nlsolve()
 #
 # 	function f!(F,x)
@@ -451,7 +458,6 @@ end
 
 # set_theta_f()
 # setPpos()
-#
 
 # adap.bn = Analytical.binomOp()
 # function test()
