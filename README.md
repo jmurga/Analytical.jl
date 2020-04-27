@@ -6,9 +6,12 @@ Extended ABC-MK calculations accounting for background selection and weak adapta
 
 Included in this repository are the scripts used to simulate and infer parameters from ABC software.
 
-To install the module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). You can easily export the Julia bin through ```bash export PATH="/path/to/directory/julia-1.0.5/bin:$PATH"```. In addition, since the package use *scipy* functions, we recommend executing Julia activating the following [conda enviroment](https://github.com/jmurga/Analytical.jl/tree/master/scripts/abc-mk.yml) (or you can just just install *scipy* in your default python)
+To install the module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). You can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.0.5/bin:$PATH"```. In addition, since the package use *scipy* functions, we recommend executing Julia activating the following [conda enviroment](https://github.com/jmurga/Analytical.jl/tree/master/scripts/abc-mk.yml) (or you can just just install *scipy* in your default python). Once Julia is installed just run:
+```bash
+julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
+```
 
-We provide a Docker image based on Debian including *Julia* and all packages needed to run the estimations. It also includes *jupyterlab* and several data science packages. You can run the whole Debian image or just the jupyterlab instance pulling the image from dockerhub:
+We provide a Docker image based on Debian including Julia and all packages needed to run the estimations. It also includes jupyterlab and several data science packages. You can run the whole Debian image or just the jupyterlab instance pulling the image from dockerhub:
 
 ```bash
 # Pull the image
