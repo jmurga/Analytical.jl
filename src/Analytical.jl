@@ -8,6 +8,7 @@ using Roots
 using HDF5
 
 include("features.jl")
+include("inferParams.jl")
 
 @with_kw mutable struct parameters
 	gam_neg::Int64             = -83
@@ -19,8 +20,8 @@ include("features.jl")
 	theta_mid_neutral::Float64 = 1e-3
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
-	B::Float64          = 0.999
-	bRange::Array{Float64,1}     = collect(0.2:0.05:1)
+	B::Float64                 = 0.999
+	bRange::Array{Float64,1}   = [0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999]
 	pposL::Float64             = 0.001
 	pposH::Float64             = 0
 	N::Int64                   = 500
@@ -35,7 +36,7 @@ include("features.jl")
 
 	NN::Int64 = 1000
 	nn::Int64 = 500
-	bn::Dict = Dict(bRange[i]=> zeros(nn+1,NN) for i in 1:length(bRange))
+	bn::Dict = Dict(bRange[i] => zeros(nn+1,NN) for i in 1:length(bRange))
 end
 
 adap = parameters()
@@ -45,8 +46,7 @@ export adap, binomOp
 ###### Solving parameters ######
 ################################
 
-# function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=0.999,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,binomial=true)
-function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=collect(0.2:0.05:1),B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false)
+function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false)
 
 	adap.gam_neg           = gam_neg
 	adap.gL                = gL
@@ -57,7 +57,7 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 	adap.theta_mid_neutral = theta_mid_neutral
 	adap.al                = al
 	adap.be                = be
-	adap.bRange                 = bRange
+	adap.bRange            = bRange
 	adap.B                 = B
 	adap.pposL             = pposL
 	adap.pposH             = pposH
@@ -146,9 +146,6 @@ end
 
 function binomOp(B)
 
-	if(B == 1)
-		B = 0.999
-	end
     NN2          = convert(Int64, round(adap.NN*B, digits=0))
     samples      =  [i for i in 0:adap.nn]
     samplesFreqs = [j for j in 0:NN2]
@@ -383,7 +380,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		# Outputs
 		sel = (selH+selL)+selN
 
-		ret = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel2./neut)
+		ret = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 		ret = ret[1:lastindex(ret)-1]
 
 		selNopos = selN
@@ -419,6 +416,8 @@ function summaryStatistics(fileName::String,simulationName::String,alphaPos::Arr
 		f = open("test.csv", "a+");
 		CSV.write(f, A; delim = ',')
 end
+
+end # module
 
 
 ################################
@@ -526,5 +525,3 @@ end
 #
 # 	return out
 # end
-
-end # module
