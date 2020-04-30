@@ -41,12 +41,12 @@ end
 
 adap = parameters()
 
-export adap, binomOp
+export adap
 ################################
 ###### Solving parameters ######
 ################################
 
-function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false)
+function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,convoluteBinomial=true)
 
 	adap.gam_neg           = gam_neg
 	adap.gL                = gL
@@ -73,11 +73,10 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 
 	adap.NN = N*2
 	adap.nn = n*2
-	adap.bn = Dict(bRange[i]=>binomOp(bRange[i]) for i in 1:length(bRange))
 
-	# if binomial == true
-	# 	adap.bn = binomOp()
-	# end
+	if convoluteBinomial == true
+		adap.bn = Dict(bRange[i] => binomOp(bRange[i]) for i in 1:length(bRange))
+	end
 end
 
 function Br(Lmax::Int64,theta::Float64)
@@ -268,7 +267,7 @@ function DiscSFSSelNegDown(ppos::Float64)
 	return out[2:lastindex(out)-1]
 end
 
-function DiscSFSSelNeg(ppos)
+function DiscSFSSelNeg(ppos::Float64)
 
 	beta     = adap.be/(1.0*adap.B)
 	NN2      = convert(Int64, round(adap.NN*adap.B, digits=0))
@@ -305,7 +304,21 @@ end
 ################################
 ###    Summary statistics    ###
 ################################
-function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,nopos::String)
+function possionSampling(;observedValue, lambdaS, lambdaN)
+
+	poissonS  = (lambdaS/(lambdaS + lambdaN) .* observedValue) .|> Poisson
+	poissonD  = (lambdaN/(lambdaS + lambdaN) .* observedValue) .|> Poisson
+
+	expectedS = rand.(poissonS,1)
+	expectedN = rand.(poissonD,1)
+
+	return(reduce(vcat,expectedS),reduce(vcat,expectedN))
+end
+
+function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
+
+	P = observedData[:,1]
+	D = observedData[:,2]
 
 	if nopos == "pos"
 		# Fixation
@@ -335,31 +348,35 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		return (ret)
 	elseif nopos == "nopos"
+
 		# Fixation
-		fNNopos    = adap.B*fixNeut()*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fNegNopos  = adap.B*fixNegB(0.5*pposH+0.5*pposL)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosLNopos = fixPosSim(gammaL,0.5*pposL)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosHNopos = fixPosSim(gammaH,0.5*pposH)*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fN    = adap.B*fixNeut()*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
+		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
+		fPosL = fixPosSim(gammaL,0.5*pposL)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
+		fPosH = fixPosSim(gammaH,0.5*pposH)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
+
+		ds = fN
+		dn = fNeg + fPosL + fPosH
 
 		# Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+		sel = selN
+
+		ps = sum(neut) ./ sum(selN+neut)
+		pn = sum(selN) ./ sum(selN+neut)
 
 		# Outputs
-		selNopos = selN
+		expectedDs, expectedDn = possionSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
 
-		retNopos = 1 .- (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0)) .* (selNopos./neut)
-		retNopos = retNopos[1:lastindex(retNopos)-1]
+		expectedPs, expectedPn = possionSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
 
-		# retNopos = Array{Float64}(undef, adap.nn - 1)
-		# selNopos = Array{Float64}(undef, adap.nn - 1)
+		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn)
 
-		# for i in 1:length(retNopos)
-		# 	selNopos[i] = selN[i]
-		# 	retNopos[i] = float(1.0 - (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0))* selNopos[i]/neut[i])
-		# end
+		ret = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
+		ret = ret[1:lastindex(ret)-1]
 
-		return (retNopos)
+		return (ret,expectedValues)
 	else
 		# Fixation
 		fN         = adap.B*fixNeut()
@@ -405,16 +422,13 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 	end
 end
 
-function summaryStatistics(fileName::String,simulationName::String,alphaPos::Array{Float64},alphaNopos::Array{Float64})
+function summaryStatistics(fileName::String,simulationName::String,alpha::Array{Float64},expectedValues::Array{Int64,2})
 
 		file  = h5open(fileName, "cw")
 		group = g_create(file, simulationName*string(rand(Int64)))
-		d_write(group, "alphaPos", alphaPos)
-		d_write(group, "alphaNopos", alphaNopos)
+		d_write(group, "alpha", alpha)
+		d_write(group, "expectedValues", expectedValues)
 		close(file)
-
-		f = open("test.csv", "a+");
-		CSV.write(f, A; delim = ',')
 end
 
 end # module
@@ -432,7 +446,7 @@ end # module
 # 	end
 #
 # 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-# 	pposL,pposH = nlsolve(f!,[ 0.0; 0.0]).zero
+# 	pposL,pposH = NLsolve.nlsolve(f!,[ 0.0; 0.0]).zero
 #
 # 	if pposL < 0.0
 # 	 	pposL = 0.0

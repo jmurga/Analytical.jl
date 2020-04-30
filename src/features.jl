@@ -1,3 +1,6 @@
+using QuadGK
+using SpecialFunctions
+using Roots
 
 function GammaDist(gamma)
 	return ((adap.be^adap.al)/SpecialFunctions.gamma(adap.al))*(gamma^(adap.al-1))*exp(-adap.be*gamma)
@@ -10,10 +13,9 @@ function PiP0(gamma)
 end
 
 function intPiP0()
-	# ret = lambda gam: PiP0(gam
+
 	f(gam) = PiP0(gam)
-	return quadgk(f,0,1000)[1]
-	# return sc.quad(f,1,1000)
+	return QuadGK.quadgk(f,0,1000)[1]
 end
 
 function calcBGam(L,alpha,beta,theta)

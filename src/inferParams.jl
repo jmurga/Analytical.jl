@@ -1,8 +1,23 @@
 using Distributions
 using Statistics
-using StatsPlots
 using GZip
-using DelimitedFiles
+using CSV
+using StatsBase
+
+function readData(file)
+	df = CSV.read(file)
+
+	resampling = vcat([10,25,50,75],collect(100:100:1000),collect(1000:500:4000))
+	tmp = zeros(length(resampling),2)
+	for i in 1:length(resampling)
+		idx = StatsBase.sample(axes(df, 1), resampling[i]; replace = true, ordered = true)
+		tmp[i,:] = sum(convert(Array, df[idx,:]), dims = 1)
+	end
+
+	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
+	return out
+end
+
 
 function meanQ(x)
 	m = mean(x)
@@ -16,7 +31,8 @@ function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64,
 	run(reg)
 
 	files = filter(x -> occursin(outputPrefix,x), readdir(outputPath))
-	openFiles(f) = GZip.open(DelimitedFiles.readdlm,outputPath*"/"*f)
+	# openFiles(f) = GZip.open(DelimitedFiles.readdlm,outputPath*"/"*f)
+	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f)))
 
 	estimates = Array{Float64}(undef,length(files),3)
 	estimates = files .|> openFiles .|> meanQ
