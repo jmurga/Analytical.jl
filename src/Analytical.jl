@@ -1,14 +1,14 @@
 module Analytical
 
+include("features.jl")
+include("inferParams.jl")
+
 using Parameters
 using PyCall
 using SpecialFunctions
 using Distributions
 using Roots
 using HDF5
-
-include("features.jl")
-include("inferParams.jl")
 
 @with_kw mutable struct parameters
 	gam_neg::Int64             = -83
@@ -27,12 +27,8 @@ include("inferParams.jl")
 	N::Int64                   = 500
 	n::Int64                   = 250
 	Lf::Int64                  = 10^6
-	L_mid::Int64               = 501
 	rho::Float64               = 0.001
-	al2::Float64               = 0.0415
-	be2::Float64               = 0.00515625
 	TE::Float64                = 5.0
-	ABC::Bool                  = false
 
 	NN::Int64 = 1000
 	nn::Int64 = 500
@@ -46,7 +42,7 @@ export adap
 ###### Solving parameters ######
 ################################
 
-function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,convoluteBinomial=true)
+function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.999,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
 
 	adap.gam_neg           = gam_neg
 	adap.gL                = gL
@@ -64,12 +60,8 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 	adap.N                 = N
 	adap.n                 = n
 	adap.Lf                = Lf
-	adap.L_mid             = L_mid
 	adap.rho               = rho
-	adap.al2               = al2
-	adap.be2               = be2
 	adap.TE                = TE
-	adap.ABC               = ABC
 
 	adap.NN = N*2
 	adap.nn = n*2
@@ -304,7 +296,7 @@ end
 ################################
 ###    Summary statistics    ###
 ################################
-function possionSampling(;observedValue, lambdaS, lambdaN)
+function poissonSampling(;observedValue, lambdaS, lambdaN)
 
 	poissonS  = (lambdaS/(lambdaS + lambdaN) .* observedValue) .|> Poisson
 	poissonD  = (lambdaN/(lambdaS + lambdaN) .* observedValue) .|> Poisson
@@ -317,8 +309,8 @@ end
 
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
-	P = observedData[:,1]
-	D = observedData[:,2]
+	P = observedData[:,1][lastindex(observedData[:,1])]
+	D = observedData[:,2][lastindex(observedData[:,2])]
 
 	if nopos == "pos"
 		# Fixation
@@ -367,14 +359,15 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		pn = sum(selN) ./ sum(selN+neut)
 
 		# Outputs
-		expectedDs, expectedDn = possionSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
+		expectedDs, expectedDn = poissonSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
 
-		expectedPs, expectedPn = possionSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
-
-		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn)
+		expectedPs, expectedPn = poissonSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
 
 		ret = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
 		ret = ret[1:lastindex(ret)-1]
+
+		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,ret[lastindex(ret)])
+		# expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,fill(adap.B,size(expectedPn)[1]),fill(ret[lastindex(ret)],size(expectedPn)[1]))
 
 		return (ret,expectedValues)
 	else
@@ -422,13 +415,14 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 	end
 end
 
-function summaryStatistics(fileName::String,simulationName::String,alpha::Array{Float64},expectedValues::Array{Int64,2})
+function summaryStatistics(fileName,alpha,expectedValues)
 
-		file  = h5open(fileName, "cw")
-		group = g_create(file, simulationName*string(rand(Int64)))
-		d_write(group, "alpha", alpha)
-		d_write(group, "expectedValues", expectedValues)
-		close(file)
+
+	h5open(fileName, "cw") do file
+		tmp = string(rand(Int64))
+	    write(file, "tmp"*tmp*"/alpha", alpha)
+	    write(file, "tmp"*tmp*"/expectedValues", expectedValues)
+	end
 end
 
 end # module
@@ -437,7 +431,38 @@ end # module
 ################################
 ######## Old functions  ########
 ################################
-
+# function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,convoluteBinomial=true)
+#
+# 	adap.gam_neg           = gam_neg
+# 	adap.gL                = gL
+# 	adap.gH                = gH
+# 	adap.alLow             = alLow
+# 	adap.alTot             = alTot
+# 	adap.theta_f           = theta_f
+# 	adap.theta_mid_neutral = theta_mid_neutral
+# 	adap.al                = al
+# 	adap.be                = be
+# 	adap.bRange            = bRange
+# 	adap.B                 = B
+# 	adap.pposL             = pposL
+# 	adap.pposH             = pposH
+# 	adap.N                 = N
+# 	adap.n                 = n
+# 	adap.Lf                = Lf
+# 	adap.L_mid             = L_mid
+# 	adap.rho               = rho
+# 	adap.al2               = al2
+# 	adap.be2               = be2
+# 	adap.TE                = TE
+# 	adap.ABC               = ABC
+#
+# 	adap.NN = N*2
+# 	adap.nn = n*2
+#
+# 	if convoluteBinomial == true
+# 		adap.bn = Dict(bRange[i] => binomOp(bRange[i]) for i in 1:length(bRange))
+# 	end
+# end
 # function setPpos_nlsolve()
 #
 # 	function f!(F,x)
