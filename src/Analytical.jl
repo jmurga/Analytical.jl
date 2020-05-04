@@ -355,12 +355,11 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 		sel = selN
 
-		ps = sum(neut) ./ sum(selN+neut)
-		pn = sum(selN) ./ sum(selN+neut)
+		ps = sum(neut) ./ sum(sel+neut)
+		pn = sum(sel) ./ sum(sel+neut)
 
 		# Outputs
 		expectedDs, expectedDn = poissonSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
-
 		expectedPs, expectedPn = poissonSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
 
 		ret = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
@@ -371,47 +370,61 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		return (ret,expectedValues)
 	else
-		# Fixation
-		fN         = adap.B*fixNeut()
-		fNNopos    = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fNeg       = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-		fNegNopos  = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosL      = fixPosSim(gammaL,0.5*pposL)
-		fPosLNopos = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosH      = fixPosSim(gammaH,0.5*pposH)
-		fPosHNopos =  fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
 
-		# Polymorphism
+		## Accounting for positive alleles segregating due to linkage
+		# Fixation
+		fN     = adap.B*fixNeut()
+		fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+		fPosL  = fixPosSim(gammaL,0.5*pposL)
+		fPosH  = fixPosSim(gammaH,0.5*pposH)
+
+		ds = fN
+		dn = fNeg + fPosL + fPosH
+
+		## Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
 		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
 		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
-		# Outputs
 		sel = (selH+selL)+selN
+		ps = sum(neut) ./ sum(sel+neut)
+		pn = sum(sel) ./ sum(sel+neut)
+
+		## Outputs
+		expectedDs, expectedDn = poissonSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
+		expectedPs, expectedPn = poissonSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
 
 		ret = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 		ret = ret[1:lastindex(ret)-1]
 
-		selNopos = selN
+		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,ret[lastindex(ret)])
 
-		retNopos = 1 .- (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0)) .* (selNopos./neut)
-		retNopos = retNopos[1:lastindex(retNopos)-1]
+		# Accounting only for neutral and deleterious alleles segregating
+		## Fixation
+		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+		fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
 
-		# ret      = Array{Float64}(undef, adap.nn - 1)
-		# retNopos = Array{Float64}(undef, adap.nn - 1)
-		# sel      = Array{Float64}(undef, adap.nn - 1)
-		# selNopos = Array{Float64}(undef, adap.nn - 1)
-		#
-		# for i in 1:length(ret)
-		# 	sel[i]      = (selH[i]+selL[i])+selN[i]
-		# 	ret[i]      = float(1.0 - (fN/(fPosL + fPosH+  fNeg+0.0))* sel[i]/neut[i])
-		#
-		# 	selNopos[i] = selN[i]
-		# 	retNopos[i] = float(1.0 - (fNNopos/(fPosLNopos + fPosHNopos+  fNegNopos+0.0))* selNopos[i]/neut[i])
-		# end
+		ds_nopos = fN_nopos
+		dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
 
-		return (ret,retNopos)
+		## Polymorphism
+		sel_nopos = selN
+		ps_nopos = sum(neut) ./ sum(sel_nopos+neut)
+		pn_nopos = sum(sel_nopos) ./ sum(sel_nopos+neut)
+
+		## Outputs
+		expectedDs_nopos, expectedDn_nopos = poissonSampling(observedValue=D,lambdaS=ds_nopos,lambdaN=dn_nopos)
+		expectedPs_nopos, expectedPn_nopos = poissonSampling(observedValue=P,lambdaS=ps_nopos,lambdaN=pn_nopos)
+
+		ret_nopos = 1 .- (fN_nopos/(fNeg_nopos + fPosH_nopos+  fNeg_nopos+0.0)) .* (sel_nopos./neut)
+		ret_nopos = ret_nopos[1:lastindex(ret_nopos)-1]
+
+		expectedValues = hcat(expectedValues,ret_nopos[lastindex(ret_nopos)])
+
+		return (ret,ret_nopos,expectedValues)
 	end
 end
 

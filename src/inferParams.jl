@@ -19,9 +19,9 @@ function readData(file)
 end
 
 
-function meanQ(x)
-	m = mean(x)
-	q = Statistics.quantile(x[:,1],[0.05,0.95])
+function meanQ(x,column=5)
+	m = mean(x[:,column])
+	q = Statistics.quantile(x[:,column],[0.05,0.95])
 	return append!(q,m)
 end
 
@@ -32,11 +32,12 @@ function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64,
 
 	files = filter(x -> occursin(outputPrefix,x), readdir(outputPath))
 	# openFiles(f) = GZip.open(DelimitedFiles.readdlm,outputPath*"/"*f)
-	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f)))
+	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f),header=false))
 
 	estimates = Array{Float64}(undef,length(files),3)
 	estimates = files .|> openFiles .|> meanQ
 	results = reduce(hcat,estimates) |> transpose
+	results = convert(Matrix,results)
 	# results = Dict(zip(files, estimates))
 
 	rm.(outputPath.*"/".*files)
