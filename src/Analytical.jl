@@ -296,15 +296,26 @@ end
 ################################
 ###    Summary statistics    ###
 ################################
-function poissonSampling(;observedValue, lambdaS, lambdaN)
+function poissonFixation(;observedValue, λds, λdn)
 
-	poissonS  = (lambdaS/(lambdaS + lambdaN) .* observedValue) .|> Poisson
-	poissonD  = (lambdaN/(lambdaS + lambdaN) .* observedValue) .|> Poisson
+	poissonS  = (λds/(λds + λdn) .* observedValue) .|> Poisson
+	poissonD  = (λdn/(λds + λdn) .* observedValue) .|> Poisson
 
-	expectedS = rand.(poissonS,1)
-	expectedN = rand.(poissonD,1)
+	sampledDs = rand.(poissonS,1)
+	sampledDn = rand.(poissonD,1)
 
-	return(reduce(vcat,expectedS),reduce(vcat,expectedN))
+	return(reduce(vcat,sampledDs),reduce(vcat,sampledDn))
+end
+
+function poissonPolymorphism(;observedValues, λps, λpn)
+
+    psPois(x,y=λps,z=λpn) = rand.((y./(y .+ z) .* x) .|> Poisson,1)
+    pnPois(x,y=λps,z=λpn) = rand.((z./(y .+ z) .* x) .|> Poisson,1)
+
+    sampledPs = observedValues .|> psPois
+    sampledPn = observedValues .|> pnPois
+
+    return (reduce(hcat,sampledPs),reduce(hcat,sampledPn))
 end
 
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
@@ -388,6 +399,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		sel = (selH+selL)+selN
+		replace!(sel,NaN=>0)
 		ps = sum(neut) ./ sum(sel+neut)
 		pn = sum(sel) ./ sum(sel+neut)
 

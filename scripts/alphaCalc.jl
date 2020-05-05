@@ -50,7 +50,7 @@ function test(f)
 		Analytical.setPpos()
 		adap.theta_f = theta_f
 		adap.B = newB
-		# run the calucation
+
 		x,y = Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,empiricalValues,"nopos")
 		CSV.write("/home/jmurga/"*f*".csv", DataFrame(y), delim='\t', append=true)
 		#summaryStatistics("/home/jmurga/"*f*".h5",x,y)
@@ -58,7 +58,7 @@ function test(f)
 	end
 end
 
-alphaAll = ABCreg
+alphaAll = ABCreg(data="/home/jmurga/data2.gz",prior="/home/jmurga/prior.gz", nparams=5, nsummaries=4, outputPath="/home/jmurga/", outputPrefix="newOut", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
 
 alpha = hcat(pos,nopos)
 asympPlot(alpha,0.2)
