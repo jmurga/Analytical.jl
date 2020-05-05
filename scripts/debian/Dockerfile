@@ -33,7 +33,7 @@ RUN  tar -zxvf /root/julia-1.0.5-linux-x86_64.tar.gz -C /root
 RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","SpecialFunctions","Distributions","Roots","PyPlot","IJulia","CSV","HDF5","GZip","QuadGK"])'
 
 ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
-ADD scripts/poissonSampling.ipynb /analysis/BenchmarkJulia.ipynb
+ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb
 ADD scripts/alphaCalc.jl  /analysis/alphaCalc.jl
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
