@@ -309,13 +309,24 @@ end
 
 function poissonPolymorphism(;observedValues, λps, λpn)
 
-    psPois(x,y=λps,z=λpn) = rand.((y./(y .+ z) .* x) .|> Poisson,1)
-    pnPois(x,y=λps,z=λpn) = rand.((z./(y .+ z) .* x) .|> Poisson,1)
+    psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
+    pnPois(x,y=λps,z=λpn) = reduce(vcat,rand.((z./(y .+ z) .* x) .|> Poisson,1))
 
-    sampledPs = observedValues .|> psPois
-    sampledPn = observedValues .|> pnPois
+    sampledPs = observedValues .|> psPois # We can apply here any statistic measure
+    sampledPn = observedValues .|> pnPois # We can apply here any statistic measure
 
-    return (reduce(hcat,sampledPs),reduce(hcat,sampledPn))
+    return sampledPs,sampledPn
+end
+
+function poissonPolymorphism2(;observedValues, λps, λpn)
+
+    psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
+    pnPois(x,y=λps,z=λpn) = reduce(vcat,rand.((z./(y .+ z) .* x) .|> Poisson,1))
+
+    sampledPs = observedValues .|> psPois # We can apply here any statistic measure
+    sampledPn = observedValues .|> pnPois # We can apply here any statistic measure
+
+    return sum(reduce(vcat,sampledPs)), sum(reduce(vcat,sampledPn))
 end
 
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
