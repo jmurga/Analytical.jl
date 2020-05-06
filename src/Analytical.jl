@@ -8,7 +8,7 @@ using PyCall
 using SpecialFunctions
 using Distributions
 using Roots
-using HDF5
+# using HDF5
 
 @with_kw mutable struct parameters
 	gam_neg::Int64             = -83
@@ -150,11 +150,15 @@ end
 ################################
 
 # E[Dn]  = LT(E[Dn+] + E[Dn-] + E[Dns])
-# E[Dn+] =  (p+(1-ℯ^-2s)
+# E[Dns] =  (p+(1-ℯ^-2s)
 # E[Dn-] = p-(2^-α*β^α(-ζ[α,2+β/2] + ζ[α,1/2*(2-1/N+β)]))
-# E[Dns] = (1 - p- - p+) * 1/2N = p_synoymous * 1/(B*2N)
+# E[Dn+] = (1 - p- - p+) * 1/2N = p_synoymous * 1/(B*2N)
 
-# Neutral fixations reduce by B value given the probability of being synonymous.
+"""
+
+	Neutral fixations reduce by B value given the probability of being synonymous.
+E[Dns] =  (1 - p- - p+) ⋅ B ⋅ 1/2N
+"""
 function fixNeut()
 	return 0.255*(1.0/(adap.B*adap.NN))
 end
