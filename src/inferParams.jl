@@ -2,6 +2,7 @@ using Distributions
 using Statistics
 using GZip
 using CSV
+using Parsers
 using StatsBase
 
 function readData(file)
@@ -18,6 +19,33 @@ function readData(file)
 	return out
 end
 
+function parseSfs(data,sfsColumns,divColumns)
+
+	df = CSV.read(data,header=false,delim=' ')
+
+    tmp  = split.(df[:,sfsColumns], ",")
+    f(x) = Parsers.parse.(Float64,x[2:end-1])
+    pn   = round.(reduce(vcat,tmp[:,1] .|> f),digits=4) |> StatsBase.countmap
+    ps   = round.(reduce(vcat,tmp[:,2] .|> f),digits=4) |> StatsBase.countmap
+
+    x = zeros(adap.nn)
+	y = zeros(adap.nn)
+    for i in 1:adap.nn
+        try
+            x[i] = pn[round.((i/adap.nn),digits=4)]
+            y[i] = ps[round.((i/adap.nn),digits=4)]
+        catch
+            x[i] = 0
+            y[i] = 0
+        end
+    end
+
+	sfs = x .+ y
+
+	P  = sum(sfs)
+	D = convert(Matrix,df[:,divColumns]) |> sum
+    return [P,sfs,D]
+end
 
 function meanQ(x,column=5)
 	m = mean(x[:,column])

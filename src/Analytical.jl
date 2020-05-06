@@ -27,7 +27,7 @@ using HDF5
 	N::Int64                   = 500
 	n::Int64                   = 250
 	Lf::Int64                  = 10^6
-	rho::Float64               = 0.001
+	rho::Float64                 = 0.001
 	TE::Float64                = 5.0
 
 	NN::Int64 = 1000
@@ -38,9 +38,6 @@ end
 adap = parameters()
 
 export adap
-################################
-###### Solving parameters ######
-################################
 
 function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.999,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
 
@@ -71,29 +68,26 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 	end
 end
 
+################################
+###### Solving parameters ######
+################################
+
+# π/π_0 ≈ ℯ^(-4μL/2rL+t)
 function Br(Lmax::Int64,theta::Float64)
 
-	gam_neg = adap.gam_neg
-	rho     = adap.rho
-	t       = -1.0*adap.gam_neg/(adap.NN+0.0)
-	u       = theta/(2.0*adap.NN)
-	r       = rho/(2.0*adap.NN)
+	γ_neg = adap.gam_neg
+	ρ  	  = adap.rho
+	t     = -1.0*γ_neg/(adap.NN+0.0)
+	μ     = theta/(2.0*adap.NN)
+	r     = ρ/(2.0*adap.NN)
 
-	return exp(-4*u*Lmax/(2*Lmax*r+t))
+	return ℯ^(-4*μ*Lmax/(2*Lmax*r+t))
 end
 
-function set_Lf()
-
-	i(L)   = Br(L,theta_f,adap,adap)-B
-	tmpLf  = Roots.find_zero(i,100)
-	Lf     = convert(Int64,round(tmpLf))
-
-	return Lf
-end
-
+# Set mutation rate given the expected reduction in nucleotide diversity (B value ) in a locus.
 function set_theta_f()
 
-	i(theta)     = Br(adap.Lf,theta)-adap.B
+	i(θ)         = Br(adap.Lf,θ)-adap.B
 	theta_f      = Roots.find_zero(i,0.00001)
 	adap.theta_f = theta_f
 end
@@ -155,15 +149,32 @@ end
 ######     Fixations      ######
 ################################
 
+# E[Dn]  = LT(E[Dn+] + E[Dn-] + E[Dns])
+# E[Dn+] =  (p+(1-ℯ^-2s)
+# E[Dn-] = p-(2^-α*β^α(-ζ[α,2+β/2] + ζ[α,1/2*(2-1/N+β)]))
+# E[Dns] = (1 - p- - p+) * 1/2N = p_synoymous * 1/(B*2N)
+
+# Neutral fixations reduce by B value given the probability of being synonymous.
+function fixNeut()
+	return 0.255*(1.0/(adap.B*adap.NN))
+end
+
+# Negative fixations
+function fixNegB(ppos::Float64)
+	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
+end
+
+# Positive fixations
 function pFix(gamma::Int64)
+
 	s    = gamma/(adap.NN+0.0)
-	pfix = (1.0-exp(-2.0*s))/(1.0-exp(-2.0*gamma))
+	pfix = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gamma))
 
 	if s >= 0.1
-		pfix = exp(-(1.0+s))
+		pfix = ℯ^(-(1.0+s))
 		lim = 0
 		while(lim < 200)
-			pfix = exp((1.0+s)*(pfix-1.0))
+			pfix = ℯ^((1.0+s)*(pfix-1.0))
 			lim +=1
 		pfix = 1-pfix
 		end
@@ -172,32 +183,28 @@ function pFix(gamma::Int64)
 	return pfix
 end
 
-function fixNeut()
-	return 0.255*(1.0/(adap.B*adap.NN))
-end
-
-function fixNegB(ppos::Float64)
-	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
-end
-
+# Positive fixations after apply Φ, reduction of positive fixations due deleterious linkage given a value B of background selection
 function fixPosSim(gamma::Int64,ppos::Float64)
 
 	S  = abs(adap.gam_neg/(1.0*adap.NN))
 	r  = adap.rho/(2.0*adap.NN)
-	u  = adap.theta_f/(2.0*adap.NN)
+	μ  = adap.theta_f/(2.0*adap.NN)
 	s  = gamma/(adap.NN*1.0)
 
-	p0 = SpecialFunctions.polygamma(1,(s+S)/r)
-	p1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
+	Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
+	Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
 	CC = 1.0
 
-	return 0.745*ppos*exp(-2.0*S*u*(p0-p1)*CC^2/r^2)*pFix(gamma)
+	return 0.745 * ppos * ℯ^(-2.0*S*μ*(Ψ0-Ψ1)*CC^2/r^2) * pFix(gamma)
 end
 
 ################################
 ######    Polymorphism    ######
 ################################
-
+# Expected number of polymorphism above frequency x from the standard diffusion theory
+# f(x) = ∫(s) θs* (1/x(1-x)) * ( (ℯ^(Ns)*(1-ℯ^(-4Ns(1-x))) ) / (ℯ^(4Ns-1)))
+# Convolote with the binomial to obtain the downsampled sfs
+# E[P(x)] = ∑_x=x*→x=1 fB(x*)
 ############Neutral#############
 
 function DiscSFSNeutDown()
@@ -228,11 +235,11 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 	else
 		S        = abs(adap.gam_neg/(1.0*adap.NN))
 		r        = adap.rho/(2.0*adap.NN)
-		u        = adap.theta_f/(2.0*adap.NN)
+		μ        = adap.theta_f/(2.0*adap.NN)
 		s        = gammaValue/(adap.NN*1.0)
-		p0       = SpecialFunctions.polygamma(1,(s+S)/r)
-		p1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
-		red_plus = exp(-2.0*S*u*(p0-p1)/(r^2))
+		Ψ0       = SpecialFunctions.polygamma(1,(s+S)/r)
+		Ψ1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
+		red_plus = exp(-2.0*S*μ*(Ψ0-Ψ1)/(r^2))
 
 		# Solving sfs
 		NN2 = convert(Int64,round(adap.NN*adap.B,digits=0))
@@ -241,7 +248,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
 			if i > 0 && i < 1.0
-				return ppos*0.5*(exp(2*gammaCorrected)*(1-exp(-2.0*gammaCorrected*(1.0-i)))/((exp(2*gammaCorrected)-1.0)*i*(1.0-i)))
+				return ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
 			end
 			return 0.0
 		end
@@ -264,7 +271,9 @@ function DiscSFSSelNeg(ppos::Float64)
 	beta     = adap.be/(1.0*adap.B)
 	NN2      = convert(Int64, round(adap.NN*adap.B, digits=0))
 	xa       = [round(i/(NN2+0.0),digits=6) for i in 0:NN2]
+
 	z(x,ppos=ppos) = (1.0-ppos)*(2.0^-adap.al)*(beta^adap.al)*(-SpecialFunctions.zeta(adap.al,x+beta/2.0) + SpecialFunctions.zeta(adap.al,(2+beta)/2.0))/((-1.0+x)*x)
+
 	solveZ   = xa .|> z
 
 	if (solveZ[1] == Inf || isnan(solveZ[1]))
@@ -296,10 +305,10 @@ end
 ################################
 ###    Summary statistics    ###
 ################################
-function poissonFixation(;observedValue, λds, λdn)
+function poissonFixation(;observedValues, λds, λdn)
 
-	poissonS  = (λds/(λds + λdn) .* observedValue) .|> Poisson
-	poissonD  = (λdn/(λds + λdn) .* observedValue) .|> Poisson
+	poissonS  = (λds/(λds + λdn) .* observedValues) .|> Poisson
+	poissonD  = (λdn/(λds + λdn) .* observedValues) .|> Poisson
 
 	sampledDs = rand.(poissonS,1)
 	sampledDn = rand.(poissonD,1)
@@ -326,13 +335,14 @@ function poissonPolymorphism2(;observedValues, λps, λpn)
     sampledPs = observedValues .|> psPois # We can apply here any statistic measure
     sampledPn = observedValues .|> pnPois # We can apply here any statistic measure
 
-    return sum(reduce(vcat,sampledPs)), sum(reduce(vcat,sampledPn))
+    return (sum.(sampledPs), sum.(sampledPn))
 end
 
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
-	P = observedData[:,1][lastindex(observedData[:,1])]
-	D = observedData[:,2][lastindex(observedData[:,2])]
+	P   = observedData[1,:][lastindex(observedData[1,:])]
+	SFS = observedData[2,:][lastindex(observedData[2,:])]
+	D = observedData[3,:][lastindex(observedData[3,:])]
 
 	if nopos == "pos"
 		# Fixation
@@ -341,26 +351,33 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		fPosL = fixPosSim(gammaL,0.5*pposL)
 		fPosH = fixPosSim(gammaH,0.5*pposH)
 
+		ds = fN
+		dn = fNeg + fPosL + fPosH
+
 		# Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
 		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
 		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
+		sel = (selH+selL)+selN
+		replace!(sel,NaN=>0)
+		ps = sum(neut) ./ sum(sel+neut)
+		pn = sum(sel) ./ sum(sel+neut)
+
 		# Outputs
+		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
+		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
+
+
 		sel = (selH+selL)+selN
 
-		ret = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		ret = ret[1:lastindex(ret)-1]
+		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+		α = α[1:lastindex(α)-1]
 
-		# ret = Array{Float64}(undef, adap.nn-1)
-		# sel = Array{Float64}(undef, adap.nn - 1)
-		# for i in 1:length(ret)
-		# 	sel[i] = (selH[i]+selL[i])+selN[i]
-		# 	ret[i] = float(1.0 - (fN/(fPosL + fPosH +  fNeg + 0.0)) * sel[i]/neut[i])
-		# end
+		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
 
-		return (ret)
+		return (α,expectedValues)
 	elseif nopos == "nopos"
 
 		# Fixation
@@ -377,20 +394,20 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 		sel = selN
 
-		ps = sum(neut) ./ sum(sel+neut)
-		pn = sum(sel) ./ sum(sel+neut)
+		ps = neut ./ (sel.+neut)
+		pn = sel ./ (sel.+neut)
 
 		# Outputs
-		expectedDs, expectedDn = poissonSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
-		expectedPs, expectedPn = poissonSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
+		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
+		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
 
-		ret = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
-		ret = ret[1:lastindex(ret)-1]
+		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
+		α = α[1:lastindex(α)-1]
 
-		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,ret[lastindex(ret)])
+		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
 		# expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,fill(adap.B,size(expectedPn)[1]),fill(ret[lastindex(ret)],size(expectedPn)[1]))
 
-		return (ret,expectedValues)
+		return (α,expectedValues)
 	else
 
 		## Accounting for positive alleles segregating due to linkage
@@ -415,13 +432,11 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		pn = sum(sel) ./ sum(sel+neut)
 
 		## Outputs
-		expectedDs, expectedDn = poissonSampling(observedValue=D,lambdaS=ds,lambdaN=dn)
-		expectedPs, expectedPn = poissonSampling(observedValue=P,lambdaS=ps,lambdaN=pn)
+		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
+		expectedPs, expectedPn = poissonPolymorphism2(observedValues=P,λps=ps,λpn=pn)
 
-		ret = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		ret = ret[1:lastindex(ret)-1]
-
-		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,ret[lastindex(ret)])
+		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+		α = α[1:lastindex(α)-1]
 
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
@@ -439,15 +454,15 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		pn_nopos = sum(sel_nopos) ./ sum(sel_nopos+neut)
 
 		## Outputs
-		expectedDs_nopos, expectedDn_nopos = poissonSampling(observedValue=D,lambdaS=ds_nopos,lambdaN=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonSampling(observedValue=P,lambdaS=ps_nopos,lambdaN=pn_nopos)
+		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
+		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism2(observedValues=P,λps=ps_nopos,λpn=pn_nopos)
 
-		ret_nopos = 1 .- (fN_nopos/(fNeg_nopos + fPosH_nopos+  fNeg_nopos+0.0)) .* (sel_nopos./neut)
-		ret_nopos = ret_nopos[1:lastindex(ret_nopos)-1]
+		α_nopos = 1 .- (fN_nopos/(fNeg_nopos + fPosH_nopos+  fNeg_nopos+0.0)) .* (sel_nopos./neut)
+		α_nopos = α_nopos[1:lastindex(α_nopos)-1]
 
-		expectedValues = hcat(expectedValues,ret_nopos[lastindex(ret_nopos)])
+		expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[lastindex(α_nopos)])
 
-		return (ret,ret_nopos,expectedValues)
+		return (α,α_nopos,expectedValues)
 	end
 end
 
@@ -467,9 +482,9 @@ end # module
 ################################
 ######## Old functions  ########
 ################################
-# function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,rho=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,convoluteBinomial=true)
+# function changeParameters(;γ_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B=0.95,pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,L_mid=501,ρ=0.001,al2= 0.0415,be2=0.00515625,TE=5.0,ABC=false,convoluteBinomial=true)
 #
-# 	adap.gam_neg           = gam_neg
+# 	adap.gam_neg           = γ_neg
 # 	adap.gL                = gL
 # 	adap.gH                = gH
 # 	adap.alLow             = alLow
@@ -486,7 +501,7 @@ end # module
 # 	adap.n                 = n
 # 	adap.Lf                = Lf
 # 	adap.L_mid             = L_mid
-# 	adap.rho               = rho
+# 	adap.rho               = ρ
 # 	adap.al2               = al2
 # 	adap.be2               = be2
 # 	adap.TE                = TE
@@ -507,7 +522,7 @@ end # module
 # 	end
 #
 # 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-# 	pposL,pposH = NLsolve.nlsolve(f!,[ 0.0; 0.0]).zero
+# 	pposL,pposH = NLsolve.nlsolve(f!,[ 0.00001; 0.000001]).zero
 #
 # 	if pposL < 0.0
 # 	 	pposL = 0.0
@@ -516,6 +531,15 @@ end # module
 # 		pposH = 0.0
 # 	end
 # 	adap.pposL,adap.pposH = pposL, pposH
+# end
+
+# function set_Lf()
+#
+# 	i(L)   = Br(L,theta_f,adap,adap)-B
+# 	tmpLf  = Roots.find_zero(i,100)
+# 	Lf     = convert(Int64,round(tmpLf))
+#
+# 	return Lf
 # end
 
 # function summaryStatistics(fileName,simulationName,alphaPos,alphaNopos)
