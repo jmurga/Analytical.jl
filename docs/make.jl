@@ -7,12 +7,11 @@ makedocs(
     doctest  = false,
     pages    = [
         "index.md"
-    ]
+    ],
 )
 
 
-
 deploydocs(
-    repo = "github.com/JuliaStats/Distributions.jl.git",
+    repo = "github.com/jmurga/Analytical.jl.git",
     versions = ["stable" => "v^", "v#.#", "dev" => "master"]
 )
