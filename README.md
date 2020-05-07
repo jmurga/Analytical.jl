@@ -1,6 +1,6 @@
 # Analytical
 
-[![Build Status](https://travis-ci.com/jmurga/Analytical.jl.svg?branch=master)](https://travis-ci.com/jmurga/Analytical.jl) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://jmurga.github.io/Analytical.jl/latest/)  
+[![Build Status](https://travis-ci.com/jmurga/Analytical.jl.svg?branch=master)](https://travis-ci.com/jmurga/Analytical.jl) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://jmurga.github.io/Analytical.jl/stable)  
 
 Extended ABC-MK calculations accounting for background selection and weak adaptation based on Julia language.
 

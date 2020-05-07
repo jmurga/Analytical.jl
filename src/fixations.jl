@@ -101,6 +101,7 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 	Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
 	CC = 1.0
 
+	# return 0.745 * ppos * phiReduction * pFix(gamma)
 	return 0.745 * ppos * ℯ^(-2.0*S*μ*(Ψ0-Ψ1)*CC^2/r^2) * pFix(gamma)
 end
  

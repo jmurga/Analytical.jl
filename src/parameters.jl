@@ -136,3 +136,16 @@ function binomOp(B)
     out  = Distributions.pdf.(z,samples)
     return out
 end
+
+function phiRecution()
+    S  = abs(adap.gam_neg/(1.0*adap.NN))
+    r  = adap.rho/(2.0*adap.NN)
+    μ  = adap.theta_f/(2.0*adap.NN)
+    s  = gamma/(adap.NN*1.0)
+
+    Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
+    Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
+    CC = 1.0
+
+    return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
+end
