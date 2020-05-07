@@ -9,12 +9,12 @@ julia:
 notifications:
   email: false
 jobs:
-  - stage: "Documentation"
-  julia: 1.0.5
-  os: linux
   allow_failures:
     - julia: nightly
   fast_finish: true
+  stage: "Documentation"
+  julia: 1.0.5
+  os: linux
   script:
     - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
     Pkg.instantiate()'
