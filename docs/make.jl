@@ -3,6 +3,7 @@ using Documenter, Analytical
 
 makedocs(
     sitename="Analytical MK approach",
+    authors = "Jesús Murga-Moreno, Lawrence Uricchio, David Enard",
     modules  = [Analytical],
     doctest  = false,
     pages    = [
@@ -12,6 +13,5 @@ makedocs(
 
 
 deploydocs(
-    repo = "github.com/jmurga/Analytical.jl.git",
-    versions = ["stable" => "v^", "v#.#", "dev" => "master"]
+    repo = "github.com/jmurga/Analytical.jl.git"
 )
