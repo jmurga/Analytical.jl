@@ -5,11 +5,11 @@
 # E[Dn]  = LT(E[Dn+] + E[Dn-] + E[Dns])
 
 # Neutral fixation reduced by background selection
-@doc raw"""
-```math
-	Neutral fixations reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
-	$\mathbb{E}\left[D_{s}\rigth] =  \left(1 - p_{-} - p_{+}) \cdot B \cdot \frac{1}{2N}\rigth)$
-```
+"""
+	```math
+		Neutral fixations reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
+		$\mathbb{E}\left[D_{s}\rigth] =  \left(1 - p_{-} - p_{+}) \cdot B \cdot \frac{1}{2N}\rigth)$
+	```
 # Returns
 	Rate of neutral fixation in a Float64
 """
@@ -18,13 +18,13 @@ function fixNeut()
 end
 
 # Negative fixations
-@doc raw"""
+"""
 ```math
 	$\mathbb{E}\left[D_{n-}\right] =  p_{-} \left(2^-\alpha \cdot \beta^\alpha \cdot \left(-\zeta\left[\alpha,2+\beta/2] + \zeta\left(\left[\alpha,1/2*\left(\left(2-\fract{1}{N+\beta}\rigth)\rigth]\rigth)\rigth)$
 ```
 
 # Arguments
-	- ```ppos::Float64```: positive selection coefficient
+	- ```ppos::Float64```: selection coefficient
 Negative fixations.
 # Returns
 	Rate of fixations from negative DFE in a Float64
@@ -36,9 +36,11 @@ end
 # Positive fixations
 @doc raw"""
 ```math
-	Positive fixation s
+	Positive fixation rate
 	$\mathbb{E}\left[D_{s}\rigth] =  \left(1 - p_{-} - p_{+}) \cdot B \cdot \frac{1}{2N}\rigth)$
 ```
+# Arguments
+	- ```ppos::Float64```: selection coefficient
 # Returns
 	Rate of neutral fixation in a Float64
 """

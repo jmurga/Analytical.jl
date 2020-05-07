@@ -7,17 +7,7 @@ include("summaryStatistics.jl")
 include("inferParams.jl")
 include("features.jl")
 
-using Parameters
-using PyCall
-using SpecialFunctions
-using Distributions
-using Roots
-using Statistics
-using GZip
-using CSV
-using Parsers
-using StatsBase
-
+using Parameters PyCall SpecialFunctions Distributions Roots Statistics GZip CSV Parsers StatsBase
 
 export adap
 

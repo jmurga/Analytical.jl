@@ -2,7 +2,7 @@
 ####### Define parameters ######
 ################################
 
-
+import Parameters: @with_kw
 @with_kw mutable struct parameters
 	gam_neg::Int64             = -83
 	gL::Int64                  = 10
