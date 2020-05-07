@@ -7,9 +7,9 @@
 # Neutral fixation reduced by background selection
 """
 	Expected neutral fixations rate reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
-	```math	
-		\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
-	````
+```math	
+	\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
+````
 # Returns
 	Expected rate of neutral fixations: Float64
 """
@@ -66,8 +66,13 @@ end
 """
 	```math
 		Reduction of expected positive fixations rate due deleterious linkage given a value \$B\$ of background selection. The fixation probability of positively selected alleles \$B\$ is reduced by a factor \\phi across all deleterious linked sites:
-		\\Phi
+		\\mathbb{E}\\left[D_{s}\\rigth] = p_{+}\\left(1-\\euler^-2s\\right)
+		\\phi\\left(t,s\\right) = e^\\left(\\frac{-2\\mu}{t\\left(1+\\frac{rL}{t}+\\frac{2s}{t}\\right)}\\rigth)
+		\\Phi = \\prod_{1}^{L} \\phi(t,s)
+		\\mathbb{E}\\left[D_{s}'\\rigth] = \\mathbb{E}\\left[D_{s}\\rigth] \\cdot \\Phi
 	```
+
+	
 # Arguments
 	- ```ppos::Float64```: selection coefficient
 # Returns
