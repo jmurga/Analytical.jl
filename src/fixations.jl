@@ -6,9 +6,12 @@
 
 # Neutral fixation reduced by background selection
 """
-	Expected neutral fixations rate reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
+	fixNeut()
+
+Expected neutral fixations rate reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
+
 ```math	
-	\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
+\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
 ````
 # Returns
 	Expected rate of neutral fixations: Float64
@@ -19,10 +22,13 @@ end
 
 # Negative fixations
 """
-	Expected fixation rate from negative DFE
-	```math
-		\\mathbb{E}\\left[D_{n-}\\right] =  p_{-} \\left(2^-\\alpha \\cdot \\beta^\\alpha \\cdot \\left(-\\zeta\\left[\\alpha,2+\\beta/2] + \\zeta\\left(\\left[\\alpha,1/2*\\left(\\left(2-\\fract{1}{N+\\beta}\\rigth)\\rigth]\\rigth)\\rigth)
-	```
+
+	fixNegB(ppos)
+
+Expected fixation rate from negative DFE
+```math
+\\mathbb{E}\\left[D_{n-}\\right] =  p_{-} \\left(2^-\\alpha \\cdot \\beta^\\alpha \\cdot \\left(-\\zeta\\left[\\alpha,2+\\beta/2] + \\zeta\\left(\\left[\\alpha,1/2*\\left(\\left(2-\\fract{1}{N+\\beta}\\rigth)\\rigth]\\rigth)\\rigth)
+```
 # Arguments
 	- ```ppos::Float64```: selection coefficient
 Negative fixations.
@@ -35,10 +41,12 @@ end
 
 # Positive fixations
 """
-	Expected positive fixation rate
-	```math
-		\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
-	```
+	fixNegB(pFix)
+
+Expected positive fixation rate
+```math
+\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
+```
 # Arguments
 	- ```ppos::Float64```: selection coefficient
 # Returns
@@ -64,13 +72,17 @@ end
 
 # Positive fixations after apply Φ, reduction of positive fixations due deleterious linkage given a value B of background selection
 """
-	```math
-		Reduction of expected positive fixations rate due deleterious linkage given a value \$B\$ of background selection. The fixation probability of positively selected alleles \$B\$ is reduced by a factor \\phi across all deleterious linked sites:
-		\\mathbb{E}\\left[D_{s}\\rigth] = p_{+}\\left(1-\\euler^-2s\\right)
-		\\phi\\left(t,s\\right) = e^\\left(\\frac{-2\\mu}{t\\left(1+\\frac{rL}{t}+\\frac{2s}{t}\\right)}\\rigth)
-		\\Phi = \\prod_{1}^{L} \\phi(t,s)
-		\\mathbb{E}\\left[D_{s}'\\rigth] = \\mathbb{E}\\left[D_{s}\\rigth] \\cdot \\Phi
-	```
+
+	fixPosSim(gamma,ppos)
+
+Reduction of expected positive fixations rate due deleterious linkage given a value  of background selection. The fixation probability of positively selected alleles is reduced by a factor ```math \\phi``` across all deleterious linked sites
+
+```math
+	\\mathbb{E}\\left[D_{s}\\rigth] = p_{+}\\left(1-\\euler^-2s\\right)
+	\\phi\\left(t,s\\right) = e^\\left(\\frac{-2\\mu}{t\\left(1+\\frac{rL}{t}+\\frac{2s}{t}\\right)}\\rigth)
+	\\Phi = \\prod_{1}^{L} \\phi(t,s)
+	\\mathbb{E}\\left[D_{s}'\\rigth] = \\mathbb{E}\\left[D_{s}\\rigth] \\cdot \\Phi
+```
 
 	
 # Arguments
@@ -78,7 +90,6 @@ end
 # Returns
 	Expected rate of positive fixations under background selection: Float64
 """
-
 function fixPosSim(gamma::Int64,ppos::Float64)
 
 	S  = abs(adap.gam_neg/(1.0*adap.NN))
