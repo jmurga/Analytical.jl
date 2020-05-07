@@ -6,12 +6,12 @@
 
 # Neutral fixation reduced by background selection
 """
-	```math
-		Neutral fixations reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
-		$\mathbb{E}\left[D_{s}\rigth] =  \left(1 - p_{-} - p_{+}) \cdot B \cdot \frac{1}{2N}\rigth)$
-	```
+	Expected neutral fixations rate reduce by a background selection value. It takes into accoun the ammount probability of being synonymous.
+	```math	
+		\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
+	````
 # Returns
-	Rate of neutral fixation in a Float64
+	Expected rate of neutral fixations: Float64
 """
 function fixNeut()
 	return 0.255*(1.0/(adap.B*adap.NN))
@@ -19,26 +19,26 @@ end
 
 # Negative fixations
 """
-```math
-	$\mathbb{E}\left[D_{n-}\right] =  p_{-} \left(2^-\alpha \cdot \beta^\alpha \cdot \left(-\zeta\left[\alpha,2+\beta/2] + \zeta\left(\left[\alpha,1/2*\left(\left(2-\fract{1}{N+\beta}\rigth)\rigth]\rigth)\rigth)$
-```
-
+	Expected fixation rate from negative DFE
+	```math
+		\\mathbb{E}\\left[D_{n-}\\right] =  p_{-} \\left(2^-\\alpha \\cdot \\beta^\\alpha \\cdot \\left(-\\zeta\\left[\\alpha,2+\\beta/2] + \\zeta\\left(\\left[\\alpha,1/2*\\left(\\left(2-\\fract{1}{N+\\beta}\\rigth)\\rigth]\\rigth)\\rigth)
+	```
 # Arguments
 	- ```ppos::Float64```: selection coefficient
 Negative fixations.
 # Returns
-	Rate of fixations from negative DFE in a Float64
+	Expected rate of fixations from negative DFE in a Float64
 """
 function fixNegB(ppos::Float64)
 	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
 end
 
 # Positive fixations
-@doc raw"""
-```math
-	Positive fixation rate
-	$\mathbb{E}\left[D_{s}\rigth] =  \left(1 - p_{-} - p_{+}) \cdot B \cdot \frac{1}{2N}\rigth)$
-```
+"""
+	Expected positive fixation rate
+	```math
+		\\mathbb{E}\\left[D_{s}\\rigth] =  \\left(1 - p_{-} - p_{+}) \\cdot B \\cdot \\frac{1}{2N}\\rigth)
+	```
 # Arguments
 	- ```ppos::Float64```: selection coefficient
 # Returns
@@ -63,6 +63,17 @@ function pFix(gamma::Int64)
 end
 
 # Positive fixations after apply Φ, reduction of positive fixations due deleterious linkage given a value B of background selection
+"""
+	```math
+		Reduction of expected positive fixations rate due deleterious linkage given a value \$B\$ of background selection. The fixation probability of positively selected alleles \$B\$ is reduced by a factor \\phi across all deleterious linked sites:
+		\\Phi
+	```
+# Arguments
+	- ```ppos::Float64```: selection coefficient
+# Returns
+	Expected rate of positive fixations under background selection: Float64
+"""
+
 function fixPosSim(gamma::Int64,ppos::Float64)
 
 	S  = abs(adap.gam_neg/(1.0*adap.NN))
@@ -76,3 +87,4 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 
 	return 0.745 * ppos * ℯ^(-2.0*S*μ*(Ψ0-Ψ1)*CC^2/r^2) * pFix(gamma)
 end
+ 

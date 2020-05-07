@@ -7,17 +7,26 @@
 # Convolote with the binomial to obtain the downsampled sfs
 # E[P(x)] = ∑_x=x*→x=1 fB(x*)
 ############Neutral#############
-
+"""
+	Expected neutral allele frequency rate reduce by background selection. The spectrum depends on the number of individual: adap.NN.
+	```math
+		\\mathbb{E}\\left[P_{(x)}\\rigth] = \\sum{x^{*}=x}{x^{*}=1} f_{B}(x)
+	```
+# Return:
+	- Array{Float64}(adap.NN ``\\cdot`` adap.B,1)
+"""
 function DiscSFSNeutDown()
 
 	NN2 = convert(Int64,round(adap.NN*adap.B))
 
-	function neutralSfs(i)
-		if i > 0 && i < NN2
-			 return 1.0/(i)
-		end
-		return 0.0
-	end
+	# function neutralSfs(i)
+	# 	if i > 0 && i < NN2
+	# 		 return 1.0/(i)
+	# 	end
+	# 	return 0.0
+	# end
+
+	neutralSfs(i)    = 1.0/i
 
 	x                = [convert(Float64,i) for i in 0:NN2]
 	solvedNeutralSfs = x .|> neutralSfs

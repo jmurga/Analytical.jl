@@ -1,3 +1,4 @@
 ```@docs
-fixNeut()
+Analytical.fixNeut
+Analytical.fixNegB
 ```
