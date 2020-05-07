@@ -9,10 +9,13 @@
 ############Neutral#############
 
 """
-	Expected neutral allele frequency rate reduce by background selection. The spectrum depends on the number of individual: adap.NN.
-	```math
-		\\mathbb{E}\\left[P_{(x)}\\rigth] = \\sum{x^{*}=x}{x^{*}=1} f_{B}(x)
-	```
+	
+	DiscSFSNeutDown()
+
+Expected neutral allele frequency rate reduce by background selection. The spectrum depends on the number of individual: adap.NN.
+```math
+\\mathbb{E}\\left[P_{(x)}\\rigth] = \\sum{x^{*}=x}{x^{*}=1} f_{B}(x)
+```
 # Return:
 	- Array{Float64}(adap.NN · adap.B,1)
 """

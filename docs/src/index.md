@@ -3,6 +3,6 @@ Analytical estimation of $\alpha_{x}$ asympotic accounting for linkage. We explo
 
 ```@docs
 Analytical.fixNeut
-Analytical.fixNegB
+Analytical.DiscSFSNeutDown
 Analytical.pFix
 ```
