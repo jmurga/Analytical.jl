@@ -7,7 +7,7 @@ makedocs(
     sitename="Analytical MK approach",
     authors = "Jesús Murga-Moreno, Lawrence Uricchio, David Enard",    
     pages    = [
-        "index.md"
+        "Home" => "index.md"
     ]
 )
 

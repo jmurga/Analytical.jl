@@ -12,33 +12,32 @@
 	
 	DiscSFSNeutDown()
 
-Expected neutral allele frequency rate reduce by background selection. The spectrum depends on the number of individual: adap.NN.
+Expected rate of neutral allele frequency reduce by background selection. The spectrum depends on the number of individual []
 
 ```math
 \\mathbb{E}[Ps_{(x)}] = \\sum{x^{*}=x}{x^{*}=1}f_{B}(x)
 ```
 
 # Return:
-	- Array{Float64}(adap.NN · adap.B,1)
+ - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
 function DiscSFSNeutDown()
 
 	NN2 = convert(Int64,round(adap.NN*adap.B))
 
-	# function neutralSfs(i)
-	# 	if i > 0 && i < NN2
-	# 		 return 1.0/(i)
-	# 	end
-	# 	return 0.0
-	# end
-
-	neutralSfs(i)    = 1.0/i
+	function neutralSfs(i)
+		if i > 0 && i < NN2
+			 return 1.0/(i)
+		end
+		return 0.0
+	end
 
 	x                = [convert(Float64,i) for i in 0:NN2]
 	solvedNeutralSfs = x .|> neutralSfs
 	out              = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
 
 	return 	out[2:lastindex(out)-1]
+
 end
 
 ############Positive############
@@ -49,18 +48,20 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 	if ppos == 0.0
 		out = zeros(Float64,adap.nn + 1)
 	else
-		S        = abs(adap.gam_neg/(1.0*adap.NN))
-		r        = adap.rho/(2.0*adap.NN)
-		μ        = adap.theta_f/(2.0*adap.NN)
-		s        = gammaValue/(adap.NN*1.0)
-		Ψ0       = SpecialFunctions.polygamma(1,(s+S)/r)
-		Ψ1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
-		red_plus = ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2))
-				   
+		# S        = abs(adap.gam_neg/(1.0*adap.NN))
+		# r        = adap.rho/(2.0*adap.NN)
+		# μ        = adap.theta_f/(2.0*adap.NN)
+		# s        = gammaValue/(adap.NN*1.0)
+		# Ψ0       = SpecialFunctions.polygamma(1,(s+S)/r)
+		# Ψ1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
+		# red_plus = ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2))
+		
+		red_plus = phiReduction(gammaValue)
+		
 		# Solving sfs
 		NN2 = convert(Int64,round(adap.NN*adap.B,digits=0))
 		xa  = [i for i in 0:NN2]
-		xa  = xa/(NN2+0.0)
+		xa  = xa/(NN2)
 
 		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
 			if i > 0 && i < 1.0
@@ -69,7 +70,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 			return 0.0
 		end
 
-		solvedPositiveSfs = (1.0/(NN2+0.0)) * (xa .|> positiveSfs)
+		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
 		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
 	end
 

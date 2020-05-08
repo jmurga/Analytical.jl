@@ -1,6 +1,19 @@
 ################################
 ###    Summary statistics    ###
 ################################
+"""
+	poissonFixation(observedValues,λds, λdn)
+
+Divergence sampling from Poisson distribution. The expected neutral and selected fixations are subset through their relative expected rates ([`Analytical.fixNeut`](@ref), [`Analytical.fixNegB`](@ref), [`Analytical.fixPosSim`](@ref)). Empirical values are used are used to simulate the locus *L* along a branch of time *T* from which the expected *Ds* and *Dn* raw count estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily given the success rate ``\\lambda`` in the distribution.
+
+# Arguments
+ - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
+ - ` λds`: expected neutral fixations rate.
+ - ` λdn`: expected selected fixations rate.
+# Returns
+ - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
+
+"""
 function poissonFixation(;observedValues, λds, λdn)
 
 	poissonS  = (λds/(λds + λdn) .* observedValues) .|> Poisson
@@ -23,6 +36,19 @@ function poissonPolymorphism(;observedValues, λps, λpn)
     return sampledPs,sampledPn
 end
 
+"""
+	poissonPolymorphism(observedValues,λps,λpn)
+
+Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical SFS are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole SFS given each frequency success rate ``\\lambda`` in the distribution.
+
+# Arguments
+ - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
+ - ` λps `: expected neutral site frequency spectrum rate.
+ - ` λpn `: expected selected site frequency spectrum rate.
+# Returns
+ - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
+
+"""
 function poissonPolymorphism2(;observedValues, λps, λpn)
 
     psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
@@ -34,6 +60,26 @@ function poissonPolymorphism2(;observedValues, λps, λpn)
     return (sum.(sampledPs), sum.(sampledPn))
 end
 
+"""
+	alphaByFrequencies(gammaL,gammaH,pposL,pposH,observedData,nopos)
+
+Analytical α(x) estimation. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region. Solve α(x) from the expectation rates:
+
+```math	
+\\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
+```
+
+# Arguments
+ - `gammaL::Int64`: strength of weakly positive selection
+ - `gammaH::Int64`: strength of strong positive selection
+ - `pposL`::Float64: probability of weakly selected allele
+ - `pposH`::Float64: probability of strong selected allele
+ - `observedData::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
+ - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
+
+# Returns
+ - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
+"""
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
 	P   = observedData[1,:][lastindex(observedData[1,:])]
@@ -101,8 +147,6 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		α = α[1:lastindex(α)-1]
 
 		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
-		# expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,fill(adap.B,size(expectedPn)[1]),fill(ret[lastindex(ret)],size(expectedPn)[1]))
-
 		return (α,expectedValues)
 	else
 

@@ -28,13 +28,14 @@ end
 B  = 0.999
 al = 0.2
 weak = 0.2
-empiricalValues = Analytical.readData("/home/jmurga/positiveSelectionHuman/201911/results/observedData.tsv")
-# Adap contains all parameters needed to estimate alpha under N conditions
-println(adap)
-
 # Change adap to desired values.
 # Not declared options reset to default values
 Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=B,bRange=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],pposL=0.001,pposH=0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
+
+empiricalValues = Analytical.parseSfs("/home/jmurga/mktest/data/mk_with_positions_BGS.txt",[3,5],[6,7])
+# Adap contains all parameters needed to estimate alpha under N conditions
+println(adap)
+
 
 function test(f)
 
