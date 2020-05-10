@@ -108,12 +108,12 @@ function cumulativeSfs(sfsTemp)
 	out    = Array{Float64}(undef, length(sfsTemp)+1)
 	out[1] = sum(sfsTemp)
 
-	for i in 2:length(sfsTemp)+1
+	for i in 2:(length(sfsTemp)+1)
 		app = out[i-1]-sfsTemp[i-1]
 		if app > 0.0
 			out[i] = app
 		else
-			out[i] = (0.0)
+			out[i] = 0.0
 		end
 	end
 	return out

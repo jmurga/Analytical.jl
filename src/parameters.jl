@@ -96,8 +96,8 @@ function changeParameters(;gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=
 	adap.rho               = rho
 	adap.TE                = TE
 
-	adap.NN = N*2
-	adap.nn = n*2
+	adap.NN = (N*2)
+	adap.nn = (n*2)
 
 	if convoluteBinomial == true
 		adap.bn = Dict(bRange[i] => binomOp(bRange[i]) for i in 1:length(bRange))
@@ -131,7 +131,7 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 function set_theta_f()
 
 	i(θ)         = Br(adap.Lf,θ)-adap.B
-	theta_f      = Roots.find_zero(i,0.00001)
+	theta_f      = Roots.find_zero(i,0.0)
 	adap.theta_f = theta_f
 end
 
@@ -230,7 +230,6 @@ function phiReduction(gammaValue::Int64)
 
     return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 end
-
 
 function setPpos_nlsolve()
 

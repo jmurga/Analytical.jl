@@ -98,24 +98,23 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		# Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
+		neut = neut[1:lastindex(neut)-1]
+
 		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
 		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		sel = (selH+selL)+selN
-		replace!(sel,NaN=>0)
-		ps = sum(neut) ./ sum(sel+neut)
-		pn = sum(sel) ./ sum(sel+neut)
+		sel = sel[1:lastindex(sel)-1]
 
+		ps = neut ./ sum(sel.+neut)
+		pn = sel ./ sum(sel.+neut)
+		
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
 		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
 
-
-		sel = (selH+selL)+selN
-
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = α[1:lastindex(α)-1]
 
 		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
 
@@ -133,18 +132,20 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		# Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
-		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
-		sel = selN
+		neut = neut[1:lastindex(neut)-1]
 
+		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+		sel = selN[1:lastindex(selN)-1]
+		
 		ps = neut ./ (sel.+neut)
 		pn = sel ./ (sel.+neut)
+		
 
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
 		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
-		α = α[1:lastindex(α)-1]
 
 		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
 		return (α,expectedValues)
@@ -162,21 +163,22 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		## Polymorphism
 		neut = cumulativeSfs(DiscSFSNeutDown())
+		neut = neut[1:lastindex(neut)-1]
+		
 		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
 		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		sel = (selH+selL)+selN
-		replace!(sel,NaN=>0)
-		ps = sum(neut) ./ sum(sel+neut)
-		pn = sum(sel) ./ sum(sel+neut)
+		sel = sel[1:lastindex(sel)-1]
+		ps = neut ./ sum(sel.+neut)
+		pn = sel ./ sum(sel.+neut)
 
 		## Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
 		expectedPs, expectedPn = poissonPolymorphism2(observedValues=P,λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = α[1:lastindex(α)-1]
 
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
@@ -189,16 +191,15 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
 
 		## Polymorphism
-		sel_nopos = selN
-		ps_nopos = sum(neut) ./ sum(sel_nopos+neut)
-		pn_nopos = sum(sel_nopos) ./ sum(sel_nopos+neut)
+		sel_nopos = selN[1:lastindex(selN)-1]
+		ps_nopos = neut ./ (sel_nopos.+neut)
+		pn_nopos = sel_nopos ./ (sel_nopos.+neut)
 
 		## Outputs
 		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism2(observedValues=P,λps=ps_nopos,λpn=pn_nopos)
+		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism2(observedValues=[SFS],λps=ps_nopos,λpn=pn_nopos)
 
-		α_nopos = 1 .- (fN_nopos/(fNeg_nopos + fPosH_nopos+  fNeg_nopos+0.0)) .* (sel_nopos./neut)
-		α_nopos = α_nopos[1:lastindex(α_nopos)-1]
+		α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
 
 		expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[lastindex(α_nopos)])
 

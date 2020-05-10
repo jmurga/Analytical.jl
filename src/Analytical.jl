@@ -7,9 +7,9 @@ include("summaryStatistics.jl")
 include("inferTools.jl")
 include("features.jl")
 
-using Parameters, PyCall, SpecialFunctions, Distributions, Roots, Statistics, GZip, CSV, Parsers, StatsBase
+using Parameters, PyCall, SpecialFunctions, Distributions, Roots, Statistics, CSV, Parsers, StatsBase
 
-export adap, fixNeut
+export adap
 
 end # module
 

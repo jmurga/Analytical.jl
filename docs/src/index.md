@@ -22,16 +22,21 @@ adap
 
 # Installation
 
-To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.0.5/bin:$PATH"``` in your shell. Since we use *scipy* to solve equations, you must install it on your Python. Once Julia and *scipy* are installed you just need to run at your shell:
+To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell. Since we use *scipy* to solve equations, the package depends on PyCall:
 
 ```bash
+julia -e 'using Pkg;Pkg.add("PyCall");pyimport_conda("scipy.optimize", "scipy")'
 julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 ```
 
 Or from Pkg REPL (by pressing `]` at Julia interpreter):
 
 ```julia
-add PackageSpec(path="https://github.com/jmurga/Analytical.jl")
+add PyCall
+add "https://github.com/jmurga/Analytical.jl"
+# exits from Pkg REPL and run
+using PyCall
+pyimport_conda("scipy.optimize", "scipy")
 ```
 
 In addition we provide a Docker image based on Debian including Julia and Jupyter notebook. You can access to Debian system or just to Jupyter pulling the image from dockerhub. Remember to link the folder `/analysis` with any folder at your home to save the results:
