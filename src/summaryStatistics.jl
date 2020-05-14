@@ -25,17 +25,6 @@ function poissonFixation(;observedValues, λds, λdn)
 	return(reduce(vcat,sampledDs),reduce(vcat,sampledDn))
 end
 
-function poissonPolymorphism(;observedValues, λps, λpn)
-
-    psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
-    pnPois(x,y=λps,z=λpn) = reduce(vcat,rand.((z./(y .+ z) .* x) .|> Poisson,1))
-
-    sampledPs = observedValues .|> psPois # We can apply here any statistic measure
-    sampledPn = observedValues .|> pnPois # We can apply here any statistic measure
-
-    return sampledPs,sampledPn
-end
-
 """
 	poissonPolymorphism(observedValues,λps,λpn)
 
@@ -49,7 +38,7 @@ Polymorphism sampling from Poisson distributions. The total expected neutral and
  - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism2(;observedValues, λps, λpn)
+function poissonPolymorphism(;observedValues, λps, λpn)
 
     psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
     pnPois(x,y=λps,z=λpn) = reduce(vcat,rand.((z./(y .+ z) .* x) .|> Poisson,1))
@@ -107,12 +96,12 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		sel = (selH+selL)+selN
 		sel = sel[1:lastindex(sel)-1]
 
-		ps = neut ./ sum(sel.+neut)
-		pn = sel ./ sum(sel.+neut)
+		ps = neut ./ (sel.+neut)
+		pn = sel ./ (sel.+neut)
 		
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 
@@ -143,7 +132,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism2(observedValues=[SFS],λps=ps,λpn=pn)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
 
@@ -171,13 +160,20 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		sel = (selH+selL)+selN
 		sel = sel[1:lastindex(sel)-1]
-		ps = neut ./ sum(sel.+neut)
-		pn = sel ./ sum(sel.+neut)
+		
+		if(isnan(sel[1]))
+			sel[1]=0
+		elseif(isnan(sel[end]))
+			sel[end]=0
+		end
+
+		ps = neut ./ (sel.+neut)
+		pn = sel ./ (sel.+neut)
 
 		## Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism2(observedValues=P,λps=ps,λpn=pn)
-
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
+		
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 
 		# Accounting only for neutral and deleterious alleles segregating
@@ -197,11 +193,11 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		## Outputs
 		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism2(observedValues=[SFS],λps=ps_nopos,λpn=pn_nopos)
+		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=[SFS],λps=ps_nopos,λpn=pn_nopos)
 
 		α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
 
-		expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[lastindex(α_nopos)])
+		expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α[end]-α_nopos[end],α_nopos[lastindex(α_nopos)])
 
 		return (α,α_nopos,expectedValues)
 	end

@@ -42,7 +42,6 @@ end
 
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
-
 function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0

@@ -39,7 +39,7 @@ Expected fixation rate from negative DFE.
  - `ppos::Float64`: selection coefficient.
 
 # Returns
- - `Float64`: rxpected rate of fixations from negative DFE.
+ - `Float64`: expected rate of fixations from negative DFE.
 
 """
 function fixNegB(ppos::Float64)

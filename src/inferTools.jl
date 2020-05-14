@@ -33,7 +33,7 @@ function parseSfs(data,sfsColumns,divColumns)
 		end
 	end
 
-	sfs = x .+ y
+	sfs = x .+ y;sfs = sfs[1:lastindex(sfs)-1]
 
 	P  = sum(sfs)
 	D = convert(Matrix,df[:,divColumns]) |> sum

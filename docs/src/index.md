@@ -25,7 +25,7 @@ adap
 To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell. Since we use *scipy* to solve equations, the package depends on PyCall:
 
 ```bash
-julia -e 'using Pkg;Pkg.add("PyCall");pyimport_conda("scipy.optimize", "scipy")'
+julia -e 'using Pkg;Pkg.add("PyCall");using PyCall;pyimport_conda("scipy.optimize", "scipy")'
 julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 ```
 

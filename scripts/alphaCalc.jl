@@ -30,31 +30,36 @@ al = 0.2
 weak = 0.2
 # Change adap to desired values.
 # Not declared options reset to default values
-Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=B,bRange=[0.8],pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
+Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=B,bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
 
 empiricalValues = Analytical.parseSfs("/home/jmurga/mktest/data/mk_with_positions_BGS.txt",[3,5],[6,7])
 # Adap contains all parameters needed to estimate alpha under N conditions
 println(adap)
 
 
-function test(f)
+
+function test(iter)
 
 	# println(i)
-	for i in 1:1000
-		newB = rand(append!(collect(0.25:0.05:0.95),0.999))
-		# Analytical.changeParameters(gam_neg=-rand(80:200),gL=rand(10:20),gH=rand(100:500),alLow=rand(collect(0.1:0.1:0.4)),alTot=rand(collect(0.1:0.1:0.4)),theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=newB,bRange=[0.8],pposL=0.001,pposH=0,N=500,n=25,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=false)
+	for i in 1:iter
+		
+		
+		# for j in adap.bRange
+		for j in [0.999]
+		
+			Analytical.changeParameters(gam_neg=-rand(80:200),gL=rand(10:20),gH=rand(100:500),alLow=rand(collect(0.1:0.1:0.4)),alTot=rand(collect(0.1:0.1:0.4)),theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=false)
 
-		Analytical.set_theta_f()
-		theta_f = adap.theta_f
-		adap.B = 0.999
-		Analytical.set_theta_f()
-		Analytical.setPpos()
-		adap.theta_f = theta_f
-		adap.B = newB
+			Analytical.set_theta_f()
+			theta_f = adap.theta_f
+			adap.B = 0.999
+			Analytical.set_theta_f()
+			Analytical.setPpos()
+			adap.theta_f = theta_f
+			adap.B = j
 
-		x,y,z= Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,empiricalValues,"af")
-		# CSV.write("/home/jmurga/"*f*".csv", DataFrame(y), delim='\t', append=true)
-		#summaryStatistics("/home/jmurga/"*f*".h5",x,y)
+			x,y,z= Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,empiricalValues,"af")
+			CSV.write("/home/jmurga/test.csv", DataFrame(z), delim='\t', append=true)
+		end
 
 	end
 end

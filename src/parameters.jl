@@ -31,7 +31,7 @@ end
 """
 	adap( 
 		gam_neg::Int64,
-		gL::Int64,
+		gL::Int64,	
 		gH::Int64,
 		alLow::Float64,
 		alTot::Float64,
@@ -112,9 +112,8 @@ end
 # π/π_0 ≈ ℯ^(-4μL/2rL+t)
 function Br(Lmax::Int64,theta::Float64)
 
-	γ_neg = adap.gam_neg
 	ρ  	  = adap.rho
-	t     = -1.0*γ_neg/(adap.NN+0.0)
+	t     = -1.0*adap.gam_neg/(adap.NN+0.0)
 	μ     = theta/(2.0*adap.NN)
 	r     = ρ/(2.0*adap.NN)
 
@@ -151,16 +150,7 @@ end
 
 function setPpos()
  	sc          = pyimport("scipy.optimize")
-	# pposL,pposH = sc.fsolve(solvEqns,(0.001,0.001))
 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
-
-	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-	# function f!(F,x)
-	# 	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
-	# 	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
-	# end
-	#
-	# pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
 	if pposL < 0.0
 	 	pposL = 0.0
