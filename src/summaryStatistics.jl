@@ -28,7 +28,7 @@ end
 """
 	poissonPolymorphism(observedValues,λps,λpn)
 
-Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical SFS are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole SFS given each frequency success rate ``\\lambda`` in the distribution.
+Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical sfs are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole sfs given each frequency success rate ``\\lambda`` in the distribution.
 
 # Arguments
  - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
@@ -78,9 +78,9 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
 
-	P   = observedData[1][1]
-	SFS = observedData[2][:,1]
-	D   = observedData[3][1]
+	P   = observedData[1]
+	sfs = observedData[2]
+	D   = observedData[3]
 
 	if nopos == "pos"
 		# Fixation
@@ -108,7 +108,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=[sfs],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 
@@ -139,7 +139,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		# Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=[sfs],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
 
@@ -180,14 +180,13 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		## Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=SFS,λps=ps,λpn=pn)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
 
-		cumulativePs = cumulativeSfs(expectedPs)[1:end-1]
-		cumulativePn = cumulativeSfs(expectedPn)[1:end-1]
+		cumulativePs = cumulativeSfs(expectedPs)[:,1:end-1]
+		cumulativePn = cumulativeSfs(expectedPn)[:,1:end-1]
 
 		# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = view(1 .- (expectedDs/expectedDn) .* (cumulativePn./cumulativePs),1:convert(Int64,ceil(adap.nn*0.9)))
-		
+		α = permutedims(view(1 .- expectedDs./expectedDn .* (cumulativePn./cumulativePs),:,1:convert(Int64,ceil(adap.nn*0.9))))
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
 		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
@@ -206,22 +205,22 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		## Outputs
 		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=SFS,λps=ps_nopos,λpn=pn_nopos)
-		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1)
-		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1)
+		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
+		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),:,1:adap.nn-1)
+		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),:,1:adap.nn-1)
 
 
 		# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-		α_nopos = view(1 .- (expectedDs_nopos/expectedDn_nopos) .* (cumulativePn_nopos./cumulativePs_nopos),1:convert(Int64,ceil(adap.nn*0.9)))
+		α_nopos = permutedims(view(1 .- (expectedDs_nopos./expectedDn_nopos) .* (cumulativePn_nopos./cumulativePs_nopos),:,1:convert(Int64,ceil(adap.nn*0.9))))
 
-		# expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[end]-α[end],α_nopos[lastindex(α_nopos)])
+
 		expectedValues = hcat(expectedDs,
 								expectedDn,
-								sum(expectedPs),
-								sum(expectedPn),
-								α[lastindex(α)],
-								α_nopos[end]-α[end],
-								α_nopos[end])
+								permutedims(sum(expectedPs,dims=1)),
+								permutedims(sum(expectedPn,dims=1)),
+								α[size(α,1),:],
+								α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
+								α_nopos[size(α_nopos,1),:])
 
 		return (α,α_nopos,expectedValues)
 	end
