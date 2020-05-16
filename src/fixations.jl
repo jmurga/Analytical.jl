@@ -115,4 +115,3 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 	return 0.745 * ppos * red_plus * pFix(gamma)
 end
 
- 

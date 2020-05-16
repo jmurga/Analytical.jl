@@ -40,13 +40,19 @@ Polymorphism sampling from Poisson distributions. The total expected neutral and
 """
 function poissonPolymorphism(;observedValues, λps, λpn)
 
-    psPois(x,y=λps,z=λpn) = reduce(vcat,rand.((y./(y .+ z) .* x) .|> Poisson,1))
-    pnPois(x,y=λps,z=λpn) = reduce(vcat,rand.((z./(y .+ z) .* x) .|> Poisson,1))
+	λ1 = similar(λps);λ2 = similar(λpn)
+	# Neutral λ
+	λ1 .= @. λps ./ (λps .+ λpn)
+	# Selected λ
+	λ2 .= @. λpn / (λps + λpn)
 
-    sampledPs = observedValues .|> psPois # We can apply here any statistic measure
-    sampledPn = observedValues .|> pnPois # We can apply here any statistic measure
+	psPois(x,z=λ1) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
+	pnPois(x,z=λ2) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
 
-    return (sum.(sampledPs), sum.(sampledPn))
+	sampledPs = observedValues |> psPois
+	sampledPn = observedValues |> pnPois
+
+    return (sampledPs, sampledPn)
 end
 
 """
@@ -71,9 +77,10 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 """
 function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
-	P   = observedData[1,:][lastindex(observedData[1,:])]
-	SFS = observedData[2,:][lastindex(observedData[2,:])]
-	D = observedData[3,:][lastindex(observedData[3,:])]
+
+	P   = observedData[1][1]
+	SFS = observedData[2][:,1]
+	D   = observedData[3][1]
 
 	if nopos == "pos"
 		# Fixation
@@ -167,15 +174,20 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 			sel[end]=0
 		end
 
-		ps = neut ./ (sel.+neut)
-		pn = sel ./ (sel.+neut)
+		ps = similar(neut); pn = similar(neut)
+		ps .= @. neut / (sel+neut)
+		pn .= @. sel / (sel+neut)
 
 		## Outputs
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=[SFS],λps=ps,λpn=pn)
-		
-		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+		expectedPs, expectedPn = poissonPolymorphism(observedValues=SFS,λps=ps,λpn=pn)
 
+		cumulativePs = cumulativeSfs(expectedPs)[1:end-1]
+		cumulativePn = cumulativeSfs(expectedPn)[1:end-1]
+
+		# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+		α = view(1 .- (expectedDs/expectedDn) .* (cumulativePn./cumulativePs),1:convert(Int64,ceil(adap.nn*0.9)))
+		
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
 		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
@@ -188,16 +200,28 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 
 		## Polymorphism
 		sel_nopos = selN[1:lastindex(selN)-1]
-		ps_nopos = neut ./ (sel_nopos.+neut)
-		pn_nopos = sel_nopos ./ (sel_nopos.+neut)
+		ps_nopos = similar(neut); pn_nopos = similar(neut)
+		ps_nopos .= @. neut / (sel_nopos + neut)
+		pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
 		## Outputs
 		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=[SFS],λps=ps_nopos,λpn=pn_nopos)
+		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=SFS,λps=ps_nopos,λpn=pn_nopos)
+		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1)
+		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1)
 
-		α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
 
-		expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[end]-α[end],α_nopos[lastindex(α_nopos)])
+		# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
+		α_nopos = view(1 .- (expectedDs_nopos/expectedDn_nopos) .* (cumulativePn_nopos./cumulativePs_nopos),1:convert(Int64,ceil(adap.nn*0.9)))
+
+		# expectedValues = hcat(expectedDs_nopos,expectedDn_nopos,expectedPs_nopos,expectedPn_nopos,α[lastindex(α)],α_nopos[end]-α[end],α_nopos[lastindex(α_nopos)])
+		expectedValues = hcat(expectedDs,
+								expectedDn,
+								sum(expectedPs),
+								sum(expectedPn),
+								α[lastindex(α)],
+								α_nopos[end]-α[end],
+								α_nopos[end])
 
 		return (α,α_nopos,expectedValues)
 	end

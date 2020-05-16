@@ -14,7 +14,7 @@ Analytical.pFix
 Analytical.fixPosSim
 Analytical.DiscSFSNeutDown
 Analytical.poissonFixation
-Analytical.poissonPolymorphism2
+Analytical.poissonPolymorphism
 Analytical.alphaByFrequencies
 Analytical.phiReduction
 adap

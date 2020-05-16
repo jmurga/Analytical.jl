@@ -12,32 +12,68 @@ function readData(file)
 	return out
 end
 
-function parseSfs(data,sfsColumns,divColumns)
+function parseSfs(data,sfsColumns=[3,5],divColumns=[5,6])
 
-	df = CSV.read(data,header=false,delim=' ')
+	g(x) = Parsers.parse.(Float64,x[2:end-1])
+	
+	if(data isa String)
+		P   = Array{Int64}(undef,1)
+		D   = Array{Int64}(undef,1)
+		sfs = Array{Array}(undef,1)	
 
-	tmp  = split.(df[:,sfsColumns], ",")
-	f(x) = Parsers.parse.(Float64,x[2:end-1])
-	pn   = round.(reduce(vcat,tmp[:,1] .|> f),digits=4) |> StatsBase.countmap
-	ps   = round.(reduce(vcat,tmp[:,2] .|> f),digits=4) |> StatsBase.countmap
+		df = CSV.read(data,header=false,delim=' ')
 
-	x = zeros(adap.nn)
-	y = zeros(adap.nn)
-	for i in 1:adap.nn
-		try
-			x[i] = pn[round.((i/adap.nn),digits=4)]
-			y[i] = ps[round.((i/adap.nn),digits=4)]
-		catch
-			x[i] = 0
-			y[i] = 0
+		tmp  = split.(df[:,sfsColumns], ",")
+		pn   = round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap
+		ps   = round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap
+
+		x = zeros(adap.nn -1)
+		y = zeros(adap.nn -1)
+		for i in 1:adap.nn -1
+			try
+				x[i] = pn[round.((i/adap.nn),digits=4)]
+				y[i] = ps[round.((i/adap.nn),digits=4)]
+			catch
+				x[i] = 0
+				y[i] = 0
+			end
+		end
+
+		sfs[i] = x .+ y
+
+		P[i]  = sum(vcat(sfs[i])...)
+		D[i]= convert(Matrix,df[:,divColumns]) |> sum
+
+	else
+		P   = Array{Int64}(undef,length(data))
+		D   = Array{Int64}(undef,length(data))
+		sfs = Array{Int64}(undef,length(data),adap.nn-1)
+		for i in 1:length(data)
+			df = CSV.read(data[i],header=false,delim=' ')
+	
+			tmp  = split.(df[:,sfsColumns], ",")
+			pn   = round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap
+			ps   = round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap
+	
+			x = zeros(adap.nn -1)
+			y = zeros(adap.nn -1)
+			for i in 1:adap.nn -1
+				try
+					x[i] = pn[round.((i/adap.nn),digits=4)]
+					y[i] = ps[round.((i/adap.nn),digits=4)]
+				catch
+					x[i] = 0
+					y[i] = 0
+				end
+			end
+	
+			sfs[i,:] = x .+ y
+	
+			P[i]  = sum(vcat(sfs[i])...)
+			D[i]= convert(Matrix,df[:,divColumns]) |> sum
 		end
 	end
-
-	sfs = x .+ y;sfs = sfs[1:lastindex(sfs)-1]
-
-	P  = sum(sfs)
-	D = convert(Matrix,df[:,divColumns]) |> sum
-	return [P,sfs,D]
+	return [P,permutedims(sfs),D]
 end
 
 function meanQ(x,column=5)
@@ -65,4 +101,3 @@ function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64,
 
 	return results
 end
-
