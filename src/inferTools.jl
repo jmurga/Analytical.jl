@@ -12,14 +12,15 @@ function readData(file)
 	return out
 end
 
-function parseSfs(data,sfsColumns=[3,5],divColumns=[5,6])
+function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7])
 
 	g(x) = Parsers.parse.(Float64,x[2:end-1])
 	
 	if(data isa String)
 		P   = Array{Int64}(undef,1)
 		D   = Array{Int64}(undef,1)
-		sfs = Array{Array}(undef,1)	
+		sfs = Array{Float64}(undef, adap.nn -1 ,1)
+		newData = Array{Float64}(undef, 1,4)
 
 		df = CSV.read(data,header=false,delim=' ')
 
@@ -39,15 +40,23 @@ function parseSfs(data,sfsColumns=[3,5],divColumns=[5,6])
 			end
 		end
 
-		sfs[i] = x .+ y
+		# Saving summarize data to abc. Ds, Dn, Ps, Pn
+		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x)]
 
-		P[i]  = sum(vcat(sfs[i])...)
-		D[i]= convert(Matrix,df[:,divColumns]) |> sum
+		# Empirical data to analytical estimations
+		sfs .= x .+ y
+		P = sum(sfs)
+		D = convert(Matrix,df[:,divColumns]) |> sum
+		
+		CSV.write(output, DataFrame(newData), delim='\t',writeheader=false)
+		return [P,sfs,D]
 
 	else
 		P   = Array{Int64}(undef,length(data))
 		D   = Array{Int64}(undef,length(data))
 		sfs = Array{Int64}(undef,length(data),adap.nn-1)
+		newData = Array{Int64}(undef,length(data),4)
+
 		for i in 1:length(data)
 			df = CSV.read(data[i],header=false,delim=' ')
 	
@@ -57,6 +66,7 @@ function parseSfs(data,sfsColumns=[3,5],divColumns=[5,6])
 	
 			x = zeros(adap.nn -1)
 			y = zeros(adap.nn -1)
+
 			for i in 1:adap.nn -1
 				try
 					x[i] = pn[round.((i/adap.nn),digits=4)]
@@ -66,38 +76,61 @@ function parseSfs(data,sfsColumns=[3,5],divColumns=[5,6])
 					y[i] = 0
 				end
 			end
-	
+			
+			# Saving summarize data to abc. Ds, Dn, Ps, Pn
+			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x)]
+			
+			# Empirical data to analytical estimations
 			sfs[i,:] = x .+ y
-	
 			P[i]  = sum(vcat(sfs[i])...)
-			D[i]= convert(Matrix,df[:,divColumns]) |> sum
+			D[i] = convert(Matrix,df[:,divColumns]) |> sum
+
 		end
+
+		CSV.write(output, DataFrame(newData),delim='\t',writeheader=false)
+		return [P,permutedims(sfs),D]
+
 	end
-	return [P,permutedims(sfs),D]
 end
 
-function meanQ(x,column=5)
-	m = mean(x[:,column])
-	q = Statistics.quantile(x[:,column],[0.05,0.95])
-	return append!(q,m)
+function meanQ(x,columns=[5,6,7])
+	x = x[:,columns]
+	m = mean(x,dims=1)
+	
+	qt = Array{Float64}(undef,size(x,2),2)
+	for i in 1:size(x,2)
+		qt[i,:] = StatsBase.quantile(x[:,i],[0.05,0.95])
+	end
+
+	return vcat(m,permutedims(qt))
 end
 
 function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath="/home/jmurga/ABCreg/src/reg")
 
 	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath/$outputPrefix -$regressionMode -t $tolerance`
+	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f),header=false))
+
 	run(reg)
 
 	files = filter(x -> occursin(outputPrefix,x), readdir(outputPath))
-	# openFiles(f) = GZip.open(DelimitedFiles.readdlm,outputPath*"/"*f)
-	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f),header=false))
 
-	estimates = Array{Float64}(undef,length(files),3)
-	estimates = files .|> openFiles .|> meanQ
-	results = reduce(hcat,estimates) |> transpose
-	results = convert(Matrix,results)
-	# results = Dict(zip(files, estimates))
+	if (length(files) == 1)
+		posteriors = files |> openFiles
+		estimates  = posteriors |> meanQ
+	else
+		posteriors = files .|> openFiles
+		estimates  = posteriors .|> meanQ
+	end
+	
+	return posteriors,estimates
+end
 
-	rm.(outputPath.*"/".*files)
+function plotPosterior(data,file,imgSize)
 
-	return results
+	Plots.gr()
+	Plots.theme(:wong2)
+	
+	p1 = StatsPlots.density(data[:,[5,6,7]],legend = :topright, fill=(0, 0.3),xlabel = "alpha",label = ["alpha strong" "alpha weak" "alpha"],ylabel = "Posterior density", lw = 0.5,fmt = :svg,bottom_margin=10mm,left_margin=10mm,size=imgSize)
+	Plots.savefig(file)
+
 end

@@ -104,18 +104,36 @@ end
 
 function cumulativeSfs(sfsTemp)
 
-	out    = Array{Float64}(undef, size(sfsTemp,1)+1,size(sfsTemp,2))
-	out[1,:] = sum(sfsTemp,dims=1)
+	if (size(sfsTemp,2) ==1)
+		out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
+		out[1] = sum(sfsTemp)
 
-	for i in 2:(size(sfsTemp)[1]+1)
+		for i in 2:(size(sfsTemp)[1]+1)
 	
-		app = out[i-1,:]-sfsTemp[i-1,:]
+			app = out[i-1,:]-sfsTemp[i-1,:]
+			
+			if sum(app) > 0.0
+				out[i,:] = app
+			else
+				out[i,:] = zeros(length(app))
+			end
+		end
+	else
 		
-		if sum(app) > 0.0
-			out[i,:] = app
-		else
-			out[i,:] = zeros(length(app))
+		out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
+		out[1,:] = sum(sfsTemp,dims=1)
+		
+		for i in 2:(size(sfsTemp)[1]+1)
+	
+			app = out[i-1,:] .- sfsTemp[i-1,:]
+			
+			if sum(app) > 0.0
+				out[i,:] = app
+			else
+				out[i,:] = zeros(length(app))
+			end
 		end
 	end
-	return permutedims(out)
+
+	return out
 end

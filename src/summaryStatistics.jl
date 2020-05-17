@@ -22,7 +22,7 @@ function poissonFixation(;observedValues, λds, λdn)
 	sampledDs = rand.(poissonS,1)
 	sampledDn = rand.(poissonD,1)
 
-	return(reduce(vcat,sampledDs),reduce(vcat,sampledDn))
+	return(reduce(hcat,sampledDs),reduce(hcat,sampledDn))
 end
 
 """
@@ -182,11 +182,13 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
 		expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
 
-		cumulativePs = cumulativeSfs(expectedPs)[:,1:end-1]
-		cumulativePn = cumulativeSfs(expectedPn)[:,1:end-1]
+		cumulativePs = cumulativeSfs(expectedPs)[1:end-1,:]
+		cumulativePn = cumulativeSfs(expectedPn)[1:end-1,:]
 
 		# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = permutedims(view(1 .- expectedDs./expectedDn .* (cumulativePn./cumulativePs),:,1:convert(Int64,ceil(adap.nn*0.9))))
+		α = view(1 .- ((expectedDs./expectedDn) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+
+		# α = 1 .- (expectedDs./expectedDn .* (cumulativePn./cumulativePs))
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
 		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
@@ -206,21 +208,33 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		## Outputs
 		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
 		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
-		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),:,1:adap.nn-1)
-		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),:,1:adap.nn-1)
+
+		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
+		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
 
 
 		# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-		α_nopos = permutedims(view(1 .- (expectedDs_nopos./expectedDn_nopos) .* (cumulativePn_nopos./cumulativePs_nopos),:,1:convert(Int64,ceil(adap.nn*0.9))))
+		α_nopos = view(1 .- ((expectedDs_nopos ./ expectedDn_nopos) .* (cumulativePn_nopos ./ cumulativePs_nopos)),1:convert(Int64,ceil(adap.nn*0.9)),:)
 
-
-		expectedValues = hcat(expectedDs,
-								expectedDn,
-								permutedims(sum(expectedPs,dims=1)),
-								permutedims(sum(expectedPn,dims=1)),
-								α[size(α,1),:],
-								α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
-								α_nopos[size(α_nopos,1),:])
+		if (size(expectedDs,2) == 1)
+			expectedValues = hcat(expectedDs,
+				expectedDn,
+				sum(expectedPs),
+				sum(expectedPn),
+				α[size(α,1),:],
+				α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
+				α_nopos[size(α_nopos,1),:]
+			)
+		else
+			expectedValues = hcat(permutedims(expectedDs),
+				permutedims(expectedDn),
+				permutedims(sum(expectedPs,dims=1)),
+				permutedims(sum(expectedPn,dims=1)),
+				α[size(α,1),:],
+				α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
+				α_nopos[size(α_nopos,1),:]
+			)
+		end
 
 		return (α,α_nopos,expectedValues)
 	end
