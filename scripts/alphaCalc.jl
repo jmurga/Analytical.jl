@@ -30,19 +30,16 @@ al = 0.2
 weak = 0.2
 # Change adap to desired values.
 # Not declared options reset to default values
-Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=0.999,bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
+Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=0.999,bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=true)
 
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
-
-empiricalValues = Analytical.parseSfs(files,[3,5],[6,7])
+empiricalData = Analytical.parseSfs(data=files[1],output="/home/jmurga/dataT.tsv",sfsColumns=[3,5],divColumns=[6,7])
 
 # Adap contains all parameters needed to estimate alpha under N conditions
 println(adap)
 
-
-
-function test(iter)
+function test(iter,data)
 
 	# println(i)
 	for i in 1:iter		
@@ -59,7 +56,7 @@ function test(iter)
 			adap.theta_f = theta_f
 			adap.B = j
 
-			x,y,z= Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,empiricalValues,"af")
+			x,y,z= Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,data,"both")
 			CSV.write("/home/jmurga/priorVip.csv", DataFrame(z), delim='\t', append=true)
 		end
 

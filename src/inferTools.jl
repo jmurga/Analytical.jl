@@ -1,19 +1,9 @@
-function readData(file)
-	df = CSV.read(file)
-
-	resampling = vcat([10,25,50,75],collect(100:100:1000),collect(1000:500:4000))
-	tmp = zeros(length(resampling),2)
-	for i in 1:length(resampling)
-		idx = StatsBase.sample(axes(df, 1), resampling[i]; replace = true, ordered = true)
-		tmp[i,:] = sum(convert(Array, df[idx,:]), dims = 1)
-	end
-
-	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
-	return out
-end
+import DataFrames: DataFrame
+import CSV: read
+import CSV: write
 
 function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7])
-
+	
 	g(x) = Parsers.parse.(Float64,x[2:end-1])
 	
 	if(data isa String)
@@ -22,7 +12,7 @@ function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Arra
 		sfs = Array{Float64}(undef, adap.nn -1 ,1)
 		newData = Array{Float64}(undef, 1,4)
 
-		df = CSV.read(data,header=false,delim=' ')
+		df = read(data,header=false,delim=' ')
 
 		tmp  = split.(df[:,sfsColumns], ",")
 		pn   = round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap
@@ -48,7 +38,7 @@ function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Arra
 		P = sum(sfs)
 		D = convert(Matrix,df[:,divColumns]) |> sum
 		
-		CSV.write(output, DataFrame(newData), delim='\t',writeheader=false)
+		write(output, DataFrame(newData), delim='\t',writeheader=false)
 		return [P,sfs,D]
 
 	else
@@ -58,7 +48,7 @@ function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Arra
 		newData = Array{Int64}(undef,length(data),4)
 
 		for i in 1:length(data)
-			df = CSV.read(data[i],header=false,delim=' ')
+			df = read(data[i],header=false,delim=' ')
 	
 			tmp  = split.(df[:,sfsColumns], ",")
 			pn   = round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap
@@ -87,7 +77,7 @@ function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Arra
 
 		end
 
-		CSV.write(output, DataFrame(newData),delim='\t',writeheader=false)
+		write(output, DataFrame(newData),delim='\t',writeheader=false)
 		return [P,permutedims(sfs),D]
 
 	end
@@ -133,4 +123,18 @@ function plotPosterior(data,file,imgSize)
 	p1 = StatsPlots.density(data[:,[5,6,7]],legend = :topright, fill=(0, 0.3),xlabel = "alpha",label = ["alpha strong" "alpha weak" "alpha"],ylabel = "Posterior density", lw = 0.5,fmt = :svg,bottom_margin=10mm,left_margin=10mm,size=imgSize)
 	Plots.savefig(file)
 
+end
+
+function readData(file)
+	df = CSV.read(file)
+
+	resampling = vcat([10,25,50,75],collect(100:100:1000),collect(1000:500:4000))
+	tmp = zeros(length(resampling),2)
+	for i in 1:length(resampling)
+		idx = StatsBase.sample(axes(df, 1), resampling[i]; replace = true, ordered = true)
+		tmp[i,:] = sum(convert(Array, df[idx,:]), dims = 1)
+	end
+
+	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
+	return out
 end

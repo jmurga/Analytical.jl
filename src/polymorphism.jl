@@ -24,19 +24,23 @@ Expected rate of neutral allele frequency reduce by background selection. The sp
 function DiscSFSNeutDown()
 
 	NN2 = convert(Int64,round(adap.NN*adap.B))
-
+	# Allocating variables
+	x = Array{Float64}(undef,NN2 + 1)
+	solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
+	out              = Array{Float64}(undef,NN2 + 1)
+ 
 	function neutralSfs(i)
 		if i > 0 && i < NN2
 			 return 1.0/(i)
 		end
 		return 0.0
 	end
-
-	x                = [convert(Float64,i) for i in 0:NN2]
-	solvedNeutralSfs = x .|> neutralSfs
+	
+	x                = collect(0:NN2)
+	solvedNeutralSfs .= x .|> neutralSfs
 	out              = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
 
-	return 	out[2:lastindex(out)-1]
+	return 	view(out,2:lastindex(out)-1,:)
 
 end
 
@@ -58,8 +62,8 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		red_plus = phiReduction(gammaValue)
 		
 		# Solving sfs
-		NN2 = convert(Int64,round(adap.NN*adap.B,digits=0))
-		xa  = [i for i in 0:NN2]
+		NN2 = convert(Int64,ceil(adap.NN*adap.B))
+		xa  = collect(0:NN2)
 		xa  = xa/(NN2)
 
 		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
@@ -69,11 +73,15 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 			return 0.0
 		end
 
+		# Allocating outputs
+		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
+		out              = Array{Float64}(undef,NN2 + 1)
+	
 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
 		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
 	end
 
-	return out[2:lastindex(out)-1]
+	return view(out,2:lastindex(out)-1,:)
 end
 
 ######Slightly deleterious######
@@ -85,8 +93,10 @@ end
 function DiscSFSSelNeg(ppos::Float64)
 
 	beta     = adap.be/(1.0*adap.B)
-	NN2      = convert(Int64, round(adap.NN*adap.B, digits=0))
-	xa       = [round(i/(NN2+0.0),digits=6) for i in 0:NN2]
+	NN2      = convert(Int64, ceil(adap.NN*adap.B))
+	xa       = collect(0:NN2)./NN2
+	
+	solveZ   = similar(xa)
 
 	z(x,ppos=ppos) = (1.0-ppos)*(2.0^-adap.al)*(beta^adap.al)*(-SpecialFunctions.zeta(adap.al,x+beta/2.0) + SpecialFunctions.zeta(adap.al,(2+beta)/2.0))/((-1.0+x)*x)
 
@@ -104,34 +114,17 @@ end
 
 function cumulativeSfs(sfsTemp)
 
-	if (size(sfsTemp,2) ==1)
-		out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
-		out[1] = sum(sfsTemp)
+	out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
+	out[1,:] = sum(sfsTemp,dims=1)
+	
+	for i in 2:(size(sfsTemp)[1]+1)
 
-		for i in 2:(size(sfsTemp)[1]+1)
-	
-			app = out[i-1,:]-sfsTemp[i-1,:]
-			
-			if sum(app) > 0.0
-				out[i,:] = app
-			else
-				out[i,:] = zeros(length(app))
-			end
-		end
-	else
+		app = out[i-1,:] .- sfsTemp[i-1,:]
 		
-		out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
-		out[1,:] = sum(sfsTemp,dims=1)
-		
-		for i in 2:(size(sfsTemp)[1]+1)
-	
-			app = out[i-1,:] .- sfsTemp[i-1,:]
-			
-			if sum(app) > 0.0
-				out[i,:] = app
-			else
-				out[i,:] = zeros(length(app))
-			end
+		if sum(app) > 0.0
+			out[i,:] = app
+		else
+			out[i,:] = zeros(length(app))
 		end
 	end
 

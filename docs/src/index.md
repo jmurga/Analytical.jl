@@ -1,24 +1,10 @@
 # Analytical
 
-Analytical approximation to $\alpha_{x}$ accounting for linkage. We explore the impact of linkage and background selection at positive selected alleles sites. The package  solve anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
+Analytical approximation to $\alpha_{x}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
 
 When empircal values of polymorphim and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
 
-Our goal is to subset summary statistics given a set of empirical values for any genetic scenario that would be used as prior distributions in *ABC* algorithms.
-
-
-```@docs
-Analytical.fixNeut
-Analytical.fixNegB
-Analytical.pFix
-Analytical.fixPosSim
-Analytical.DiscSFSNeutDown
-Analytical.poissonFixation
-Analytical.poissonPolymorphism
-Analytical.alphaByFrequencies
-Analytical.phiReduction
-adap
-```
+Our goal is to subset summary statistics given empirical observed values that would be used as prior distributions in *ABC* algorithms. Please check
 
 # Installation
 
@@ -50,8 +36,21 @@ docker run -i -t -v ${HOME}/folderPath:/analysis/folder  jmurga/mktest
 docker run -i -t -v ${HOME}/folderPath:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
-
-
 # Dependencies
+All the dependecies are installed within the package. If you experiment any problem contact us or try to reinstall the dependencies. Please be sure you installed *scipy* properly in Julia. Alternative, you can install *scipy* through *pip* module in your default Python.
+
+
+## Mandatory dependencies to solve the analytical equations
+- [`Roots`](https://github.com/JuliaMath/Roots.jl) - root finding.
+- [`Distributions`](https://github.com/JuliaStats/Distributions.jl) - probability distributions.
+- [`PyCall`](https://github.com/JuliaPy/PyCall.jl) - directly call and fully interoperate with Python.1
+- [`SpecialFunctions`](https://github.com/JuliaMath/SpecialFunctions.jl) - special mathematical functions in Julia.
+
+
+The following dependencies are required to use all the funcionalities (parse SFS, plots)
+- [`CSV`](https://github.com/JuliaNLSolvers/Optim.jl)
+- [`Parsers`](https://github.com/JuliaStats/Distributions.jl)
+- [`StatsBase`](https://github.com/JuliaStats/Distances.jl)
+- [`DataFrames`](https://github.com/JuliaStats/Distances.jl)
 
 # References

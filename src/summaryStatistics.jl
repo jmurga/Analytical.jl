@@ -41,6 +41,9 @@ Polymorphism sampling from Poisson distributions. The total expected neutral and
 function poissonPolymorphism(;observedValues, λps, λpn)
 
 	λ1 = similar(λps);λ2 = similar(λpn)
+	sampledPs = similar(observedValues)
+	sampledPn = similar(observedValues)
+	
 	# Neutral λ
 	λ1 .= @. λps ./ (λps .+ λpn)
 	# Selected λ
@@ -75,7 +78,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
+function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
 
 	P   = observedData[1]
@@ -158,15 +161,18 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		dn = fNeg + fPosL + fPosH
 
 		## Polymorphism
+		neut = Array{Float64}(undef,adap.nn,1)
+		selH = similar(neut);selL = similar(neut);selN = similar(neut);
+
 		neut = cumulativeSfs(DiscSFSNeutDown())
-		neut = neut[1:lastindex(neut)-1]
+		neut = view(neut, 1:lastindex(neut)-1,:)
 		
 		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
 		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
 		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
 
 		sel = (selH+selL)+selN
-		sel = sel[1:lastindex(sel)-1]
+		sel = view(sel,1:lastindex(sel)-1,:)
 		
 		if(isnan(sel[1]))
 			sel[1]=0
@@ -182,13 +188,12 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
 		expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
 
-		cumulativePs = cumulativeSfs(expectedPs)[1:end-1,:]
-		cumulativePn = cumulativeSfs(expectedPn)[1:end-1,:]
+		cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPn,1),:)
+		cumulativePn = view(cumulativeSfs(expectedPn),1:size(expectedPn,1),:)
 
 		# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = view(1 .- ((expectedDs./expectedDn) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+		α = view(1 .- (((expectedDs)./(expectedDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
 
-		# α = 1 .- (expectedDs./expectedDn .* (cumulativePn./cumulativePs))
 		# Accounting only for neutral and deleterious alleles segregating
 		## Fixation
 		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
@@ -200,7 +205,7 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
 
 		## Polymorphism
-		sel_nopos = selN[1:lastindex(selN)-1]
+		sel_nopos = view(selN,1:lastindex(selN)-1,:)
 		ps_nopos = similar(neut); pn_nopos = similar(neut)
 		ps_nopos .= @. neut / (sel_nopos + neut)
 		pn_nopos .= @. sel_nopos / (sel_nopos + neut)
@@ -212,29 +217,18 @@ function alphaByFrequencies(gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Fl
 		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
 		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
 
-
 		# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
 		α_nopos = view(1 .- ((expectedDs_nopos ./ expectedDn_nopos) .* (cumulativePn_nopos ./ cumulativePs_nopos)),1:convert(Int64,ceil(adap.nn*0.9)),:)
 
-		if (size(expectedDs,2) == 1)
-			expectedValues = hcat(expectedDs,
-				expectedDn,
-				sum(expectedPs),
-				sum(expectedPn),
-				α[size(α,1),:],
-				α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
-				α_nopos[size(α_nopos,1),:]
-			)
-		else
-			expectedValues = hcat(permutedims(expectedDs),
-				permutedims(expectedDn),
-				permutedims(sum(expectedPs,dims=1)),
-				permutedims(sum(expectedPn,dims=1)),
-				α[size(α,1),:],
-				α_nopos[size(α_nopos,1),:]-α[size(α,1),:],
-				α_nopos[size(α_nopos,1),:]
-			)
+
+		# Handling error to return any array size
+		Dn,Ds,Pn,Ps = try 
+			permutedims(expectedDs),permutedims(expectedDn),permutedims(sum(expectedPs,dims=1)),permutedims(sum(expectedPn,dims=1))
+		catch err
+			expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
 		end
+
+		expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) )
 
 		return (α,α_nopos,expectedValues)
 	end
