@@ -63,7 +63,7 @@ function test(iter,data)
 	end
 end
 
-alphaAll = Analytical.ABCreg(data="/home/jmurga/data2.gz",prior="/home/jmurga/prior.gz", nparams=5, nsummaries=4, outputPath="/home/jmurga/", outputPrefix="newOut", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
+alphaAll = Analytical.ABCreg(data="/home/jmurga/dataAbc/data2.tsv",prior="/home/jmurga/dataAbc/priorVip.tsv", nparams=7, nsummaries=4, outputPath="/home/jmurga/dataAbc/", outputPrefix="newTest", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
 
 alpha = hcat(pos,nopos)
 asympPlot(alpha,0.2)

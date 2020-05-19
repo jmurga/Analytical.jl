@@ -8,7 +8,10 @@ makedocs(
     authors = "Jesús Murga-Moreno, Lawrence Uricchio, David Enard",    
     pages    = [
         "Home" => "index.md",
-        "Package overview" => "package.md",
+        "Package Overview" => [
+            "Analytical estimations" => "analytical.md",
+            "ABC inference" => "abc.md"
+        ],
         "Reference" => "reference.md"
     ]
 )

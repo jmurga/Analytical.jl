@@ -1,5 +1,5 @@
 # *adap* variable
-*adap* is the only variable exported from *Analytical* module. It is a Mutable structure contaning the variables required to solve the 4 analytical approach. Any value could be easily change reassing. *adap* should be change before the execution, in other case, $\alpha_{(x)$ will be solve with the default values. To change all the values at once, you can use [Analytical.changeParameters](@ref Analytical.changeParameters) in order to set a model.
+*adap* is the only variable exported from *Analytical* module. It is a Mutable structure contaning the variables required to solve the analytical approach. Any value can be easly changed. Remember *adap* should be change before the execution, in other case, $\alpha_{(x)$ will be solve with the default values. To change all the values at once, you can use [Analytical.changeParameters](@ref) in order to set especific models.
 
 ```@docs
 Analytical.adap
@@ -12,6 +12,7 @@ Analytical.fixNegB
 Analytical.pFix
 Analytical.fixPosSim
 ```
+
 ## Polymorphism
 ```@docs
 Analytical.DiscSFSNeutDown
@@ -22,4 +23,11 @@ Analytical.DiscSFSNeutDown
 Analytical.poissonFixation
 Analytical.poissonPolymorphism
 Analytical.alphaByFrequencies
+```
+
+## Inference tools
+```@docs
+Analytical.parseSfs
+Analytical.ABCreg
+Analytical.meanQ
 ```

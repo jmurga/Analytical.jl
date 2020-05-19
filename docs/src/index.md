@@ -1,12 +1,12 @@
-# Analytical
+# ABC-MK
 
-Analytical approximation to $\alpha_{x}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
+ABC-MK is an analytical approximation to $\alpha_{x}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
 
 When empircal values of polymorphim and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
 
 Our goal is to subset summary statistics given empirical observed values that would be used as prior distributions in *ABC* algorithms. Please check
 
-# Installation
+## Installation
 
 To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell. Since we use *scipy* to solve equations, the package depends on PyCall.
 
@@ -20,7 +20,7 @@ Or from Pkg REPL (by pressing `]` at Julia interpreter):
 add https://github.com/jmurga/Analytical.jl
 ```
 
-## Scipy installation
+**Scipy installation**  
 You can install *scipy* on your default Python or install it through Julia Conda:
 
 ```julia
@@ -32,7 +32,7 @@ If you cannot install properly *scipy* through Julia Conda try the following:
 - Set an empty Python enviroment and re-build PyCall: `ENV["PYTHON"]="";  Pkg.build("PyCall")`
 - Re-launch Julia and install the scipy.optimize module: `using PyCall;pyimport_conda("scipy.optimize", "scipy)`
 
-## Docker
+### Docker
 We provide a Docker image based on Debian including Julia and Jupyter notebook. You can access to Debian system or just to Jupyter pulling the image from dockerhub. Remember to link the folder `/analysis` with any folder at your home to save the results:
 
 ```bash
@@ -44,7 +44,7 @@ docker run -i -t -v ${HOME}/folderPath:/analysis/folder  jmurga/mktest
 docker run -i -t -v ${HOME}/folderPath:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
-# Dependencies
+## Dependencies
 All the dependecies are installed within the package. You don't need to install manually. If you experiment any problem contact us or try to reinstall *Pycall* and *scipy*.
 
 ### Mandatory dependencies to solve the analytical equations
