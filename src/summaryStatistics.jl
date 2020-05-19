@@ -58,10 +58,11 @@ function poissonPolymorphism(;observedValues, λps, λpn)
     return (sampledPs, sampledPn)
 end
 
+
 """
 	alphaByFrequencies(gammaL,gammaH,pposL,pposH,observedData,nopos)
 
-Analytical α(x) estimation. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region. Solve α(x) from the expectation rates:
+Analytical α(x) estimation. Solve α(x) from the expectation generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
 ```math	
 \\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
@@ -76,14 +77,9 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
  - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
 
 # Returns
- - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
+ - `Array{Float64,1}` α(x).
 """
-function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
-
-
-	P   = observedData[1]
-	sfs = observedData[2]
-	D   = observedData[3]
+function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
 
 	if nopos == "pos"
 		# Fixation
@@ -109,15 +105,10 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		ps = neut ./ (sel.+neut)
 		pn = sel ./ (sel.+neut)
 		
-		# Outputs
-		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=[sfs],λps=ps,λpn=pn)
 
 		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 
-		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
-
-		return (α,expectedValues)
+		return (α)
 	elseif nopos == "nopos"
 
 		# Fixation
@@ -141,97 +132,127 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		
 
 		# Outputs
-		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=[sfs],λps=ps,λpn=pn)
-
 		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
 
-		expectedValues = hcat(expectedDs,expectedDn,expectedPs,expectedPn,α[lastindex(α)])
-		return (α,expectedValues)
-	else
-
-		## Accounting for positive alleles segregating due to linkage
-		# Fixation
-		fN     = adap.B*fixNeut()
-		fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-		fPosL  = fixPosSim(gammaL,0.5*pposL)
-		fPosH  = fixPosSim(gammaH,0.5*pposH)
-
-		ds = fN
-		dn = fNeg + fPosL + fPosH
-
-		## Polymorphism
-		neut = Array{Float64}(undef,adap.nn,1)
-		selH = similar(neut);selL = similar(neut);selN = similar(neut);
-
-		neut = cumulativeSfs(DiscSFSNeutDown())
-		neut = view(neut, 1:lastindex(neut)-1,:)
-		
-		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
-		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
-		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
-
-		sel = (selH+selL)+selN
-		sel = view(sel,1:lastindex(sel)-1,:)
-		
-		if(isnan(sel[1]))
-			sel[1]=0
-		elseif(isnan(sel[end]))
-			sel[end]=0
-		end
-
-		ps = similar(neut); pn = similar(neut)
-		ps .= @. neut / (sel+neut)
-		pn .= @. sel / (sel+neut)
-
-		## Outputs
-		expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-		expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
-
-		cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPn,1),:)
-		cumulativePn = view(cumulativeSfs(expectedPn),1:size(expectedPn,1),:)
-
-		# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-		α = view(1 .- (((expectedDs)./(expectedDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
-
-		# Accounting only for neutral and deleterious alleles segregating
-		## Fixation
-		fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-		fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-
-		ds_nopos = fN_nopos
-		dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
-
-		## Polymorphism
-		sel_nopos = view(selN,1:lastindex(selN)-1,:)
-		ps_nopos = similar(neut); pn_nopos = similar(neut)
-		ps_nopos .= @. neut / (sel_nopos + neut)
-		pn_nopos .= @. sel_nopos / (sel_nopos + neut)
-
-		## Outputs
-		expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-		expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
-
-		cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
-		cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
-
-		# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-		α_nopos = view(1 .- ((expectedDs_nopos ./ expectedDn_nopos) .* (cumulativePn_nopos ./ cumulativePs_nopos)),1:convert(Int64,ceil(adap.nn*0.9)),:)
-
-
-		# Handling error to return any array size
-		Dn,Ds,Pn,Ps = try 
-			permutedims(expectedDs),permutedims(expectedDn),permutedims(sum(expectedPs,dims=1)),permutedims(sum(expectedPn,dims=1))
-		catch err
-			expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
-		end
-
-		expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) )
-
-		return (α,α_nopos,expectedValues)
+		return (α)
 	end
+end
+
+"""
+	alphaByFrequencies(gammaL,gammaH,pposL,pposH,observedData,nopos)
+
+Analytical α(x) estimation. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. We solve α(x) from empirical observed values. The values will be use to sample from a Poisson distribution the total counts of polymorphism and divergence using the rates. The mutation rate, the locus length and the time of the branch should be proportional to the observed values. 
+
+```math	
+\\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
+```
+
+# Arguments
+ - `gammaL::Int64`: strength of weakly positive selection
+ - `gammaH::Int64`: strength of strong positive selection
+ - `pposL`::Float64: probability of weakly selected allele
+ - `pposH`::Float64: probability of strong selected allele
+ - `observedData::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
+ - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
+
+# Returns
+ - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
+"""
+function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array)
+
+	P   = observedData[1]
+	sfs = observedData[2]
+	D   = observedData[3]
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN     = adap.B*fixNeut()
+	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+	fPosL  = fixPosSim(gammaL,0.5*pposL)
+	fPosH  = fixPosSim(gammaH,0.5*pposH)
+
+	ds = fN
+	dn = fNeg + fPosL + fPosH
+
+	## Polymorphism
+	neut = Array{Float64}(undef,adap.nn,1)
+	selH = similar(neut);selL = similar(neut);selN = similar(neut);
+
+	neut = cumulativeSfs(DiscSFSNeutDown())
+	neut = view(neut, 1:lastindex(neut)-1,:)
+	
+	selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
+	selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
+	selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+
+	sel = (selH+selL)+selN
+	sel = view(sel,1:lastindex(sel)-1,:)
+	
+	if(isnan(sel[1]))
+		sel[1]=0
+	elseif(isnan(sel[end]))
+		sel[end]=0
+	end
+
+	ps = similar(neut); pn = similar(neut)
+	ps .= @. neut / (sel+neut)
+	pn .= @. sel / (sel+neut)
+
+	## Outputs
+	expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
+	expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
+
+	cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPn,1),:)
+	cumulativePn = view(cumulativeSfs(expectedPn),1:size(expectedPn,1),:)
+
+	# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+	α = view(1 .- (((expectedDs)./(expectedDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+
+	ds_nopos = fN_nopos
+	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+
+	## Polymorphism
+	sel_nopos = view(selN,1:lastindex(selN)-1,:)
+	ps_nopos = similar(neut); pn_nopos = similar(neut)
+	ps_nopos .= @. neut / (sel_nopos + neut)
+	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
+
+	## Outputs
+	expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
+	expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
+
+	cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
+	cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
+
+	# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
+	α_nopos = view(1 .- ((expectedDs_nopos ./ expectedDn_nopos) .* (cumulativePn_nopos ./ cumulativePs_nopos)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+
+	##########
+	# Output #
+	##########
+	
+	# Handling error to return any array size
+	Dn,Ds,Pn,Ps = try 
+		permutedims(expectedDs),permutedims(expectedDn),permutedims(sum(expectedPs,dims=1)),permutedims(sum(expectedPn,dims=1))
+	catch err
+		expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
+	end
+
+	expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) )
+
+	return (α,α_nopos,expectedValues)
 end
 
 function summaryStatistics(fileName,alpha,expectedValues)

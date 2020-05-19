@@ -1,10 +1,8 @@
-import DataFrames: DataFrame
-import CSV: read
-import CSV: write
+
 
 function parseSfs(;data,output,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7])
 	
-	g(x) = Parsers.parse.(Float64,x[2:end-1])
+	g(x) = parse.(Float64,x[2:end-1])
 	
 	if(data isa String)
 		P   = Array{Int64}(undef,1)
@@ -85,7 +83,7 @@ end
 
 function meanQ(x,columns=[5,6,7])
 	x = x[:,columns]
-	m = mean(x,dims=1)
+	m = StatsBase.mean(x,dims=1)
 	
 	qt = Array{Float64}(undef,size(x,2),2)
 	for i in 1:size(x,2)
@@ -98,19 +96,15 @@ end
 function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath="/home/jmurga/ABCreg/src/reg")
 
 	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath/$outputPrefix -$regressionMode -t $tolerance`
-	openFiles(f) = convert(Matrix,CSV.read(GZip.open(outputPath*"/"*f),header=false))
+
+	openFiles(f) = convert(Matrix,read(open(f),header=false))
 
 	run(reg)
 
-	files = filter(x -> occursin(outputPrefix,x), readdir(outputPath))
+	files = outputPath .* filter(x -> occursin(outputPrefix,x), readdir(outputPath))
 
-	if (length(files) == 1)
-		posteriors = files |> openFiles
-		estimates  = posteriors |> meanQ
-	else
-		posteriors = files .|> openFiles
-		estimates  = posteriors .|> meanQ
-	end
+	posteriors = files .|> openFiles
+	estimates  = posteriors .|> meanQ
 	
 	return posteriors,estimates
 end
@@ -126,7 +120,7 @@ function plotPosterior(data,file,imgSize)
 end
 
 function readData(file)
-	df = CSV.read(file)
+	df = read(file)
 
 	resampling = vcat([10,25,50,75],collect(100:100:1000),collect(1000:500:4000))
 	tmp = zeros(length(resampling),2)

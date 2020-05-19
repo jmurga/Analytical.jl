@@ -130,7 +130,6 @@ function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::
 	end
 end
 
-
 ################################
 ###### Solving parameters ######
 ################################

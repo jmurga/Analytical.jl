@@ -34,6 +34,7 @@ RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","Sp
 
 ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
 ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb
+ADD scripts/results.ipynb /analysis/results.ipynb
 ADD scripts/alphaCalc.jl  /analysis/alphaCalc.jl
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt

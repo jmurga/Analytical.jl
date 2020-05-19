@@ -15,12 +15,12 @@ Expected neutral fixations rate reduce by a background selection value.
 ```math
 \\mathbb{E}[D_{s}] = (1 - p_{-} - p_{+}) B \\frac{1}{2N}
 ```
-
 # Returns
  - `Float64`: expected rate of neutral fixations.
 
 """
 function fixNeut()
+			# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
 	return 0.255*(1.0/(adap.B*adap.NN))
 end
 
@@ -43,6 +43,7 @@ Expected fixation rate from negative DFE.
 
 """
 function fixNegB(ppos::Float64)
+		# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
 	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
 end
 
@@ -111,7 +112,7 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 	# CC = 1.0
 	red_plus = phiReduction(gamma)
 
-	# return 0.745 * ppos * phiReduction() * pFix(gamma)
+		# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
 	return 0.745 * ppos * red_plus * pFix(gamma)
 end
 

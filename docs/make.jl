@@ -9,7 +9,7 @@ makedocs(
     pages    = [
         "Home" => "index.md",
         "Package overview" => "package.md",
-        "Reference" => "references.md"
+        "Reference" => "reference.md"
     ]
 )
 

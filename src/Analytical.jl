@@ -7,9 +7,14 @@ include("summaryStatistics.jl")
 include("inferTools.jl")
 include("features.jl")
 
-using Parameters, PyCall, SpecialFunctions, Distributions, Roots, CSV, Parsers, StatsBase, DataFrames, Plots, StatsPlots
-import Plots.PlotMeasures
+using Parameters, PyCall, SpecialFunctions, Distributions, Roots, StatsBase, Plots, StatsPlots
 
+import Plots.PlotMeasures
+import CSV.read
+import CSV: write
+import DataFrames: DataFrame
+import GZip: open
+import Parsers.parse
 
 export adap
 
