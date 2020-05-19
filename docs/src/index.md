@@ -21,6 +21,7 @@ add https://github.com/jmurga/Analytical.jl
 ```
 
 **Scipy installation**  
+
 You can install *scipy* on your default Python or install it through Julia Conda:
 
 ```julia
@@ -47,7 +48,7 @@ docker run -i -t -v ${HOME}/folderPath:/analysis/folder -p 8888:8888 jmurga/mkte
 ## Dependencies
 All the dependecies are installed within the package. You don't need to install manually. If you experiment any problem contact us or try to reinstall *Pycall* and *scipy*.
 
-### Mandatory dependencies to solve the analytical equations
+#### Mandatory dependencies to solve the analytical equations
 - [`Roots`](https://github.com/JuliaMath/Roots.jl) - root finding.
 - [`Distributions`](https://github.com/JuliaStats/Distributions.jl) - probability distributions.
 - [`PyCall`](https://github.com/JuliaPy/PyCall.jl) - directly call and fully interoperate with Python.
@@ -55,14 +56,14 @@ All the dependecies are installed within the package. You don't need to install 
 - [`Parameters`](https://github.com/mauro3/Parameters.jl) - custom keyword constructor.
 
 
-### The following dependencies are required to use all the funcionalities (parse SFS, plots, etc.)
+#### The following dependencies are required to use all the funcionalities (parse SFS, plots, etc.)
 - [`CSV`](https://github.com/JuliaNLSolvers/Optim.jl)
 - [`Parsers`](https://github.com/JuliaStats/Distributions.jl)
 - [`StatsBase`](https://github.com/JuliaStats/Distances.jl)
 - [`DataFrames`](https://github.com/JuliaStats/Distances.jl)
 - [`GZip`](https://github.com/JuliaIO/GZip.jl)
 
-### ABC
+#### ABC
 We link [ABCreg](https://github.com/molpopgen/ABCreg) with julia in order to perform ABC estimations. If you are going to use ABCreg to do inference please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
 
 ```bash
@@ -70,4 +71,4 @@ git clone https://github.com/molpopgen/ABCreg.git
 cd ABCreg/src && make
 ```
 
-# References
+## References

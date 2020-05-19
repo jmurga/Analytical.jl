@@ -39,7 +39,7 @@ ADD scripts/alphaCalc.jl  /analysis/alphaCalc.jl
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
+RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/AnalyticalMK.jl"))'
 
 RUN git clone https://github.com/molpopgen/ABCreg.git /root/ABCreg
 RUN cd /root/ABCreg/src && make

@@ -84,8 +84,8 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 				end
 			end
 			
-			# Saving summarize data to abc. Ds, Dn, Ps, Pn
-			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x)]
+			# Saving summarize data to abc. Dn, Ds, Pn, Ps
+			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(x) sum(y)]
 			
 			# Empirical data to analytical estimations
 			sfs[i,:] = x .+ y

@@ -256,8 +256,6 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 end
 
 function summaryStatistics(fileName,alpha,expectedValues)
-
-
 	h5open(fileName, "cw") do file
 		tmp = string(rand(Int64))
 	    write(file, "tmp"*tmp*"/alpha", alpha)
