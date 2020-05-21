@@ -11,7 +11,7 @@ Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f
 
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
-empiricalData = Analytical.parseSfs(data=files[1],output="/home/jmurga/dataT.tsv",sfsColumns=[3,5],divColumns=[6,7])
+empiricalData = Analytical.parseSfs(data=files,output="/home/jmurga/data.tsv",sfsColumns=[3,5],divColumns=[6,7])
 
 # Adap contains all parameters needed to estimate alpha under N conditions
 println(adap)
@@ -20,8 +20,8 @@ function test(iter,data)
 
 	# println(i)
 	for i in 1:iter
-		for j in adap.bRange
-		# for j in [0.999]
+		# for j in adap.bRange
+		for j in [0.999]
 			
 			gam_neg=-rand(80:400)
 			gL=rand(10:20)
@@ -40,7 +40,9 @@ function test(iter,data)
 			adap.B = j
 
 			x,y,z= Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
-			CSV.write("/home/jmurga/priorVip.csv", DataFrame(z), delim='\t', append=true)
+			Analytical.summaryStatistics("/home/jmurga/prior.csv",z)
+
+			# CSV.write("/home/jmurga/prior.csv", DataFrame(z), delim='\t', append=true)
 		end
 
 	end

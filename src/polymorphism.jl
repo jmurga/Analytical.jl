@@ -78,6 +78,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		out              = Array{Float64}(undef,NN2 + 1)
 	
 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
+		replace!(solvedPositiveSfs, NaN=>0.0)
 		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
 	end
 

@@ -228,7 +228,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 
 	## Polymorphism
 	sel_nopos = view(selN,1:lastindex(selN)-1,:)
-	ps_nopos = similar(neut); pn_nopos = similar(neut)
+	ps_nopos  = similar(neut); pn_nopos = similar(neut)
 	ps_nopos .= @. neut / (sel_nopos + neut)
 	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
@@ -255,15 +255,13 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
 	end
 
-	expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
+	expectedValues = hcat(Dn,Ds,Pn,Ps,summarySfs,view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
 
 	return (α,α_nopos,expectedValues)
 end
 
-function summaryStatistics(fileName,alpha,expectedValues)
-	h5open(fileName, "cw") do file
-		tmp = string(rand(Int64))
-	    write(file, "tmp"*tmp*"/alpha", alpha)
-	    write(file, "tmp"*tmp*"/expectedValues", expectedValues)
-	end
+function summaryStatistics(fileName::String,summStats::Array{Float64})
+
+	write(fileName, DataFrame(summStats), delim='\t', append=true)
+
 end
