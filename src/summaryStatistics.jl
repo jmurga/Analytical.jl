@@ -22,9 +22,8 @@ function poissonFixation(;observedValues, λds, λdn)
 	sampledDs = rand.(poissonS,1)
 	sampledDn = rand.(poissonD,1)
 
-	return(reduce(hcat,sampledDs),reduce(hcat,sampledDn))
+	return (reduce(hcat,sampledDs),reduce(hcat,sampledDn))
 end
-
 """
 	poissonPolymorphism(observedValues,λps,λpn)
 
@@ -158,7 +157,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array)
+function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData)
 
 	P   = observedData[1]
 	sfs = observedData[2]
@@ -178,20 +177,24 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = Array{Float64}(undef,adap.nn,1)
+	neut = Array{Float64}(undef,adap.nn-1,1)
 	selH = similar(neut);selL = similar(neut);selN = similar(neut);
 
-	neut = cumulativeSfs(DiscSFSNeutDown())
-	neut = view(neut, 1:lastindex(neut)-1,:)
-	
-	selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
-	selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
-	selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+	neut .= DiscSFSNeutDown()
+
+	selH .= DiscSFSSelPosDown(gammaH,pposH)
+	selL .= DiscSFSSelPosDown(gammaL,pposL)
+	selN .= DiscSFSSelNegDown(pposH+pposL)
+	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+
+	neut, selH, selL, selN = splitColumns(tmp)
 
 	sel = (selH+selL)+selN
 	sel = view(sel,1:lastindex(sel)-1,:)
-	
-	if(isnan(sel[1]))
+	neut = view(neut,1:lastindex(neut)-1,:)
+
+	if (isnan(sel[1]))
 		sel[1]=0
 	elseif(isnan(sel[end]))
 		sel[end]=0
@@ -243,6 +246,8 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	# Output #
 	##########
 	
+	summarySfs = reduceSfs(expectedPn + expectedPn,20)
+
 	# Handling error to return any array size
 	Dn,Ds,Pn,Ps = try 
 		permutedims(expectedDs),permutedims(expectedDn),permutedims(sum(expectedPs,dims=1)),permutedims(sum(expectedPn,dims=1))
@@ -250,7 +255,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
 	end
 
-	expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) )
+	expectedValues = hcat(Ds,Dn,Ps,Pn, view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
 
 	return (α,α_nopos,expectedValues)
 end

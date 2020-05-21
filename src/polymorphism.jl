@@ -37,7 +37,7 @@ function DiscSFSNeutDown()
 	end
 	
 	x                = collect(0:NN2)
-	solvedNeutralSfs .= x .|> neutralSfs
+	solvedNeutralSfs = x .|> neutralSfs
 	out              = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
 
 	return 	view(out,2:lastindex(out)-1,:)
@@ -94,7 +94,7 @@ function DiscSFSSelNeg(ppos::Float64)
 
 	beta     = adap.be/(1.0*adap.B)
 	NN2      = convert(Int64, ceil(adap.NN*adap.B))
-	xa       = collect(0:NN2)./NN2
+	xa       = collect(0:NN2)/NN2
 	
 	solveZ   = similar(xa)
 

@@ -1,29 +1,6 @@
 using Analytical
 using PyPlot
 
-function asympPlot(alphaValues,originalAsymp)
-	fig    = plt.figure(figsize=(8, 6))
-	plt.style.use("seaborn")
-
-	x      = 1:size(alphaValues)[1]
-	y1     = alphaValues[:,1]
-	y2     = alphaValues[:,2]
-
-	plt.plot(x, y1,"-",color="#91d5db")
-	plt.plot(x, y1,"o",color="#91d5db")
-	plt.plot(x, y2,"-",color="#fab4be")
-	plt.plot(x, y2,"o",color="#fab4be")
-	plt.plot(x, fill(originalAsymp,size(alphaValues)[1]),"-.",color="gray")
-	plt.grid()
-	plt.xscale("log")
-	plt.xlim(0,60)
-	# plt.ylim((y1.min() - (y1.min()*50/100)),0.25)
-	plt.xticks([1,2,5,10,20,50],[1,2,5,10,20,50])
-	plt.grid()
-
-	return(fig)
-end
-
 ###### Fig 1. ######
 B  = 0.999
 al = 0.2
@@ -42,11 +19,17 @@ println(adap)
 function test(iter,data)
 
 	# println(i)
-	for i in 1:iter		
-		# for j in adap.bRange
-		for j in [0.999]
-		
-			Analytical.changeParameters(gam_neg=-rand(80:200),gL=rand(10:20),gH=rand(100:500),alLow=rand(collect(0.1:0.1:0.4)),alTot=rand(collect(0.1:0.1:0.4)),theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=false)
+	for i in 1:iter
+		for j in adap.bRange
+		# for j in [0.999]
+			
+			gam_neg=-rand(80:400)
+			gL=rand(10:20)
+			gH=rand(100:500)
+			alLow=rand(collect(0.0:0.1:0.4))
+			alTot=rand(collect(0.1:0.1:0.4))
+			
+			Analytical.changeParameters(gam_neg=-rand(80:200),gL=rand(10:20),gH=rand(100:500),alLow=rand(collect(0.1:0.1:0.4)),alTot=rand(collect(0.1:0.1:0.4)),theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=false)
 
 			Analytical.set_theta_f()
 			theta_f = adap.theta_f
@@ -56,7 +39,7 @@ function test(iter,data)
 			adap.theta_f = theta_f
 			adap.B = j
 
-			x,y,z= Analytical.alphaByFrequencies(adap.gL,adap.gH,adap.pposL,adap.pposH,data,"both")
+			x,y,z= Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
 			CSV.write("/home/jmurga/priorVip.csv", DataFrame(z), delim='\t', append=true)
 		end
 
@@ -99,6 +82,31 @@ B  = [0.4,0.6,0.8,0.999]
 al = float(0.2)
 
 ###########################
+
+
+function asympPlot(alphaValues,originalAsymp)
+	fig    = plt.figure(figsize=(8, 6))
+	plt.style.use("seaborn")
+
+	x      = 1:size(alphaValues)[1]
+	y1     = alphaValues[:,1]
+	y2     = alphaValues[:,2]
+
+	plt.plot(x, y1,"-",color="#91d5db")
+	plt.plot(x, y1,"o",color="#91d5db")
+	plt.plot(x, y2,"-",color="#fab4be")
+	plt.plot(x, y2,"o",color="#fab4be")
+	plt.plot(x, fill(originalAsymp,size(alphaValues)[1]),"-.",color="gray")
+	plt.grid()
+	plt.xscale("log")
+	plt.xlim(0,60)
+	# plt.ylim((y1.min() - (y1.min()*50/100)),0.25)
+	plt.xticks([1,2,5,10,20,50],[1,2,5,10,20,50])
+	plt.grid()
+
+	return(fig)
+end
+
 
 function test2(alphaLow)
 	results = Array{Array}(undef,length(B))

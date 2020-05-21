@@ -27,7 +27,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		P   = Array{Int64}(undef,1)
 		D   = Array{Int64}(undef,1)
 		sfs = Array{Float64}(undef, adap.nn -1 ,1)
-		newData = Array{Float64}(undef, 1,4)
+		newData = Array{Float64}(undef, 1,24)
 
 		df = read(data,header=false,delim=' ')
 
@@ -47,13 +47,12 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 			end
 		end
 
-		# Saving summarize data to abc. Ds, Dn, Ps, Pn
-		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x)]
-
 		# Empirical data to analytical estimations
-		sfs .= x .+ y
+		sfs = x + y
 		P = sum(sfs)
 		D = convert(Matrix,df[:,divColumns]) |> sum
+		
+		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x) reduceSfs(sfs,20)]
 		
 		write(output, DataFrame(newData), delim='\t',writeheader=false)
 		return [P,sfs,D]
@@ -62,7 +61,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		P   = Array{Int64}(undef,length(data))
 		D   = Array{Int64}(undef,length(data))
 		sfs = Array{Int64}(undef,length(data),adap.nn-1)
-		newData = Array{Int64}(undef,length(data),4)
+		newData = Array{Int64}(undef,length(data),24)
 
 		for i in 1:length(data)
 			df = read(data[i],header=false,delim=' ')
@@ -84,13 +83,12 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 				end
 			end
 			
-			# Saving summarize data to abc. Dn, Ds, Pn, Ps
-			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(x) sum(y)]
-			
 			# Empirical data to analytical estimations
 			sfs[i,:] = x .+ y
 			P[i]  = sum(vcat(sfs[i])...)
 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
+
+			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x) reduceSfs(sfs[i,:],20)]
 
 		end
 
@@ -180,4 +178,33 @@ function readData(file)
 
 	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
 	return out
+end
+
+# function reduceSfs(sfsTemp)
+
+# 	freq  = collect(1:adap.nn-1)/adap.nn
+# 	h1    = fit(Histogram,freq,0:0.05:1)
+# 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
+
+# 	tmp    = hcat(sfsTemp,xmap1) |> DataFrame
+# 	reducedSfs = convert(Matrix,combine(groupby(tmp,:x2),:x1 => sum))
+	
+# 	return (view(reducedSfs,:,2) |> permutedims)
+# end
+
+function reduceSfs(sfsTemp,bins)
+
+
+	freq  = collect(1:adap.nn-1)/adap.nn
+	h1    = fit(Histogram,freq,0:(1/bins):1)
+	xmap1 = StatsBase.binindex.(Ref(h1), freq)
+	
+	tmp = hcat(sfsTemp,xmap1)
+
+	out = zeros(bins,size(sfsTemp,2))
+	for i in unique(xmap1)
+		out[i,:] = sum(tmp[tmp[:,end].==i,1:end-1],dims=1)
+	end
+		
+	return (permutedims(out))
 end

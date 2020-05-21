@@ -189,18 +189,18 @@ end
 
 function binomOp(B)
 
-    NN2          = convert(Int64, round(adap.NN*B, digits=0))
-    samples      =  [i for i in 0:adap.nn]
-    samplesFreqs = [j for j in 0:NN2]
-    samplesFreqs = permutedims(samplesFreqs/NN2)
+	NN2          = convert(Int64, round(adap.NN*B, digits=0))
+	samples      =  [i for i in 0:adap.nn]
+	samplesFreqs = [j for j in 0:NN2]
+	samplesFreqs = permutedims(samplesFreqs/NN2)
 
-    f(x) = Distributions.Binomial(adap.nn,x)
-    z    = samplesFreqs .|> f
+	f(x) = Distributions.Binomial(adap.nn,x)
+	z    = samplesFreqs .|> f
 
-    # out  = Array{Float64}(undef,(nn+1,NN))
-    out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
-    out  = Distributions.pdf.(z,samples)
-    return out
+	# out  = Array{Float64}(undef,(nn+1,NN))
+	out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
+	out  = Distributions.pdf.(z,samples)
+	return out
 end
 
 """
@@ -234,16 +234,16 @@ Multiplying across all deleterious linkes sites, we find:
 
 """
 function phiReduction(gammaValue::Int64)
-    S  = abs(adap.gam_neg/(1.0*adap.NN))
-    r  = adap.rho/(2.0*adap.NN)
-    μ  = adap.theta_f/(2.0*adap.NN)
-    s  = gammaValue/(adap.NN*1.0)
+	S  = abs(adap.gam_neg/(1.0*adap.NN))
+	r  = adap.rho/(2.0*adap.NN)
+	μ  = adap.theta_f/(2.0*adap.NN)
+	s  = gammaValue/(adap.NN*1.0)
 
-    Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
-    Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
-    CC = 1.0
+	Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
+	Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
+	CC = 1.0
 
-    return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
+	return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 end
 
 function setPpos_nlsolve()
