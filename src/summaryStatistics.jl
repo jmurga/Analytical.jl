@@ -268,7 +268,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
 	end
 
-	expectedValues = hcat(Dn,Ds,Pn,Ps,summarySfs,view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) .- view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
+	expectedValues = hcat(Dn,Ds,Pn,Ps,summarySfs,view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
 
 	return (α,α_nopos,expectedValues)
 end

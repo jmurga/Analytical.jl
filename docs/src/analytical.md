@@ -51,11 +51,23 @@ Plots.plot(collect(1:size(x,1)),hcat(x,y),
 )
 ```
 
-![image](src/fig1.svg)
+![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/aa980e3de977ba5e9c3f536fb4d5459ef8035221/docs/src/fig1.svg)
 
 
 ### Empirical case
-In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*.
+In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*. In this case we will need a set of empirical observed values in order to subset the summary statistics.
+
+We need to set the model accounting for the sampling value. The SFS is expected to be in raw frequencies. If the model is not properly set up, the SFS will not be correctly parse. In our case, we are going to set up a model with default parameters only to parse the SFS and convolute the observed frequencies with a binomial distribution.
+
 ```julia
-using Analytical, BenchmarkTools, Plots
+Analytical.changeParameters(N=1000,n=661,convoluteBinomial=true)
+```
+
+Once the model account for the number of samples we can open the files. The function `Analytical.parseSfs` will return polymorphic and divergent counts and SFS accounting for the whole spectrum: `collect(1:adap.nn)/adap.nn`. In addition an output file will be created contained the observed values to input in *ABCreg*.
+
+```julia
+path= "/home/jmurga/mktest/data/";suffix="txt";
+files = path .* filter(x -> occursin(suffix,x), readdir(path))
+
+empiricalValues = Analytical.parseSfs(data=files,output="testData.tsv",sfsColumns=[3,5],divColumns=[6,7])
 ```

@@ -144,7 +144,7 @@ Function to retrieve mean and quantiles (95%) from posterior distributions.
 # Returns
  - `Array{Array{Float64,2},1}`: Array of array containing mean and quantiles by posterior distribution. Each array contains ```\$\\alpha_{S}\$```, ```\$\\alpha_{W}\$``` and ```\$\\alpha\$``` information by column.
 """
-function meanQ(x::Array{Float64,2},columns::Array{Int64,1}=[5,6,7])
+function meanQ(x::Array{Float64,2},columns::Array{Int64,1}=[25,26,27])
 	x = x[:,columns]
 	m = StatsBase.mean(x,dims=1)
 	
@@ -161,7 +161,7 @@ function plotPosterior(data,file,imgSize)
 	Plots.gr()
 	Plots.theme(:wong2)
 	
-	p1 = StatsPlots.density(data[:,[5,6,7]],legend = :topright, fill=(0, 0.3),xlabel = "alpha",label = ["alpha strong" "alpha weak" "alpha"],ylabel = "Posterior density", lw = 0.5,fmt = :svg,bottom_margin=10mm,left_margin=10mm,size=imgSize)
+	p1 = StatsPlots.density(data[:,[25,26,27]],legend = :topright, fill=(0, 0.3),xlabel = "alpha",label = ["alpha strong" "alpha weak" "alpha"],ylabel = "Posterior density", lw = 0.5,fmt = :svg,bottom_margin=10mm,left_margin=10mm,size=imgSize)
 	Plots.savefig(file)
 
 end

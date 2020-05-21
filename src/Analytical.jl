@@ -10,7 +10,7 @@ include("features.jl")
 using Parameters, PyCall, SpecialFunctions, Distributions, Roots, StatsBase, Plots, StatsPlots
 
 import Plots.PlotMeasures
-import CSV.read
+import CSV: read
 import CSV: write
 import DataFrames: DataFrame
 import GZip: open
