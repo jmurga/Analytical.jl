@@ -46,6 +46,15 @@ end
 
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
+"""
+	
+	DiscSFSSelPosDown(gammaValue,ppos)
+
+Expected rate of positive selected allele frequency reduce by background selection. The spectrum depends on the number of individuals.
+
+# Return:
+ - `Array{Float64}`: expected positive selected alleles frequencies.
+"""
 function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
@@ -86,6 +95,15 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 end
 
 ######Slightly deleterious######
+"""
+	
+	DiscSFSSelNegDown(ppos)
+
+Expected rate of positive selected allele frequency reduce by background selection. Spectrum drawn on a gamma DFE. It depends on the number of individuals.
+
+# Return:
+ - `Array{Float64}`: expected negative selected alleles frequencies.
+"""
 function DiscSFSSelNegDown(ppos::Float64)
 	out = adap.B*(adap.theta_mid_neutral)*0.745*(adap.bn[adap.B]*DiscSFSSelNeg(ppos))
 	return out[2:lastindex(out)-1]
@@ -113,6 +131,11 @@ function DiscSFSSelNeg(ppos::Float64)
 	return 1.0/(NN2+0.0).*solveZ
 end
 
+"""
+	cumulativeSfs(sfsTemp)
+
+Changing SFS considering all values above a frequency *x*. The original asymptotic-MK approach takes Pn(x) and Ps(x) as the number of polymorphic sites at frequency *x* rather than above *x*, but this approach scales poorly as sample size increases. We define the polymorphic spectrum as stated above since these quantities trivially have the same asymptote but are less affected by changing sample size.
+"""
 function cumulativeSfs(sfsTemp)
 
 	out    = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))

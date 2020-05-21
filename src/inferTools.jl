@@ -180,20 +180,7 @@ function readData(file)
 	return out
 end
 
-# function reduceSfs(sfsTemp)
-
-# 	freq  = collect(1:adap.nn-1)/adap.nn
-# 	h1    = fit(Histogram,freq,0:0.05:1)
-# 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
-
-# 	tmp    = hcat(sfsTemp,xmap1) |> DataFrame
-# 	reducedSfs = convert(Matrix,combine(groupby(tmp,:x2),:x1 => sum))
-	
-# 	return (view(reducedSfs,:,2) |> permutedims)
-# end
-
 function reduceSfs(sfsTemp,bins)
-
 
 	freq  = collect(1:adap.nn-1)/adap.nn
 	h1    = fit(Histogram,freq,0:(1/bins):1)

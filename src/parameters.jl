@@ -78,7 +78,7 @@ adap = parameters()
 """
 	changeParameters()
 
-Function to re-assign the mutable struct *adap*. When values is not defined, it will be reset to the default value.
+Function to re-assign values to mutable struct *adap*. When values is not defined, it will be reset to the default value.
 
 # Parameters
  - `gam_neg::Int64`: 
@@ -133,8 +133,21 @@ end
 ################################
 ###### Solving parameters ######
 ################################
+"""
+	Br(Lmax,theta)
 
-# π/π_0 ≈ ℯ^(-4μL/2rL+t)
+Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](https://doi.org/10.1017/S0016672300032365):
+
+```math
+\\frac{\\pi}{\\pi_{0}} = e^{\\frac{4\\muL}{2rL+t}}
+```
+
+# Arguments
+ - `Lmax::Int64`: non-coding flaking length
+ - `theta::Float64`
+# Returns
+ - `Float64`: expected reduction in diversity given a non-coding length, mutation rate and defined recombination.
+"""
 function Br(Lmax::Int64,theta::Float64)
 
 	ρ  	  = adap.rho
@@ -151,6 +164,8 @@ end
 
 Find the optimum mutation given the expected reduction in nucleotide diversity (B value ) in a locus.
 
+# Returns
+ - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
 function set_theta_f()
 
@@ -173,6 +188,14 @@ function solvEqns(params)
 	return (alphaExpSimTot(pposL,pposH)-adap.alTot,alphaExpSimLow(pposL,pposH)-adap.alLow)
 end
 
+"""
+	setPpos()
+
+Find the probabilty of positive selected alleles given the model. It solves a equation system taking into account fixations probabilities of weakly and strong beneficial alleles.
+
+# Returns
+ - `Tuple{Float64,Float64}`: weakly and strong beneficial alleles probabilites.
+"""
 function setPpos()
  	sc          = pyimport("scipy.optimize")
 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
@@ -187,7 +210,15 @@ function setPpos()
 	adap.pposL,adap.pposH = pposL, pposH
 end
 
-function binomOp(B)
+"""
+	binomOp(B)
+
+Site Frequency Spectrum convolution depeding on background selection values. Pass the SFS to a binomial distribution to sample the allele frequencies probabilites.
+
+# Returns
+ - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
+"""
+function binomOp(B::Float64)
 
 	NN2          = convert(Int64, round(adap.NN*B, digits=0))
 	samples      =  [i for i in 0:adap.nn]
@@ -246,23 +277,23 @@ function phiReduction(gammaValue::Int64)
 	return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 end
 
-function setPpos_nlsolve()
+# function setPpos_nlsolve()
 
-   function f!(F,x)
-   	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
-   	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
-   end
+#    function f!(F,x)
+#    	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
+#    	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
+#    end
    
-   pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
+#    pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
-   if pposL < 0.0
-		pposL = 0.0
-   end
+#    if pposL < 0.0
+# 		pposL = 0.0
+#    end
 
-   # Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-   if (pposH < 0.0 || pposH < 9e-15)
-	   pposH = 0.0
-   end
+#    # Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+#    if (pposH < 0.0 || pposH < 9e-15)
+# 	   pposH = 0.0
+#    end
 
-   adap.pposL,adap.pposH = pposL, pposH
-end
+#    adap.pposL,adap.pposH = pposL, pposH
+# end

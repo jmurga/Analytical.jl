@@ -20,14 +20,14 @@ function test(iter,data)
 
 	# println(i)
 	for i in 1:iter
-		# for j in adap.bRange
-		for j in [0.999]
+		for j in adap.bRange
+		# for j in [0.999]
 			
 			gam_neg=-rand(80:400)
 			gL=rand(10:20)
 			gH=rand(100:500)
 			alLow=rand(collect(0.0:0.1:0.4))
-			alTot=rand(collect(0.1:0.1:0.4))
+			alTot=rand(collect(0.0:0.1:0.4))
 			
 			Analytical.changeParameters(gam_neg=-rand(80:200),gL=rand(10:20),gH=rand(100:500),alLow=rand(collect(0.1:0.1:0.4)),alTot=rand(collect(0.1:0.1:0.4)),theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=bRange=append!(collect(0.2:0.05:0.95),0.999),pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=0.001,TE=5.0,convoluteBinomial=false)
 
@@ -40,7 +40,7 @@ function test(iter,data)
 			adap.B = j
 
 			x,y,z= Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
-			Analytical.summaryStatistics("/home/jmurga/prior.csv",z)
+			Analytical.summaryStatistics("/home/jmurga/prior.tsv",z)
 
 			# CSV.write("/home/jmurga/prior.csv", DataFrame(z), delim='\t', append=true)
 		end
@@ -48,7 +48,7 @@ function test(iter,data)
 	end
 end
 
-alphaAll = Analytical.ABCreg(data="/home/jmurga/dataAbc/data2.tsv",prior="/home/jmurga/dataAbc/priorVip.tsv", nparams=7, nsummaries=4, outputPath="/home/jmurga/dataAbc/", outputPrefix="newTest", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
+alphaAll = Analytical.ABCreg(data="/home/jmurga/dataAbc/data2.tsv",prior="/home/jmurga/dataAbc/priorVip.tsv", nparams=27, nsummaries=24, outputPath="/home/jmurga/dataAbc/", outputPrefix="newTest", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
 
 alpha = hcat(pos,nopos)
 asympPlot(alpha,0.2)
