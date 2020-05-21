@@ -26,8 +26,8 @@ Analytical.fixPosSim
 ## Polymorphism
 ```@docs
 Analytical.DiscSFSNeutDown
-Analytical.DiscSFSPosDown
-Analytical.DiscSFSNegDown
+Analytical.DiscSFSSelPosDown
+Analytical.DiscSFSSelNegDown
 Analytical.cumulativeSfs
 ```
 

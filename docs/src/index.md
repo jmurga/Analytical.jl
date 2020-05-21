@@ -1,10 +1,10 @@
 # ABC-MK
 
-ABC-MK is an analytical approximation to $\alpha_{x}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
+ABC-MK is an analytical approximation to $\alpha_{(x)}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
 
 When empircal values of polymorphim and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
 
-Our goal is to subset summary statistics given empirical observed values that would be used as prior distributions in *ABC* algorithms. Please check
+Our approach estimates directly $\alpha_{(x)}$ and several statistics ($P_N$, $P_S$, $D_N$, $D_S$, $SFS$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* will be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our can estimate rate and strength of adaption in models and non-models organisms, for which previous DFE and demography are unknown.
 
 ## Installation
 

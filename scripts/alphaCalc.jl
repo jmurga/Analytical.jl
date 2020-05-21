@@ -98,7 +98,7 @@ function asympPlot(alphaValues,originalAsymp)
 	plt.plot(x, y1,"o",color="#91d5db")
 	plt.plot(x, y2,"-",color="#fab4be")
 	plt.plot(x, y2,"o",color="#fab4be")
-	plt.plot(x, fill(originalAsymp,size(alphaValues)[1]),"-.",color="gray")
+	plt.plot(x, fill(originalAsymp,size(alphaValues)[1]),"-.",color="gray")    xscale = :log,
 	plt.grid()
 	plt.xscale("log")
 	plt.xlim(0,60)

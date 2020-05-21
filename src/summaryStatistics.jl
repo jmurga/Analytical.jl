@@ -78,63 +78,76 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::Array,nopos::String)
+function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64)
 
-	if nopos == "pos"
-		# Fixation
-		fN    = adap.B*fixNeut()
-		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-		fPosL = fixPosSim(gammaL,0.5*pposL)
-		fPosH = fixPosSim(gammaH,0.5*pposH)
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
 
-		ds = fN
-		dn = fNeg + fPosL + fPosH
+	# Fixation
+	fN     = adap.B*fixNeut()
+	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+	fPosL  = fixPosSim(gammaL,0.5*pposL)
+	fPosH  = fixPosSim(gammaH,0.5*pposH)
 
-		# Polymorphism
-		neut = cumulativeSfs(DiscSFSNeutDown())
-		neut = neut[1:lastindex(neut)-1]
+	ds = fN
+	dn = fNeg + fPosL + fPosH
 
-		selH = cumulativeSfs(DiscSFSSelPosDown(gammaH,pposH))
-		selL = cumulativeSfs(DiscSFSSelPosDown(gammaL,pposL))
-		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
+	## Polymorphism
+	neut = Array{Float64}(undef,adap.nn-1,1)
+	selH = similar(neut);selL = similar(neut);selN = similar(neut);
 
-		sel = (selH+selL)+selN
-		sel = sel[1:lastindex(sel)-1]
+	neut .= DiscSFSNeutDown()
 
-		ps = neut ./ (sel.+neut)
-		pn = sel ./ (sel.+neut)
-		
+	selH .= DiscSFSSelPosDown(gammaH,pposH)
+	selL .= DiscSFSSelPosDown(gammaL,pposL)
+	selN .= DiscSFSSelNegDown(pposH+pposL)
+	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
-		α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+	neut, selH, selL, selN = splitColumns(tmp)
 
-		return (α)
-	elseif nopos == "nopos"
+	sel = (selH+selL)+selN
+	sel = view(sel,1:lastindex(sel)-1,:)
+	neut = view(neut,1:lastindex(neut)-1,:)
 
-		# Fixation
-		fN    = adap.B*fixNeut()*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
-		fNeg  = adap.B*fixNegB(0.5*pposH+0.5*pposL)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
-		fPosL = fixPosSim(gammaL,0.5*pposL)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
-		fPosH = fixPosSim(gammaH,0.5*pposH)*(adap.theta_mid_neutral/2.0)*adap.TE*adap.NN
-
-		ds = fN
-		dn = fNeg + fPosL + fPosH
-
-		# Polymorphism
-		neut = cumulativeSfs(DiscSFSNeutDown())
-		neut = neut[1:lastindex(neut)-1]
-
-		selN = cumulativeSfs(DiscSFSSelNegDown(pposH+pposL))
-		sel = selN[1:lastindex(selN)-1]
-		
-		ps = neut ./ (sel.+neut)
-		pn = sel ./ (sel.+neut)
-		
-
-		# Outputs
-		α = 1 .- (fN/(fPosL + fPosH+  fNeg+0.0)) .* (sel./neut)
-
-		return (α)
+	if (isnan(sel[1]))
+		sel[1]=0
+	elseif(isnan(sel[end]))
+		sel[end]=0
 	end
+
+	ps = similar(neut); pn = similar(neut)
+	ps .= @. neut / (sel+neut)
+	pn .= @. sel / (sel+neut)
+
+	## Outputs
+	α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+
+	ds_nopos = fN_nopos
+	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+
+	## Polymorphism
+	sel_nopos = view(selN,1:lastindex(selN)-1,:)
+	ps_nopos  = similar(neut); pn_nopos = similar(neut)
+	ps_nopos .= @. neut / (sel_nopos + neut)
+	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
+
+	α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
+
+	##########
+	# Output #
+	##########
+	return (α,α_nopos)
 end
 
 """
