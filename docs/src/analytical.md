@@ -1,8 +1,8 @@
 # Analytical estimation.
 ### Solving \alpha_(x)
-Our method is based in the analytical solution of $\alpha_{(x)}$ given a genetic scenario. The method could be extended to *DFE* and background selection values in order to get summary statistics that can be used as prior distrubtions at *ABC* methods. In this example we show how asympotic $\alpha}$ is affected by linkage and background selection.
+Our method is based in the analytical solution of $\alpha_{(x)}$ given a genetic scenario. The method could be extended to *DFE* and background selection values in order to get summary statistics that can be used as prior distrubtions at *ABC* methods. In this example we show how asympotic $\alpha$ is affected by linkage and background selection.
 
-*adap* is the only variable exported from *Analytical* module. It is a Mutable structure contaning the variables required to solve the analytical approach. Any value can be easly changed. Remember *adap* should be change before the execution, in other case, $\alpha_{(x)}$ will be solve with the default values. To change all the values at once, you can use [`Analytical.changeParameters`](@ref) in order to set specific models.
+*adap* is the only variable exported from *Analytical* module. It is a Mutable structure contaning the variables required to solve the analytical approach. Any value can be easly changed. Remember *adap* should be change before the execution, in other case, $\alpha_{(x)}$ will be solve with the default values. To change all the values at once, you can use [`Analytical.changeParameters`](@ref) in order to set specific models. Please take into account some package used here could be changed. 
 
 Load the modules
 ```julia
@@ -15,6 +15,7 @@ Analytical.changeParameters(gam_neg=-83,gL=10,gH=500,alLow=0.2,alTot=0.2,theta_f
 ```
 
 Solving the model. Here we solve $\alpha$ generally using the expected rates. We are not considering any especific mutation process over a locus and branch time.
+
 ```julia
 Analytical.set_theta_f()
 theta_f = adap.theta_f
@@ -27,10 +28,10 @@ adap.B= B
 x,y = Analytical.analyticalAlpha(gammaL=adap.gL,gammaH=adap.H,pposL=adap.pposL,pposH=adap.pposH)
 ```
 
-Ploting the resutlts. $x$ contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. $y$ contains the true value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles.
+Plotting the results. $x$ contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. $y$ contains the true value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles.
 
 ```julia
-Plots.PlotsMeasures
+Plots.PlotMeasures
 Plots.gr()
 Plots.theme(:bright)
 
@@ -50,11 +51,11 @@ Plots.plot(collect(1:size(x,1)),hcat(x,y),
 )
 ```
 
+![image](src/fig1.svg)
 
-![image](/docs/fig1.svg)
+
 ### Empirical case
-In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). Please taking into account some package used here could be changed. 
-
+In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*.
 ```julia
 using Analytical, BenchmarkTools, Plots
 ```
