@@ -51,7 +51,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		sfs = x + y
 		P = sum(sfs)
 		D = convert(Matrix,df[:,divColumns]) |> sum
-		
+		# Dn, Ds, Pn, Ps, sfs
 		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x) reduceSfs(sfs,20)]
 		
 		write(output, DataFrame(newData), delim='\t',writeheader=false)
@@ -144,26 +144,15 @@ Function to retrieve mean and quantiles (95%) from posterior distributions.
 # Returns
  - `Array{Array{Float64,2},1}`: Array of array containing mean and quantiles by posterior distribution. Each array contains ```\$\\alpha_{S}\$```, ```\$\\alpha_{W}\$``` and ```\$\\alpha\$``` information by column.
 """
-function meanQ(x::Array{Float64,2},columns::Array{Int64,1}=[25,26,27])
-	x = x[:,columns]
-	m = StatsBase.mean(x,dims=1)
-	
-	qt = Array{Float64}(undef,size(x,2),2)
-	for i in 1:size(x,2)
-		qt[i,:] = StatsBase.quantile(x[:,i],[0.05,0.95])
+function meanQ(x::Array{Float64,2})
+
+	m            = StatsBase.mean(x,dims=1)
+	qt           = Array{Float64}(undef,size(x,2),2)
+	for i in 1   : size(x,2)
+		qt[i,: ] = StatsBase.quantile(x[:,i],[0.05,0.95])
 	end
 
 	return vcat(m,permutedims(qt))
-end
-
-function plotPosterior(data,file,imgSize)
-
-	Plots.gr()
-	Plots.theme(:wong2)
-	
-	p1 = StatsPlots.density(data[:,[25,26,27]],legend = :topright, fill=(0, 0.3),xlabel = "alpha",label = ["alpha strong" "alpha weak" "alpha"],ylabel = "Posterior density", lw = 0.5,fmt = :svg,bottom_margin=10mm,left_margin=10mm,size=imgSize)
-	Plots.savefig(file)
-
 end
 
 function readData(file)
@@ -186,8 +175,8 @@ function reduceSfs(sfsTemp,bins)
 	h1    = fit(Histogram,freq,0:(1/bins):1)
 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
 	
+	
 	tmp = hcat(sfsTemp,xmap1)
-
 	out = zeros(bins,size(sfsTemp,2))
 	for i in unique(xmap1)
 		out[i,:] = sum(tmp[tmp[:,end].==i,1:end-1],dims=1)

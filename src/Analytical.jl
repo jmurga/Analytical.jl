@@ -1,22 +1,21 @@
 module Analytical
 
-include("parameters.jl")
-include("fixations.jl")
-include("polymorphism.jl")
-include("summaryStatistics.jl")
-include("inferTools.jl")
-include("features.jl")
+	include("parameters.jl")
+	include("fixations.jl")
+	include("polymorphism.jl")
+	include("summaryStatistics.jl")
+	include("inferTools.jl")
+	include("features.jl")
 
-using Parameters, PyCall, SpecialFunctions, Distributions, Roots, StatsBase, Plots, StatsPlots
+	using Parameters, PyCall, SpecialFunctions, Distributions, Roots, StatsBase
 
-import Plots.PlotMeasures
-import CSV: read
-import CSV: write
-import DataFrames: DataFrame
-import GZip: open
-import Parsers.parse
+	import CSV: read
+	import CSV: write
+	import DataFrames: DataFrame
+	import GZip: open
+	import Parsers: parse
 
-export adap
+	export adap
 
-end # module
+end 
 
