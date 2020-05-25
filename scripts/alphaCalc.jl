@@ -1,7 +1,7 @@
 using Analytical
 
 # Set up sfs
-Analytical.changeParameters(N=1000,n=661,convoluteBinomial=true)
+Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
 
 # Open empirical data
 path= "/home/jmurga/mktest/data/";suffix="txt";

@@ -73,7 +73,6 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 	
 			x = zeros(adap.nn -1)
 			y = zeros(adap.nn -1)
-
 			for i in 1:adap.nn -1
 				try
 					x[i] = pn[round.((i/adap.nn),digits=4)]
@@ -86,7 +85,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 			
 			# Empirical data to analytical estimations
 			sfs[i,:] = x .+ y
-			P[i]  = sum(vcat(sfs[i])...)
+			P[i]  = sum(sfs[i,:])
 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
 
 			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(x) sum(y) reduceSfs(sfs[i,:],20)]
