@@ -22,7 +22,7 @@ function poissonFixation(;observedValues, λds, λdn)
 	sampledDs = rand.(poissonS,1)
 	sampledDn = rand.(poissonD,1)
 
-	return (reduce(hcat,sampledDs),reduce(hcat,sampledDn))
+	return (reduce(hcat,sampledDn),reduce(hcat,sampledDs))
 end
 """
 	poissonPolymorphism(observedValues,λps,λpn)
@@ -55,7 +55,7 @@ function poissonPolymorphism(;observedValues, λps, λpn)
 	sampledPs = observedValues |> psPois
 	sampledPn = observedValues |> pnPois
 
-    return (sampledPs, sampledPn)
+    return (sampledPn, sampledPs)
 end
 
 
@@ -219,11 +219,12 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn .= @. sel / (sel+neut)
 
 	## Outputs
-	expectedDs, expectedDn = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-	expectedPs, expectedPn = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
+	expectedDn, expectedDs = poissonFixation(observedValues=D,λds=ds,λdn=dn)
+	expectedPn, expectedPs = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
 
-	cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPn,1),:)
 	cumulativePn = view(cumulativeSfs(expectedPn),1:size(expectedPn,1),:)
+	cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPs,1),:)
+
 
 	# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 	α = view(1 .- (((expectedDs)./(expectedDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
@@ -247,8 +248,8 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
 	## Outputs
-	expectedDs_nopos, expectedDn_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-	expectedPs_nopos, expectedPn_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
+	expectedDn_nopos, expectedDs_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
+	expectedPn_nopos, expectedPs_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
 
 	cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
 	cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
@@ -260,16 +261,16 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	# Output #
 	##########
 	
-	summarySfs = reduceSfs(expectedPn + expectedPn,20)
+	summarySfs = reduceSfs(expectedPn + expectedPs,20)
 
 	# Handling error to return any array size
 	Dn,Ds,Pn,Ps = try 
-		permutedims(expectedDs),permutedims(expectedDn),permutedims(sum(expectedPs,dims=1)),permutedims(sum(expectedPn,dims=1))
+		permutedims(expectedDn),permutedims(expectedDs),permutedims(sum(expectedPn,dims=1)),permutedims(sum(expectedPs,dims=1))
 	catch err
-		expectedDs,expectedDn,sum(expectedPs,dims=1),sum(expectedPn,dims=1)
+		expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
 	end
 
-	expectedValues = hcat(Dn,Ds,Pn,Ps,summarySfs,view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:))
+	expectedValues = hcat(view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:),Dn,Ds,Pn,Ps,summarySfs)
 
 	return (α,α_nopos,expectedValues)
 end

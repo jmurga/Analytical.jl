@@ -59,14 +59,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 	if ppos == 0.0
 		out = zeros(Float64,adap.nn + 1)
 	else
-		# S        = abs(adap.gam_neg/(1.0*adap.NN))
-		# r        = adap.rho/(2.0*adap.NN)
-		# μ        = adap.theta_f/(2.0*adap.NN)
-		# s        = gammaValue/(adap.NN*1.0)
-		# Ψ0       = SpecialFunctions.polygamma(1,(s+S)/r)
-		# Ψ1       = SpecialFunctions.polygamma(1,1.0+(r*adap.Lf+s+S)/r)
-		# red_plus = ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2))
-		
+
 		red_plus = phiReduction(gammaValue)
 		
 		# Solving sfs

@@ -24,6 +24,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 	g(x) = parse.(Float64,x[2:end-1])
 	
 	if(data isa String)
+
 		P   = Array{Int64}(undef,1)
 		D   = Array{Int64}(undef,1)
 		sfs = Array{Float64}(undef, adap.nn -1 ,1)
@@ -52,7 +53,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		P = sum(sfs)
 		D = convert(Matrix,df[:,divColumns]) |> sum
 		# Dn, Ds, Pn, Ps, sfs
-		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x) reduceSfs(sfs,20)]
+		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(x) sum(y) reduceSfs(sfs,20)]
 		
 		write(output, DataFrame(newData), delim='\t',writeheader=false)
 		return [P,sfs,D]
@@ -88,7 +89,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 			P[i]  = sum(vcat(sfs[i])...)
 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
 
-			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(y) sum(x) reduceSfs(sfs[i,:],20)]
+			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(x) sum(y) reduceSfs(sfs[i,:],20)]
 
 		end
 
@@ -119,7 +120,7 @@ Julia to execute *ABCreg*. You should take into account that any other ABC could
 """
 function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath="/home/jmurga/ABCreg/src/reg")
 
-	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath/$outputPrefix -$regressionMode -t $tolerance`
+	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath$outputPrefix -$regressionMode -t $tolerance`
 
 	openFiles(f) = convert(Matrix,read(open(f),header=false))
 

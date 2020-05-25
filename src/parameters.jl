@@ -20,11 +20,13 @@ import Parameters: @with_kw
 	N::Int64                   = 500
 	n::Int64                   = 250
 	Lf::Int64                  = 10^6
-	rho::Float64                 = 0.001
+	rho::Float64               = 0.001
 	TE::Float64                = 5.0
+	diploid					   = false
 
 	NN::Int64 = 1000
 	nn::Int64 = 500
+
 	bn::Dict = Dict(bRange[i] => zeros(nn+1,NN) for i in 1:length(bRange))
 end
 
@@ -101,7 +103,7 @@ Function to re-assign values to mutable struct *adap*. When values is not define
  - `TE::Float64`: 
 
 """
-function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::Float64=0.2,alTot::Float64=0.2,theta_f::Float64=1e-3,theta_mid_neutral::Float64=1e-3,al::Float64=0.184,be::Float64=0.000402,bRange::Array{Float64,1}=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B::Float64=0.999,pposL::Float64=0.001,pposH::Float64=0.0,N::Int64=1000,n::Int64=661,Lf::Int64=10^6,rho::Float64=0.001,TE::Float64=5.0,convoluteBinomial::Bool=true)
+function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::Float64=0.2,alTot::Float64=0.2,theta_f::Float64=1e-3,theta_mid_neutral::Float64=1e-3,al::Float64=0.184,be::Float64=0.000402,bRange::Array{Float64,1}=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B::Float64=0.999,pposL::Float64=0.001,pposH::Float64=0.0,N::Int64=1000,n::Int64=661,Lf::Int64=10^6,rho::Float64=0.001,TE::Float64=5.0,diploid::Bool=true,convoluteBinomial::Bool=true)
 
 	adap.gam_neg           = gam_neg
 	adap.gL                = gL
@@ -121,9 +123,14 @@ function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::
 	adap.Lf                = Lf
 	adap.rho               = rho
 	adap.TE                = TE
-
-	adap.NN = (N*2)
-	adap.nn = (n*2)
+	
+	if diploid == false
+		adap.NN = N
+		adap.nn = n
+	else
+		adap.NN = (N*2)
+		adap.nn = (n*2)
+	end
 
 	if convoluteBinomial == true
 		adap.bn = Dict(bRange[i] => binomOp(bRange[i]) for i in 1:length(bRange))

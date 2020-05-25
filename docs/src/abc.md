@@ -91,7 +91,7 @@ function plotPosterior(data,file,imgSize)
 	Plots.gr()
 	Plots.theme(:wong2)
 
-	p1 = StatsPlots.density(data[:,[25,26,27]],
+	p1 = StatsPlots.density(data],
 							legend    = :topright,
 							fill      = (0, 0.3),
 							xlabel    = L"\alpha",

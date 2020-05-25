@@ -43,7 +43,7 @@ Expected fixation rate from negative DFE.
 
 """
 function fixNegB(ppos::Float64)
-		# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
+	# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
 	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
 end
 
@@ -102,17 +102,10 @@ Expected positive fixations rate reduced due to the impact of background selecti
 """
 function fixPosSim(gamma::Int64,ppos::Float64)
 
-	# S  = abs(adap.gam_neg/(1.0*adap.NN))
-	# r  = adap.rho/(2.0*adap.NN)
-	# μ  = adap.theta_f/(2.0*adap.NN)
-	# s  = gamma/(adap.NN*1.0)
 
-	# Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
-	# Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
-	# CC = 1.0
 	red_plus = phiReduction(gamma)
 
-		# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
+	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
 	return 0.745 * ppos * red_plus * pFix(gamma)
 end
 

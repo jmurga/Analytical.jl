@@ -17,5 +17,4 @@ module Analytical
 
 	export adap
 
-end 
-
+end
