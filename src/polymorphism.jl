@@ -51,6 +51,9 @@ end
 
 Expected rate of positive selected allele frequency reduce by background selection. The spectrum depends on the number of individuals.
 
+# Arguments
+ - `gammaValue::Int64`: selection strength.
+ - `ppos::Float64`: positive selected alleles probabilty.
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
@@ -93,6 +96,8 @@ end
 
 Expected rate of positive selected allele frequency reduce by background selection. Spectrum drawn on a gamma DFE. It depends on the number of individuals.
 
+# Arguments
+ - `ppos::Float64`: positive selected alleles probabilty.
 # Return:
  - `Array{Float64}`: expected negative selected alleles frequencies.
 """

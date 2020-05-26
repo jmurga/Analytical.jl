@@ -84,7 +84,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 			end
 			
 			# Empirical data to analytical estimations
-			sfs[i,:] = x .+ y
+			sfs[i,:] = x + y
 			P[i]  = sum(sfs[i,:])
 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
 

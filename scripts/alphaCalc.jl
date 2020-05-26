@@ -1,4 +1,4 @@
-using Analytical
+using Analytical, ProgressMeter
 
 # Set up sfs
 Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
@@ -12,7 +12,7 @@ empiricalValues = Analytical.parseSfs(data=files,output="data.tsv",sfsColumns=[3
 # Custom function to perform 10^6 random solutions
 function summStats(iter,data,output)
 	# @threads
-	for i in 1:iter
+	@showprogress for i in 1:iter
 		
 		gam_neg=-rand(80:400)
 		gL=rand(10:20)
@@ -20,8 +20,8 @@ function summStats(iter,data,output)
 		alLow=rand(collect(0.0:0.1:0.2))
 		alTot=rand(collect(0.0:0.2:0.2))
 
-		@threads for j in adap.bRange
-			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,convoluteBinomial=false)
+		for j in adap.bRange
+			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
 
 			Analytical.set_theta_f()
 			theta_f = adap.theta_f

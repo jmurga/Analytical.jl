@@ -86,10 +86,10 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	##############################################################
 
 	# Fixation
-	fN     = adap.B*fixNeut()
-	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-	fPosL  = fixPosSim(gammaL,0.5*pposL)
-	fPosH  = fixPosSim(gammaH,0.5*pposH)
+	fN     = adap.B*fixNeut()*r2
+	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)*r1
+	fPosL  = fixPosSim(gammaL,0.5*pposL)*r1
+	fPosH  = fixPosSim(gammaH,0.5*pposH)*r1
 
 	ds = fN
 	dn = fNeg + fPosL + fPosH
@@ -270,7 +270,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
 	end
 
-	expectedValues = hcat(view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:),Dn,Ds,Pn,Ps,summarySfs)
+	expectedValues = hcat(view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - abs.(view(α,size(α,1),:)), view(α_nopos,size(α_nopos,1),:),Dn,Ds,Pn,Ps,summarySfs)
 
 	return (α,α_nopos,expectedValues)
 end

@@ -36,7 +36,7 @@ Expected fixation rate from negative DFE.
 ```
 
 # Arguments
- - `ppos::Float64`: selection coefficient.
+ - `ppos::Float64`: positive selected alleles probabilty.
 
 # Returns
  - `Float64`: expected rate of fixations from negative DFE.
@@ -58,7 +58,7 @@ Expected positive fixation rate.
 ```
 
 # Arguments
- - `ppos::Float64`: selection coefficient.
+ - `ppos::Float64`: positive selected alleles probabilty.
 
 # Returns
  - `Float64`: expected rate of positive fixation.
@@ -94,7 +94,7 @@ Expected positive fixations rate reduced due to the impact of background selecti
 ```
 	
 # Arguments
- - `ppos::Float64`: selection coefficient
+ - `ppos::Float64`: positive selected alleles probabilty.
 	
 # Returns
  - `Float64`: expected rate of positive fixations under background selection
