@@ -227,7 +227,7 @@ Site Frequency Spectrum convolution depeding on background selection values. Pas
 """
 function binomOp(B::Float64)
 
-	NN2          = convert(Int64,ceil(adap.NN*adap.B))
+	NN2          = convert(Int64,ceil(adap.NN*B))
 	samples      =  [i for i in 0:adap.nn]
 	samplesFreqs = [j for j in 0:NN2]
 	samplesFreqs = permutedims(samplesFreqs/NN2)
@@ -236,7 +236,7 @@ function binomOp(B::Float64)
 	z    = samplesFreqs .|> f
 
 	# out  = Array{Float64}(undef,(nn+1,NN))
-	out  = Array{Float64}(undef,(adap.nn+1,adap.NN))
+	out  = Array{Float64}(undef,(adap.nn+1,NN2))
 	out  = Distributions.pdf.(z,samples)
 	return out
 end
