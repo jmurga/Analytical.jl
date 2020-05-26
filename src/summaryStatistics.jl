@@ -86,10 +86,10 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	##############################################################
 
 	# Fixation
-	fN     = adap.B*fixNeut()*r2
-	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)*r1
-	fPosL  = fixPosSim(gammaL,0.5*pposL)*r1
-	fPosH  = fixPosSim(gammaH,0.5*pposH)*r1
+	fN     = adap.B*fixNeut()
+	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
+	fPosL  = fixPosSim(gammaL,0.5*pposL)
+	fPosH  = fixPosSim(gammaH,0.5*pposH)
 
 	ds = fN
 	dn = fNeg + fPosL + fPosH
