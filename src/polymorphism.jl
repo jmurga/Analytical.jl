@@ -57,7 +57,6 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-
 function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
@@ -118,13 +117,13 @@ end
 # 		xa  = collect(0:NN2)
 # 		xa  = xa/(NN2)
 
-# 		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
-# 			if i > 0 && i < 1.0
-# 				return ppos*0.5*(
-# 					ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
-# 			end
-# 			return 0.0
-# 		end			
+		# function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
+		# 	if i > 0 && i < 1.0
+		# 		return ppos*0.5*(
+		# 			ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
+		# 	end
+		# 	return 0.0
+		# end			
 	
 # 		# Allocating outputs
 # 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
