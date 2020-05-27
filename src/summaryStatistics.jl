@@ -282,9 +282,9 @@ function summaryAlpha(x,y)
 	out   = Array{Float64}(undef,size(x,1),3)
 
 	for i in 1:size(x,1)
-
 		out[i,:] .= x[i], abs.(y[i])-abs.(x[i]), y[i]
-
+	end
+	
 	return out
 end
 
