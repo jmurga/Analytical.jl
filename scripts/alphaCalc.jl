@@ -10,7 +10,7 @@ files = path .* filter(x -> occursin(suffix,x), readdir(path))
 empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/data.tsv",sfsColumns=[3,5],divColumns=[6,7])
 
 # Custom function to perform 10^6 random solutions
-function summStats(iter::Int64,data,output::String)
+function summStats(iter::Int64,data::Array,output::String)
 	# @threads
 	@showprogress for i in 1:iter
 	# for i in 1:iter
@@ -35,16 +35,16 @@ function summStats(iter::Int64,data,output::String)
 
 			x,y,z= Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
 
-			tmp = view(z,1,1:3)
+			# tmp = view(z,1,1:3)
 
-			if tmp[3] < tmp[1]
-				println(tmp)
-				println(adap)
-			end
+			# if tmp[3] < tmp[1]
+			# 	println(tmp)
+			# 	println(adap)
+			# end
 			Analytical.summaryStatistics(output, z)
 			
 		end
 	end
 end
 
-@time summStats(1,empiricalValues,"/home/jmurga/prior.tsv")
+summStats(59,empiricalValues,"/home/jmurga/prior.tsv")

@@ -269,10 +269,28 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	catch err
 		expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
 	end
+	view(α,size(α,1),:)
+	alphas = summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:))
+	# alphas = summaryAlpha(a,b)
 
-	expectedValues = hcat(view(α,size(α,1),:), view(α_nopos,size(α_nopos,1),:) - abs.(view(α,size(α,1),:)), view(α_nopos,size(α_nopos,1),:),Dn,Ds,Pn,Ps,summarySfs)
+	expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs)
 
 	return (α,α_nopos,expectedValues)
+end
+
+function summaryAlpha(x,y)
+
+	out   = Array{Float64}(undef,size(x,1),3)
+
+	for i in 1:size(x,1)
+
+		if (y[i] < 0)
+			out[i,:] .= x[i], abs.(y[i])-abs.(x[i]), y[i]
+		else
+			out[i,:] .= x[i], y[i]-x[i], y[i]
+		end
+	end 
+	return out
 end
 
 function summaryStatistics(fileName::String,summStats::Array{Float64})
