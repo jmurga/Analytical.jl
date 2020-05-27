@@ -12,14 +12,14 @@ empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/data.tsv",
 # Custom function to perform 10^6 random solutions
 function summStats(iter::Int64,data::Array,output::String)
 	# @threads
-	@showprogress for i in 1:iter
-	# for i in 1:iter
+	# @showprogress for i in 1:iter
+	for i in 1:iter
 		
 		gam_neg=-rand(80:400)
 		gL=rand(10:20)
 		gH=rand(300:500)
 		alLow=rand(collect(0.0:0.05:0.2))
-		alTot=rand(collect(0.1:0.05:0.4))
+		alTot=rand(collect(0.05:0.05:0.4))
 
 		for j in adap.bRange
 		# j=0.3
@@ -35,16 +35,10 @@ function summStats(iter::Int64,data::Array,output::String)
 
 			x,y,z= Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
 
-			# tmp = view(z,1,1:3)
-
-			# if tmp[3] < tmp[1]
-			# 	println(tmp)
-			# 	println(adap)
-			# end
 			Analytical.summaryStatistics(output, z)
 			
 		end
 	end
 end
 
-summStats(59,empiricalValues,"/home/jmurga/prior.tsv")
+summStats(10,empiricalValues,"/home/jmurga/prior.tsv")
