@@ -4,7 +4,7 @@ using Documenter, Analytical
 makedocs(
     modules   = [Analytical],
     format    = Documenter.HTML(),
-    sitename  = "Analytical MK approach",
+    sitename  = "ABC-MK",
     authors   = "Jesús Murga-Moreno, Lawrence Uricchio, David Enard",
     pages     = [
         "Home" => "index.md",

@@ -57,6 +57,7 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
+
 function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
@@ -70,24 +71,72 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		xa  = collect(0:NN2)
 		xa  = xa/(NN2)
 
-		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
+		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
+		gammaCorrected=gammaValue*adap.B
+		if isinf(exp(2*gammaCorrected))
+			# Checked mpmath, BigFloat, DecFP.Dec128, Quadmath.Float128
+			gammaExp1 = exp(ArbFloat(gammaCorrected*2))
+			gammaExp2 = exp(ArbFloat(gammaCorrected*-2))
+		else
+			gammaExp1 = exp(gammaCorrected*2)
+			gammaExp2 = exp(gammaCorrected*-2)
+		end
+
+		# Original
+		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
+		function positiveSfs(i,gammaExp1=gammaExp1,gammaExp2=gammaExp2,ppos=ppos)
 			if i > 0 && i < 1.0
-				return ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
+
+				out = ppos*0.5*(gammaExp1*(1- gammaExp2^(1.0-i))/((gammaExp1-1.0)*i*(1.0-i)))
+				return Float64(out)
 			end
 			return 0.0
-		end
+		end	
 
 		# Allocating outputs
 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
 		out              = Array{Float64}(undef,NN2 + 1)
 	
-		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
+		solvedPositiveSfs = (1.0/(NN2)) * (positiveSfs.(xa))
 		replace!(solvedPositiveSfs, NaN => 0.0)
 		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
 	end
 
 	return view(out,2:lastindex(out)-1,:)
 end
+
+# function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
+
+# 	if ppos == 0.0
+# 		out = zeros(Float64,adap.nn + 1)
+# 	else
+
+# 		red_plus = phiReduction(gammaValue)
+		
+# 		# Solving sfs
+# 		NN2 = convert(Int64,ceil(adap.NN*adap.B))
+# 		xa  = collect(0:NN2)
+# 		xa  = xa/(NN2)
+
+# 		function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
+# 			if i > 0 && i < 1.0
+# 				return ppos*0.5*(
+# 					ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
+# 			end
+# 			return 0.0
+# 		end			
+	
+# 		# Allocating outputs
+# 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
+# 		out              = Array{Float64}(undef,NN2 + 1)
+	
+# 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
+# 		replace!(solvedPositiveSfs, NaN => 0.0)
+# 		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
+# 	end
+
+# 	return view(out,2:lastindex(out)-1,:)
+# end
 
 ######Slightly deleterious######
 """

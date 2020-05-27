@@ -7,7 +7,7 @@ module Analytical
 	include("inferTools.jl")
 	include("features.jl")
 
-	using Parameters, PyCall, SpecialFunctions, Distributions, Roots, StatsBase
+	using Parameters, PyCall, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase
 
 	import CSV: read
 	import CSV: write

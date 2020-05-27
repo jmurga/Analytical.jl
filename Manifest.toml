@@ -1,3 +1,9 @@
+[[ArbNumerics]]
+deps = ["BinaryProvider", "GenericSVD", "GenericSchur", "Libdl", "LinearAlgebra", "Printf", "Random", "Readables", "SpecialFunctions"]
+git-tree-sha1 = "4b77a4789933dcef620713eb65ae64cff6c043a7"
+uuid = "7e558dbc-694d-5a72-987c-6f4ebed21442"
+version = "1.0.5"
+
 [[Arpack]]
 deps = ["BinaryProvider", "Libdl", "LinearAlgebra"]
 git-tree-sha1 = "cd64c112638582ba4f0be9c3e20656499c508565"
@@ -104,6 +110,18 @@ deps = ["Libdl"]
 git-tree-sha1 = "039be665faf0b8ae36e089cd694233f5dee3f7d6"
 uuid = "92fee26a-97fe-5a0c-ad85-20a5f3185b63"
 version = "0.5.1"
+
+[[GenericSVD]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "62909c3eda8a25b5673a367d1ad2392ebb265211"
+uuid = "01680d73-4ee2-5a08-a1aa-533608c188bb"
+version = "0.3.0"
+
+[[GenericSchur]]
+deps = ["LinearAlgebra", "Printf"]
+git-tree-sha1 = "43b4dc5648028be2c6e96201aa3653903bd1af21"
+uuid = "c145ed77-6b09-5dd9-b285-bf645a82121e"
+version = "0.4.0"
 
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
@@ -214,6 +232,12 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[Random]]
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[Readables]]
+deps = ["Test"]
+git-tree-sha1 = "9dde360267e7f5e0c292bbe14b7d034f7e617031"
+uuid = "0d4725de-cd7c-5e44-8a85-a48caeef9fa5"
+version = "0.3.3"
 
 [[Reexport]]
 deps = ["Pkg"]

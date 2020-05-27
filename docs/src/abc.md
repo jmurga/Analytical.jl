@@ -110,3 +110,5 @@ p = plotPosterior(posterior[1],"/home/jmurga/posterior1.svg",(800,600))
 ```
 
 ![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/fig2.svg)
+
+[![NBViewer](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/jmurga/Analytical.jl/blob/master/scripts/analyticalAlphaAndPriors.ipynb)
