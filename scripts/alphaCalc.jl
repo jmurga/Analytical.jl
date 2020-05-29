@@ -41,4 +41,4 @@ function summStats(iter::Int64,data::Array,output::String)
 	end
 end
 
-summStats(10,empiricalValues,"/home/jmurga/prior.tsv")
+summStats(117648,empiricalValues,"/home/jmurga/prior.tsv")

@@ -14,6 +14,7 @@ module Analytical
 	import DataFrames: DataFrame
 	import GZip: open
 	import Parsers: parse
+	import OrderedCollections: OrderedDict
 
 	export adap
 

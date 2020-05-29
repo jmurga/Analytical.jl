@@ -71,7 +71,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		xa  = xa/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gammaCorrected=gammaValue*adap.B
+		gammaCorrected = gammaValue*adap.B
 		if isinf(exp(2*gammaCorrected))
 			# Checked mpmath, BigFloat, DecFP.Dec128, Quadmath.Float128
 			gammaExp1 = exp(ArbFloat(gammaCorrected*2))
@@ -90,7 +90,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 				return Float64(out)
 			end
 			return 0.0
-		end	
+		end
 
 		# Allocating outputs
 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)

@@ -59,6 +59,25 @@ function poissonPolymorphism(;observedValues, λps, λpn)
 end
 
 
+function sampledAlpha(;d,afs,λdiv,λpol,expectedValues,bins=20)
+	## Outputs
+	expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
+	expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
+
+	cumulativePn = view(cumulativeSfs(expPn),1:size(expPn,1),:)
+	cumulativePs = view(cumulativeSfs(expPs),1:size(expPs,1),:)
+
+	# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
+	α = view(1 .- (((expDs)./(expDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+
+	if expectedValues
+		return α,expDn,expDs,expPn,expPs,reduceSfs(expPn + expPs,bins)
+	else
+		α
+	end
+
+end	
+
 """
 	alphaByFrequencies(gammaL,gammaH,pposL,pposH,observedData,nopos)
 
@@ -171,7 +190,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData)
+function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData,bins::Int64)
 
 	P   = observedData[1]
 	sfs = observedData[2]
@@ -219,15 +238,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn .= @. sel / (sel+neut)
 
 	## Outputs
-	expectedDn, expectedDs = poissonFixation(observedValues=D,λds=ds,λdn=dn)
-	expectedPn, expectedPs = poissonPolymorphism(observedValues=sfs,λps=ps,λpn=pn)
-
-	cumulativePn = view(cumulativeSfs(expectedPn),1:size(expectedPn,1),:)
-	cumulativePs = view(cumulativeSfs(expectedPs),1:size(expectedPs,1),:)
-
-
-	# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
-	α = view(1 .- (((expectedDs)./(expectedDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expectedValues=true,bins=bins)
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -248,20 +259,27 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
 	## Outputs
-	expectedDn_nopos, expectedDs_nopos = poissonFixation(observedValues=D,λds=ds_nopos,λdn=dn_nopos)
-	expectedPn_nopos, expectedPs_nopos = poissonPolymorphism(observedValues=sfs,λps=ps_nopos,λpn=pn_nopos)
-
-	cumulativePs_nopos = view(cumulativeSfs(expectedPs_nopos),1:adap.nn-1,:)
-	cumulativePn_nopos = view(cumulativeSfs(expectedPn_nopos),1:adap.nn-1,:)
-
+	
 	# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-	α_nopos = view(1 .- ((expectedDs_nopos ./ expectedDn_nopos) .* (cumulativePn_nopos ./ cumulativePs_nopos)),1:convert(Int64,ceil(adap.nn*0.9)),:)
+	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expectedValues=false)
 
+	boolArr = α_nopos[end,:] .> α[end,:]
+	
+	while sum(boolArr) < size(boolArr,1)
+		## Outputs
+		id = findall(x ->x == false, boolArr)
+
+		α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
+		α_nopos[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos))
+
+		boolArr = α_nopos[end,:] .> α[end,:]
+
+	end
+		
 	##########
 	# Output #
 	##########
 	
-	summarySfs = reduceSfs(expectedPn + expectedPs,20)
 
 	# Handling error to return any array size
 	Dn,Ds,Pn,Ps = try 
@@ -270,11 +288,13 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 		expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
 	end
 
-	alphas = summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:))
+	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
 
+	# expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs,α1[end],asymp1,α[end],asymp2)
 	expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs)
-
+	
 	return (α,α_nopos,expectedValues)
+	# return (α,α_nopos,expectedValues,α[end],asymp)
 end
 
 function summaryAlpha(x,y)
