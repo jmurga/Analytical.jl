@@ -59,7 +59,7 @@ function poissonPolymorphism(;observedValues, λps, λpn)
 end
 
 
-function sampledAlpha(;d,afs,λdiv,λpol,expectedValues,bins=20)
+function sampledAlpha(;d,afs,λdiv,λpol,expV,bins=20)
 	## Outputs
 	expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 	expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
@@ -70,7 +70,7 @@ function sampledAlpha(;d,afs,λdiv,λpol,expectedValues,bins=20)
 	# α = 1 .- (fN/(fPosL + fPosH +  fNeg + 0.0)) .* (sel./neut)
 	α = view(1 .- (((expDs)./(expDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
 
-	if expectedValues
+	if expV
 		return α,expDn,expDs,expPn,expPs,reduceSfs(expPn + expPs,bins)
 	else
 		α
@@ -238,7 +238,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn .= @. sel / (sel+neut)
 
 	## Outputs
-	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expectedValues=true,bins=bins)
+	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -259,18 +259,19 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
 	## Outputs
-	
 	# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expectedValues=false)
+	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=50)
 
 	boolArr = α_nopos[end,:] .> α[end,:]
 	
 	while sum(boolArr) < size(boolArr,1)
 		## Outputs
-		id = findall(x ->x == false, boolArr)
+		id = findall(x -> x == false, boolArr)
 
-		α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
-		α_nopos[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos))
+		# α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
+		α[:,id], expectedDn[:,id], expectedDs[:,id], expectedPn[:,id], expectedPs[:,id], summarySfs[id,:] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
+		
+		α_nopos[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
 
 		boolArr = α_nopos[end,:] .> α[end,:]
 

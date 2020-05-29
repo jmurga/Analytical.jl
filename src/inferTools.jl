@@ -142,7 +142,7 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 			# Empirical data to analytical estimations
 			tmpSfs   =  merge(+,pn,ps)
 			sfs[i,:] = reduce(vcat,values(merge(+,freq,tmpSfs)))
-			P[i]  = sum(sfs[i,:][1])
+			P[i]  = sum(sfs[i,:])
 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
 
 			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(sfs[i,:],bins)]
