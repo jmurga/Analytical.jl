@@ -4,7 +4,7 @@
 
 In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*. In this case we will need a set of empirical observed values in order to subset the summary statistics.
 
-We need to set the model accounting for the sampling value. The SFS is expected to be in raw frequencies. If the model is not properly set up, the SFS will not be correctly parsed. In our case, we are going to set up a model with default parameters only to parse the SFS and convolute the observed frequencies with a binomial distribution.
+We need to set the model accounting for the sampling value. The *SFS* is expected to be in raw frequencies. If the model is not properly set up, the *SFS* will not be correctly parsed. In our case, we are going to set up a model with default parameters only to parse the *SFS* and convolute the observed frequencies with a binomial distribution.
 
 ```julia
 Analytical.changeParameters(N=1000,n=661,convoluteBinomial=true)
@@ -19,7 +19,7 @@ files = path .* filter(x -> occursin(suffix,x), readdir(path))
 empiricalValues = Analytical.parseSfs(data=files,output="testData.tsv",sfsColumns=[3,5],divColumns=[6,7])
 ```
 
-We make a function to perform $10^6$ simulated values. We solve the analytical approximation taking into account totally random and independent to draw *DFE* and $\alpha_{(x)}$. Each parameters combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`). 
+We make a function to perform $10^6$ simulated values. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`). 
 
 In Julia you can easily parallelize a loop using ```$ export JULIA_NUM_THREADS=8```. Each iteration will be executed in a thread. In order to check the threads configured, just use in the julia console ```julia> Threads.nthreads()``` before the execution. We compute this example in a Intel i7-7700HQ (8) @ 3.800GHz laptop with 16GB of RAM using 8 threads. Please check [parallelization manual](https://docs.julialang.org/en/v1/manual/parallel-computing/) in order to send the process in a multicore system (or just put two process manually the [*alphaSumStats.jl*](https://github.com/jmurga/Analytical.jl/blob/master/scripts/alphaSumStats.jl) , a script provided to launch from command line).
 
@@ -109,6 +109,6 @@ end
 p = plotPosterior(posterior[1],"/home/jmurga/posterior1.svg",(800,600))
 ```
 
-![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/fig2.svg)
+<!-- ![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/fig2.svg) -->
 
 [![NBViewer](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/jmurga/Analytical.jl/blob/master/scripts/analyticalAlphaAndPriors.ipynb)

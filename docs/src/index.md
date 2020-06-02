@@ -2,9 +2,9 @@
 
 ABC-MK is an analytical approximation to $\alpha_{(x)}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
 
-When empircal values of polymorphim and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
+When empircal values of polymorphims and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
 
-Our approach estimates directly $\alpha_{(x)}$ and several statistics ($P_N$, $P_S$, $D_N$, $D_S$, $SFS$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* will be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our can estimate rate and strength of adaption in models and non-models organisms, for which previous DFE and demography are unknown.
+Our approach estimates directly $\alpha_{(x)}$ and several statistics ($P_N$, $P_S$, $D_N$, $D_S$, $SFS$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* can be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
 
 ## Installation
 
@@ -63,8 +63,8 @@ All the dependecies are installed within the package. You don't need to install 
 - [`DataFrames`](https://github.com/JuliaStats/Distances.jl)
 - [`GZip`](https://github.com/JuliaIO/GZip.jl)
 
-#### ABC
-We link [ABCreg](https://github.com/molpopgen/ABCreg) with julia in order to perform ABC estimations. If you are going to use ABCreg to do inference please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
+#### *ABC*
+We link [*ABCreg*](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* estimations. If you are going to use *ABCreg* to do inference please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
 
 ```bash
 git clone https://github.com/molpopgen/ABCreg.git

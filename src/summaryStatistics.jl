@@ -220,7 +220,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	selN .= DiscSFSSelNegDown(pposH+pposL)
 	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
-
+	
 	neut, selH, selL, selN = splitColumns(tmp)
 
 	sel = (selH+selL)+selN

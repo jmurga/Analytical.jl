@@ -20,7 +20,7 @@ Expected neutral fixations rate reduce by a background selection value.
 
 """
 function fixNeut()
-			# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
+	# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
 	return 0.255*(1.0/(adap.B*adap.NN))
 end
 
@@ -106,6 +106,6 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 	red_plus = phiReduction(gamma)
 
 	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
-	return 0.745 * ppos * red_plus * pFix(gamma)
+	return 0.745*ppos*red_plus*pFix(gamma)
 end
 

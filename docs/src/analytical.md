@@ -1,6 +1,6 @@
 # Analytical estimation
 ### Solving $\alpha_{(x)}$
-Our method is based in the analytical solution of $\alpha_{(x)}$ given a genetic scenario. The method could be extended to *DFE* and background selection values in order to get summary statistics that can be used as prior distrubtions at *ABC* methods. In this example we show how asympotic $\alpha$ is affected by linkage and background selection.
+Our method is based in the analytical solution of $\alpha_{(x)}$ given a genetic scenario. The method could be extended to any *DFE* and background selection values in order to get summary statistics that can be used as prior distrubtions at *ABC* methods. In this example we show how asympotic $\alpha$ is affected by linkage and background selection.
 
 *adap* is the only variable exported from *Analytical* module. It is a Mutable structure contaning the variables required to solve the analytical approach. Any value can be easly changed. Remember *adap* should be change before the execution, in other case, $\alpha_{(x)}$ will be solve with the default values. To change all the values at once, you can use [`Analytical.changeParameters`](@ref) in order to set specific models. Please take into account some package used here could be changed. 
 

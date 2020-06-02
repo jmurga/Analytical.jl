@@ -100,25 +100,11 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
 		ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
-
-		# x = zeros(adap.nn)
-		# y = zeros(adap.nn)
-		# for i in 1:adap.nn
-		# 	round.((i/adap.nn),digits=4) 
-		# 	try
-		# 		x[i] = pn[round.((i/adap.nn),digits=4)]
-		# 		y[i] = ps[round.((i/adap.nn),digits=4)]
-		# 	catch
-		# 		x[i] = 0
-		# 		y[i] = 0
-		# 	end
-		# end
-
 		# Empirical data to analytical estimations
 		tmpSfs   =  merge(+,pn,ps)
 		sfs = reduce(vcat,values(merge(+,freq,tmpSfs)))
-		P = sum(sfs)
-		D = convert(Matrix,df[:,divColumns]) |> sum
+		P = [sum(sfs)]
+		D = [convert(Matrix,df[:,divColumns]) |> sum]
 		# Dn, Ds, Pn, Ps, sfs
 		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(sfs,bins)]
 		

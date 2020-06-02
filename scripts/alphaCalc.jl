@@ -1,13 +1,13 @@
 using Analytical, ProgressMeter
 
 # Set up sfs
-Analytical.changeParameters(N=661,n=661,diploid=true,convoluteBinomial=true)
+Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
 
 # Open empirical data
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/data.tsv",sfsColumns=[3,5],divColumns=[6,7],bins=50)
+empiricalValues = Analytical.parseSfs(data=files[1],output="/home/jmurga/data.tsv",sfsColumns=[3,5],divColumns=[6,7],bins=20)
 
 # Custom function to perform 10^6 random solutions
 function summStats(iter::Int64,data::Array,output::String)
@@ -15,15 +15,15 @@ function summStats(iter::Int64,data::Array,output::String)
 	@showprogress for i in 1:iter
 	# for i in 1:iter
 		
-		gam_neg=-rand(80:400)
+		gam_neg=-rand(80:200)
 		gL=rand(10:20)
 		gH=rand(300:500)
-		alLow=rand(collect(0.0:0.05:0.2))
-		alTot=rand(collect(0.05:0.05:0.4))
+		alLow=rand(collect(0.0:0.1:0.2))
+		alTot=rand(collect(0.0:0.1:0.5))
 
 		for j in adap.bRange
 
-			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=661,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
+			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=0.184,be=0.000402,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
 
 			Analytical.set_theta_f()
 			theta_f = adap.theta_f
@@ -32,11 +32,11 @@ function summStats(iter::Int64,data::Array,output::String)
 			Analytical.setPpos()
 			adap.theta_f = theta_f
 			adap.B = j
-			x,y,z = Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=50)
+			x,y,z = Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=20)
 			Analytical.summaryStatistics(output, z)
 			
 		end
 	end
 end
 
-summStats(50,empiricalValues,"/home/jmurga/prior.tsv")
+summStats(5,empiricalValues,"/home/jmurga/prior.tsv")

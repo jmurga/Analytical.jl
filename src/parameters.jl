@@ -157,12 +157,15 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 """
 function Br(Lmax::Int64,theta::Float64)
 
+	local out::Float64 
+
 	ρ  	  = adap.rho
 	t     = -1.0*adap.gam_neg/(adap.NN+0.0)
 	μ     = theta/(2.0*adap.NN)
 	r     = ρ/(2.0*adap.NN)
 
-	return ℯ^(-4*μ*Lmax/(2*Lmax*r+t))
+	out   = ℯ^(-4*μ*Lmax/(2*Lmax*r+t))
+	return out
 end
 
 # Set mutation rate given the expected reduction in nucleotide diversity (B value ) in a locus.
@@ -175,6 +178,8 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
  - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
 function set_theta_f()
+
+	local theta_f::Float64
 
 	i(θ)         = Br(adap.Lf,θ)-adap.B
 	theta_f      = Roots.find_zero(i,0.0)
