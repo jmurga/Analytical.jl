@@ -46,7 +46,7 @@ function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2
 	sampledPn = similar(observedValues)
 
 	# Neutral λ
-	λ1 .= @. λps ./ (λps .+ λpn)
+	λ1 .= @. λps / (λps + λpn)
 	# Selected λ
 	λ2 .= @. λpn / (λps + λpn)
 

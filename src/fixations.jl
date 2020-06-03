@@ -71,14 +71,14 @@ Expected positive fixation rate.
 function pFix(gam::Int64)
 
 	s::Float64    = gam/(adap.NN)
-	# s::Float64  = rand(Distributions.Exponential(gam/(adap.NN+0.0))
+	s::Float64    = rand(Distributions.Exponential(gam/(adap.NN+0.0)))
 	pfix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gam))
 
 	if s >= 0.1
 		pfix = ℯ^(-(1.0+s))
 		lim = 0
 		while(lim < 200)
-			# s::Float64    = rand(Distributions.Exponential(gam/(adap.NN+0.0))
+			# s::Float64    = rand(Distributions.Exponential(gam/(adap.NN+0.0)))
 			pfix = ℯ^((1.0+s)*(pfix-1.0))
 			lim  = lim + 1
 		end

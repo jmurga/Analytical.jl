@@ -86,7 +86,12 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
 		function positiveSfs(i,gammaExp1=gammaExp1,gammaExp2=gammaExp2,ppos=ppos)
 			if i > 0 && i < 1.0
-
+				# if gammaExp1 is Float64
+				# if gammaValue < 20
+				# 	randGammaExp = rand(Distributions.Exponential(gammaCorrected))
+				# 	gammaExp1    = exp(randGammaExp*2)
+				# 	gammaExp2    = exp(randGammaExp*-2)
+				# end
 				local out = ppos*0.5*(gammaExp1*(1- gammaExp2^(1.0-i))/((gammaExp1-1.0)*i*(1.0-i)))
 				return Float64(out)
 			else
