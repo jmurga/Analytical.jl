@@ -22,7 +22,7 @@ import Parameters: @with_kw
 	Lf::Int64                  = 10^6
 	rho::Float64               = 0.001
 	TE::Float64                = 5.0
-	diploid					   = false
+	diploid::Bool			   = false
 
 	NN::Int64 = 1000
 	nn::Int64 = 500
@@ -31,9 +31,9 @@ import Parameters: @with_kw
 end
 
 """
-	adap( 
+	adap(
 		gam_neg::Int64,
-		gL::Int64,	
+		gL::Int64,
 		gH::Int64,
 		alLow::Float64,
 		alTot::Float64,
@@ -55,27 +55,27 @@ end
 Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. For this reason, *adap* is the only exported variable. Adap should be change before the perform the analytical approach, in other case, ```\$\\alpha_{(x)}\$``` will be solve with the default values.
 
 # Parameters
- - `gam_neg::Int64`: 
- - `gL::Int64`: 
- - `gH::Int64`: 
- - `alLow::Float64`: 
- - `alTot::Float64`: 
- - `theta_f::Float64`: 
- - `theta_mid_neutral::Float64`: 
- - `al::Float64`: 
- - `be::Float64`: 
- - `B::Float64`: 
+ - `gam_neg::Int64`:
+ - `gL::Int64`:
+ - `gH::Int64`:
+ - `alLow::Float64`:
+ - `alTot::Float64`:
+ - `theta_f::Float64`:
+ - `theta_mid_neutral::Float64`:
+ - `al::Float64`:
+ - `be::Float64`:
+ - `B::Float64`:
  - `bRange::Array{Float64,1}`:
- - `pposL::Float64`: 
- - `pposH::Float64`: 
- - `N::Int64`: 
- - `n::Int64`: 
- - `Lf::Int64`: 
- - `rho::Float64`: 
- - `TE::Float64`: 
+ - `pposL::Float64`:
+ - `pposH::Float64`:
+ - `N::Int64`:
+ - `n::Int64`:
+ - `Lf::Int64`:
+ - `rho::Float64`:
+ - `TE::Float64`:
 
 """
-adap = parameters()
+global adap = parameters()
 
 """
 	changeParameters()
@@ -83,24 +83,24 @@ adap = parameters()
 Function to re-assign values to mutable struct *adap*. When values is not defined, it will be reset to the default value.
 
 # Parameters
- - `gam_neg::Int64`: 
- - `gL::Int64`: 
- - `gH::Int64`: 
- - `alLow::Float64`: 
- - `alTot::Float64`: 
- - `theta_f::Float64`: 
- - `theta_mid_neutral::Float64`: 
- - `al::Float64`: 
- - `be::Float64`: 
- - `B::Float64`: 
+ - `gam_neg::Int64`:
+ - `gL::Int64`:
+ - `gH::Int64`:
+ - `alLow::Float64`:
+ - `alTot::Float64`:
+ - `theta_f::Float64`:
+ - `theta_mid_neutral::Float64`:
+ - `al::Float64`:
+ - `be::Float64`:
+ - `B::Float64`:
  - `bRange::Array{Float64,1}`:
- - `pposL::Float64`: 
- - `pposH::Float64`: 
- - `N::Int64`: 
- - `n::Int64`: 
- - `Lf::Int64`: 
- - `rho::Float64`: 
- - `TE::Float64`: 
+ - `pposL::Float64`:
+ - `pposH::Float64`:
+ - `N::Int64`:
+ - `n::Int64`:
+ - `Lf::Int64`:
+ - `rho::Float64`:
+ - `TE::Float64`:
 
 """
 function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::Float64=0.2,alTot::Float64=0.2,theta_f::Float64=1e-3,theta_mid_neutral::Float64=1e-3,al::Float64=0.184,be::Float64=0.000402,bRange::Array{Float64,1}=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B::Float64=0.999,pposL::Float64=0.001,pposH::Float64=0.0,N::Int64=1000,n::Int64=661,Lf::Int64=10^6,rho::Float64=0.001,TE::Float64=5.0,diploid::Bool=true,convoluteBinomial::Bool=true)
@@ -123,7 +123,7 @@ function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::
 	adap.Lf                = Lf
 	adap.rho               = rho
 	adap.TE                = TE
-	
+
 	if diploid == false
 		adap.NN = N
 		adap.nn = n
@@ -157,7 +157,7 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 """
 function Br(Lmax::Int64,theta::Float64)
 
-	local out::Float64 
+	local out::Float64
 
 	ρ  	  = adap.rho
 	t     = -1.0*adap.gam_neg/(adap.NN+0.0)
@@ -218,9 +218,8 @@ function setPpos()
 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
 	if (pposH < 0.0 || pposH < 9e-15)
 		pposH = 0.0
-	# elseif (pposL < 0.0 || pposL < 9e-15)
-	# 	pposL = 0.0
 	end
+
 	adap.pposL,adap.pposH = pposL, pposH
 end
 
@@ -253,7 +252,7 @@ end
 	phiReduction(gamma,ppos)
 
 
-Reduction in fixation probabilty due to background selection and linkage. The formulas used have been subjected to several theoretical works ([Charlesworth B., 1994](https://doi.org/10.1017/S0016672300032365), [Hudson et al., 1995](https://www.genetics.org/content/141/4/1605), [Nordborg et al. 1995](https://doi.org/10.1017/S0016672300033619), [Barton NH., 1995](https://www.genetics.org/content/140/2/821)). 
+Reduction in fixation probabilty due to background selection and linkage. The formulas used have been subjected to several theoretical works ([Charlesworth B., 1994](https://doi.org/10.1017/S0016672300032365), [Hudson et al., 1995](https://www.genetics.org/content/141/4/1605), [Nordborg et al. 1995](https://doi.org/10.1017/S0016672300033619), [Barton NH., 1995](https://www.genetics.org/content/140/2/821)).
 
 The fixation probabilty of selected alleles are reduce by a factor ``\\phi``:
 
@@ -273,22 +272,23 @@ Multiplying across all deleterious linkes sites, we find:
 
 # Arguments
  - `gamma::Int64`: selection coefficient.
-	
+
 # Returns
  - `Float64`: expected rate of positive fixations under background selection.
 
 """
 function phiReduction(gammaValue::Int64)
-	S  = abs(adap.gam_neg/(1.0*adap.NN))
-	r  = adap.rho/(2.0*adap.NN)
-	μ  = adap.theta_f/(2.0*adap.NN)
-	s  = gammaValue/(adap.NN*1.0)
+	S::Float64 = abs(adap.gam_neg/(1.0*adap.NN))
+	r::Float64 = adap.rho/(2.0*adap.NN)
+	μ::Float64 = adap.theta_f/(2.0*adap.NN)
+	s::Float64 = gammaValue/(adap.NN*1.0)
 
-	Ψ0 = SpecialFunctions.polygamma(1,(s+S)/r)
-	Ψ1 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
-	CC = 1.0
+	Ψ0::Float64 = SpecialFunctions.polygamma(1,(s+S)/r)
+	Ψ1::Float64 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
+	CC::Float64 = 1.0
 
-	return (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
+	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
+	return out
 end
 
 # function setPpos_nlsolve()
@@ -297,7 +297,7 @@ end
 #    	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
 #    	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
 #    end
-   
+
 #    pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
 #    if pposL < 0.0

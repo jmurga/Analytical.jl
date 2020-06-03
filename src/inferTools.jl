@@ -14,88 +14,28 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `output::String`: path to save file. Containing one file per input file.
  - `sfsColumns::Array{Int64,1}`: non-synonymous and synonymous daf columns. Please introduce first the non-synonymous number.
  - `divColumns::Array{Int64,1}`: non-synonymous and synonymous divergence columns. Please introduce first the non-synonymous number.
- 
+
 # Returns
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
 """
-# function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],polColumns::Array{Int64,1}=[2,4],divColumns::Array{Int64,1}=[6,7],bins::Int64)
-	
-# 	g(x) = parse.(Float64,x[2:end-1])
+function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
 
-# 	function binned(tmpDf,b::Int64)
-		
-# 		tmp1   = round.(reduce(vcat,tmpDf[:,1] .|> g),digits=4)
-# 		tmp2   = round.(reduce(vcat,tmpDf[:,2] .|> g),digits=4)
-# 		tmp = vcat(tmp1,tmp2)
-		
-# 		tmpOrdered = DataFrame(hcat(tmp,cut(tmp,0:(1/b):1;extend=true))) |> sort
-# 		binnedSfs = combine(nrow,groupby(tmpOrdered, :x2))
-
-# 		return binnedSfs[:,2]
-# 	end
-
-# 	if(data isa String)
-
-# 		P   = Array{Int64}(undef,1)
-# 		D   = Array{Int64}(undef,1)
-# 		sfs = Array{Float64}(undef, bins ,1)
-# 		newData = Array{Float64}(undef, 1,24)
-
-# 		df = read(data,header=false,delim=' ')
-# 		pol  = convert(Matrix,split.(df[:,sfsColumns], ","))
-
-# 		# Empirical data to analytical estimations
-# 		sfs = binned(pol,bins) |> permutedims
-# 		P = sum(sfs)
-# 		D = convert(Matrix,df[:,divColumns]) |> sum
-# 		newSfs = binned(pol,20) |> permutedims
-# 		# Dn, Ds, Pn, Ps, sfs
-# 		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(df[:,polColumns[1]]) sum(df[:,polColumns[2]]) newSfs]
-		
-# 		write(output, DataFrame(newData), delim='\t',writeheader=false)
-# 		return [P,sfs,D]
-# 	else
-
-# 		P   = Array{Float64}(undef,length(data))
-# 		D   = Array{Float64}(undef,length(data))
-# 		sfs = Array{Float64}(undef,length(data),bins)
-# 		newData = Array{Int64}(undef,length(data),24)
-
-# 		for i in 1:length(data)
-
-# 			df = read(data[i],header=false,delim=' ')
-# 			pol  = convert(Matrix,split.(df[:,sfsColumns], ","))
-
-# 			# Empirical data to analytical estimations
-# 			sfs[i,:] = binned(pol,bins) |> permutedims
-# 			P[i] = sum(sfs[i,:])
-# 			D[i] = convert(Matrix,df[:,divColumns]) |> sum
-# 			newSfs = binned(pol,20) |> permutedims
-# 			# Dn, Ds, Pn, Ps, sfs
-# 			newData[1,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(df[:,polColumns[1]]) sum(df[:,polColumns[2]]) newSfs]
-
-# 		end
-
-# 		write(output, DataFrame(newData),delim='\t',writeheader=false)
-# 		return [P,permutedims(sfs),D]
-# 	end
-# end
-function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
-	
 	g(x) = parse.(Float64,x[2:end-1])
-	
+
 	freq = OrderedDict(round.(collect(1:adap.nn-1)/adap.nn,digits=4) .=> 0)
 
 	if(data isa String)
 
-		P   = Array{Int64}(undef,1)
-		D   = Array{Int64}(undef,1)
-		sfs = Array{Float64}(undef, adap.nn -1 ,1)
+		P       = Array{Int64}(undef,1)
+		D       = Array{Int64}(undef,1)
+		sfs     = Array{Int64}(undef, adap.nn -1 ,1)
+		summSfs = Array{Int64}(undef, adap.nn -1 ,1)
 		newData = Array{Float64}(undef, 1,24)
 
 		df = read(data,header=false,delim=' ')
 		df = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
+
 		tmp  = split.(df[:,sfsColumns], ",")
 		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
 		ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
@@ -103,36 +43,39 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 		# Empirical data to analytical estimations
 		tmpSfs   =  merge(+,pn,ps)
 		sfs = reduce(vcat,values(merge(+,freq,tmpSfs)))
+		summSfs = reduce(vcat,values(merge(+,freq,pn)))
 		P = [sum(sfs)]
 		D = [convert(Matrix,df[:,divColumns]) |> sum]
 		# Dn, Ds, Pn, Ps, sfs
-		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(sfs,bins)]
-		
+		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs,bins)]
+
 		write(output, DataFrame(newData), delim='\t',writeheader=false)
 		return [P,sfs,D]
 
 	else
+
 		P   = Array{Int64}(undef,length(data))
 		D   = Array{Int64}(undef,length(data))
-		sfs = Array{Float64}(undef,length(data),adap.nn-1)
+		sfs = Array{Int64}(undef,length(data),adap.nn-1)
+		summSfs = Array{Int64}(undef,length(data),adap.nn-1)
 		newData = Array{Int64}(undef,length(data),4+bins)
-		
+
 		for i in 1:length(data)
-			
-			df = read(data[i],header=false,delim=' ')
-			df = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
+
+			df   = read(data[i],header=false,delim=' ')
+			df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
 			tmp  = split.(df[:,sfsColumns], ",")
 			pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
 			ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
 			# Empirical data to analytical estimations
-			tmpSfs   =  merge(+,pn,ps)
-			sfs[i,:] = reduce(vcat,values(merge(+,freq,tmpSfs)))
-			P[i]  = sum(sfs[i,:])
-			D[i] = convert(Matrix,df[:,divColumns]) |> sum
+			tmpSfs       = merge(+,pn,ps)
+			sfs[i,:]     = reduce(vcat,values(merge(+,freq,tmpSfs)))
+			summSfs[i,:] = reduce(vcat,values(merge(+,freq,pn)))
+			P[i]         = sum(sfs[i,:])
+			D[i]         = convert(Matrix,df[:,divColumns]) |> sum
 
-			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(sfs[i,:],bins)]
-
+			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs[i,:],bins)]
 		end
 
 		write(output, DataFrame(newData),delim='\t',writeheader=false)
@@ -140,7 +83,6 @@ function parseSfs(;data,output::String,sfsColumns::Array{Int64,1}=[3,5],divColum
 
 	end
 end
-
 
 """
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
@@ -159,7 +101,7 @@ Julia to execute *ABCreg*. You should take into account that any other ABC could
 # Returns
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
- - 
+ -
 """
 function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath="/home/jmurga/ABCreg/src/reg")
 
@@ -173,7 +115,7 @@ function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64,
 
 	posteriors = files .|> openFiles
 	estimates  = posteriors .|> meanQ
-	
+
 	return posteriors,estimates
 end
 
@@ -218,13 +160,12 @@ function reduceSfs(sfsTemp,bins)
 	freq  = collect(0:size(sfsTemp,1)-1)/size(sfsTemp,1)
 	h1    = fit(Histogram,freq,0:(1/bins):1)
 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
-	
-	
+
 	tmp = hcat(sfsTemp,xmap1)
-	out = zeros(bins,size(sfsTemp,2))
+	out = Array{Int64}(undef,bins,size(sfsTemp,2))
 	for i in unique(xmap1)
-		out[i,:] = sum(tmp[tmp[:,end].==i,1:end-1],dims=1)
+		out[i,:] = sum(tmp[tmp[:,end] .== i,1:end-1],dims=1)
 	end
-		
+
 	return (permutedims(out))
 end

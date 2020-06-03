@@ -21,8 +21,10 @@ Expected neutral fixations rate reduce by a background selection value.
 """
 function fixNeut()
 	# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
-	return 0.255*(1.0/(adap.B*adap.NN))
+	out::Float64 = 0.255*(1.0/(adap.B*adap.NN))
+	return out
 end
+
 
 # Negative fixations
 """
@@ -43,8 +45,10 @@ Expected fixation rate from negative DFE.
 
 """
 function fixNegB(ppos::Float64)
+
+	out::Float64 = 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
 	# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
-	return 0.745*(1-ppos)*(2^(-adap.al))*(adap.B^(-adap.al))*(adap.be^adap.al)*(-SpecialFunctions.zeta(adap.al,1.0+adap.be/(2.0*adap.B))+SpecialFunctions.zeta(adap.al,0.5*(2-1.0/(adap.N*adap.B)+adap.be/adap.B)))
+	return out
 end
 
 # Positive fixations
@@ -64,19 +68,21 @@ Expected positive fixation rate.
  - `Float64`: expected rate of positive fixation.
 
 """
-function pFix(gamma::Int64)
+function pFix(gam::Int64)
 
-	s    = gamma/(adap.NN+0.0)
-	pfix = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gamma))
+	s::Float64    = gam/(adap.NN)
+	# s::Float64  = rand(Distributions.Exponential(gam/(adap.NN+0.0))
+	pfix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gam))
 
 	if s >= 0.1
 		pfix = ℯ^(-(1.0+s))
 		lim = 0
 		while(lim < 200)
+			# s::Float64    = rand(Distributions.Exponential(gam/(adap.NN+0.0))
 			pfix = ℯ^((1.0+s)*(pfix-1.0))
-			lim +=1
-		pfix = 1-pfix
+			lim  = lim + 1
 		end
+		pfix = 1 -pfix
 	end
 
 	return pfix
@@ -92,10 +98,10 @@ Expected positive fixations rate reduced due to the impact of background selecti
 ```math
 \\mathbb{E}[D_{n+}] =  \\Phi \\cdot \\mathbb{E}[D_{n+}]
 ```
-	
+
 # Arguments
  - `ppos::Float64`: positive selected alleles probabilty.
-	
+
 # Returns
  - `Float64`: expected rate of positive fixations under background selection
 
@@ -106,6 +112,6 @@ function fixPosSim(gamma::Int64,ppos::Float64)
 	red_plus = phiReduction(gamma)
 
 	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
-	return 0.745*ppos*red_plus*pFix(gamma)
+	out::Float64 = 0.745*ppos*red_plus*pFix(gamma)
+	return out
 end
-

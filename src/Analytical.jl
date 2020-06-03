@@ -5,7 +5,6 @@ module Analytical
 	include("polymorphism.jl")
 	include("summaryStatistics.jl")
 	include("inferTools.jl")
-	# include("features.jl")
 
 	using Parameters, PyCall, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase
 
