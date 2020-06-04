@@ -14,7 +14,7 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Array{Int64,1}, λds::Float64, λdn::Float64)
+function poissonFixation(;observedValues::Array{Float64,1}, λds::Float64, λdn::Float64)
 
 	poissonS  = (λds/(λds + λdn) .* observedValues) .|> Poisson
 	poissonD  = (λdn/(λds + λdn) .* observedValues) .|> Poisson
@@ -38,7 +38,7 @@ Polymorphism sampling from Poisson distributions. The total expected neutral and
  - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2}}, λps::Array{Float64,1}, λpn::Array{Float64,1})
+function poissonPolymorphism(;observedValues::Union{Array{Float64,1},Array{Float64,2}}, λps::Array{Float64,1}, λpn::Array{Float64,1})
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
@@ -60,7 +60,7 @@ function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2
 end
 
 
-function sampledAlpha(;d::Array{Int64,1},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
+function sampledAlpha(;d::Array{Float64,1},afs::Union{Array{Float64,1},Array{Float64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
 	## Outputs
 	expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 	expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
@@ -193,9 +193,9 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 """
 function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::AbstractArray,bins::Int64)
 
-	P   = observedData[1]
-	sfs = observedData[2]
 	D   = observedData[3]
+	sfs = observedData[2]
+	P   = observedData[1]
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -292,7 +292,6 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 
 	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
 
-
 	expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs)
 
 	return (α,α_nopos,expectedValues)
@@ -311,6 +310,8 @@ end
 
 function summaryStatistics(fileName::String,summStats::Array{Float64})
 
-	write(fileName, DataFrame(summStats), delim='\t', append=true)
+	for i in 1:2
+		write(fileName * string(i) * ".tsv", DataFrame(summStats[i,:] |> transpose), delim='\t', append=true)
+	end
 
 end

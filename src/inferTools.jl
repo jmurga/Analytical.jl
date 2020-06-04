@@ -25,12 +25,12 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 
 	freq = OrderedDict(round.(collect(1:adap.nn-1)/adap.nn,digits=4) .=> 0)
 
-	if(data isa String)
+	if (data isa String)
 
-		P       = Array{Int64}(undef,1)
-		D       = Array{Int64}(undef,1)
-		sfs     = Array{Int64}(undef, adap.nn -1 ,1)
-		summSfs = Array{Int64}(undef, adap.nn -1 ,1)
+		P       = Array{Float64}(undef,1)
+		D       = Array{Float64}(undef,1)
+		sfs     = Array{Float64}(undef, adap.nn -1 ,1)
+		summSfs = Array{Float64}(undef, adap.nn -1 ,1)
 		newData = Array{Float64}(undef, 1,24)
 
 		df = read(data,header=false,delim=' ')
@@ -49,16 +49,15 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 		# Dn, Ds, Pn, Ps, sfs
 		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs,bins)]
 
-		write(output, DataFrame(newData), delim='\t',writeheader=false)
+		write(output * ".tsv", DataFrame(newData), delim='\t',writeheader=false)
 		return [P,sfs,D]
-
 	else
 
-		P   = Array{Int64}(undef,length(data))
-		D   = Array{Int64}(undef,length(data))
-		sfs = Array{Int64}(undef,length(data),adap.nn-1)
-		summSfs = Array{Int64}(undef,length(data),adap.nn-1)
-		newData = Array{Int64}(undef,length(data),4+bins)
+		P   = Array{Float64}(undef,length(data))
+		D   = Array{Float64}(undef,length(data))
+		sfs = Array{Float64}(undef,length(data),adap.nn-1)
+		summSfs = Array{Float64}(undef,length(data),adap.nn-1)
+		newData = Array{Float64}(undef,length(data),4+bins)
 
 		for i in 1:length(data)
 
@@ -76,11 +75,10 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 			D[i]         = convert(Matrix,df[:,divColumns]) |> sum
 
 			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs[i,:],bins)]
+			write(output * string(i) * ".tsv", DataFrame(newData[i,:] |> transpose),delim='\t',writeheader=false)
+
 		end
-
-		write(output, DataFrame(newData),delim='\t',writeheader=false)
 		return [P,permutedims(sfs),D]
-
 	end
 end
 

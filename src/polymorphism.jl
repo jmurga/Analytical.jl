@@ -38,11 +38,13 @@ function DiscSFSNeutDown()
 	x               = collect(0:NN2)
 	solvedNeutralSfs = x .|> neutralSfs
 
+	# out::Array{Float64}     = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
+
 	out::Array{Float64}     = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
 
 	return 	view(out,2:lastindex(out)-1,:)
-
 end
+
 
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
