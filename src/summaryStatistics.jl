@@ -30,6 +30,16 @@ end
 
 Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical sfs are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole sfs given each frequency success rate ``\\lambda`` in the distribution.
 
+The success rate managing the Poisson distribution by the observed count each frequency.  We considered both sampling variance and process variance is affecting the number of variable alleles we sample from SFS. This variance arises from the random mutation-fixation process along the branch. To incorporate this variance we do one sample per frequency-bin and use the total sampled variation and the SFS for the summary statistics. 
+
+```math
+\\mathbb{E}[P_N] = \\sum_{x=0}^{x=1} X \\in Poisson\\left(\\lambda = SFS_{(x)} \\times \\left[\\frac{\\mathbb{E}[P_{+(x)}] + \\mathbb{E}[P_{-(x)}]}{\\mathbb{E}[P_{+(x)}] + \\mathbb{E}[P_{-(x)}] + \\mathbb{E}[P_{0(x)}]}\\right]\\right)
+```
+
+```math
+\\mathbb{E}[P_S] = \\sum_{x=0}^{x=1} X \\in Poisson\\left(\\lambda = SFS_{(x)} \\times \\left[\\frac{\\mathbb{E}[P_{0}]}{\\mathbb{E}[P_{+(x)}] + \\mathbb{E}[P_{-(x)}] + \\mathbb{E}[P_{0(x)}]}\\right]\\right)
+```
+
 # Arguments
  - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
  - ` λps `: expected neutral site frequency spectrum rate.
@@ -56,7 +66,7 @@ function poissonPolymorphism(;observedValues::Union{Array{Float64,1},Array{Float
 	sampledPs = observedValues |> psPois
 	sampledPn = observedValues |> pnPois
 
-    return (sampledPn, sampledPs)
+	return (sampledPn, sampledPs)
 end
 
 
@@ -264,7 +274,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
 	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
 
-	boolArr = α_nopos[end,:] .> α[end,:]
+	boolArr = α_nopos[end,:] .> α[end,:] & (α_nopos[end,:] .> 0 | α[end,:] .> 0)
 
 	while sum(boolArr) < size(boolArr,1)
 		## Outputs
