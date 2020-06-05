@@ -11,7 +11,7 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
 ```
 ```math
 \\mathbb{E}[D_S] = X \\in Poisson\\left(\\lambda = D \\times \\left[\\frac{\\mathbb{E}[D_0]}{\\mathbb{E}[D_+] + \\mathbb{E}[D_-] + \\mathbb{E}[D_0]}\\right]\\right)
-``
+```
 # Arguments
  - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
  - ` λds`: expected neutral fixations rate.
