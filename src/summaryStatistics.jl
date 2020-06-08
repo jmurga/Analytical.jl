@@ -22,8 +22,11 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
 """
 function poissonFixation(;observedValues::Array{Float64,1}, λds::Float64, λdn::Float64)
 
-	poissonS  = (λds/(λds + λdn) .* observedValues) .|> Poisson
-	poissonD  = (λdn/(λds + λdn) .* observedValues) .|> Poisson
+	ds = λds / (λds + λdn)
+	dn =  λdn / (λds + λdn)
+
+	poissonS  = (ds .* observedValues) .|> Poisson
+	poissonD  = (dn .* observedValues) .|> Poisson
 
 	sampledDs = rand.(poissonS,1)
 	sampledDn = rand.(poissonD,1)
@@ -75,23 +78,29 @@ function poissonPolymorphism(;observedValues::Union{Array{Float64,1},Array{Float
 	return (sampledPn, sampledPs)
 end
 
-
 function sampledAlpha(;d::Array{Float64,1},afs::Union{Array{Float64,1},Array{Float64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
-	## Outputs
-	expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
-	expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
-
-	cumulativePn = view(cumulativeSfs(expPn),1:size(expPn,1),:)
-	cumulativePs = view(cumulativeSfs(expPs),1:size(expPs,1),:)
-
-
-	α = view(1 .- (((expDs)./(expDn)) .* (cumulativePn./cumulativePs)),1:convert(Int64,ceil(adap.nn*0.9)),:)
 
 	# Return expected values or not. Not using in no_pos
 	if expV
+
+		## Outputs
+		expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
+		expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
+
+		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
+		cumulativePn = view(cumulativeSfs(λpol[:,2]),1:size(λpol[:,2],1),:)
+
+		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (cumulativePn./cumulativePs))
+
 		return α,expDn,expDs,expPn,expPs,reduceSfs(expPn,bins)
 	else
-		α
+		
+		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
+		cumulativePn = view(cumulativeSfs(λpol[:,2]),1:size(λpol[:,2],1),:)
+
+		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (cumulativePn./cumulativePs))
+
+		return α
 	end
 end
 
@@ -184,7 +193,17 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	##########
 	# Output #
 	##########
-	return (α,α_nopos)
+	# Asymp values
+	alphas = hcat(α,α_nopos)
+	asymp1 = asympFit(α,1.0)
+	asymp2 = asympFit(α_nopos,1.0)
+	
+	c1 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.9)),:)
+	c2 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.8)),:)
+	c3 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.75)),:)
+
+	return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
+	return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
 
 """
@@ -235,28 +254,15 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	selH .= DiscSFSSelPosDown(gammaH,pposH)
 	selL .= DiscSFSSelPosDown(gammaL,pposL)
 	selN .= DiscSFSSelNegDown(pposH+pposL)
-	# splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
-	# tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
-
-	# neut, selH, selL, selN = splitColumns(tmp)
 
 	sel = (selH+selL)+selN
 	# sel = view(sel,1:lastindex(sel)-1,:)
 	# neut = view(neut,1:lastindex(neut)-1,:)
 
-	# if (isnan(sel[1]))
-	# 	sel[1]=0
-	# elseif(isnan(sel[end]))
-	# 	sel[end]=0
-	# end
-
-	ps = similar(neut); pn = similar(neut)
-	ps .= @. neut / (sel+neut)
-	pn .= @. sel / (sel+neut)
-
 	## Outputs
-	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
+	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
 
+	α = view(α,1:convert(Int64,ceil(adap.nn*0.9)),:)
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -272,27 +278,24 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	## Polymorphism
 	# sel_nopos = view(selN,1:lastindex(selN)-1,:)
 	sel_nopos = selN
-	ps_nopos  = similar(neut); pn_nopos = similar(neut)
-	ps_nopos .= @. neut / (sel_nopos + neut)
-	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
 
 	## Outputs
-	# α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
-	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
+	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
+	α_nopos = view(α_nopos,1:convert(Int64,ceil(adap.nn*0.9)),:)
 
-	boolArr = α_nopos[end,:] .> α[end,:] & (α_nopos[end,:] .> 0 | α[end,:] .> 0)
+	# boolArr = transpose(hcat(α[end,:],α_nopos[end,:]) .>=0)
 
-	while sum(boolArr) < size(boolArr,1)
-		## Outputs
-		id = findall(x -> x == false, boolArr)
+	# while sum(boolArr) < size(boolArr,1)
+	# 	## Outputs
+	# 	id = findall(x -> x == false, boolArr)
 
-		# α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
-		α[:,id], expectedDn[:,id], expectedDs[:,id], expectedPn[:,id], expectedPs[:,id], summarySfs[id,:] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
+	# 	# α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
+	# 	α[:,id], expectedDn[:,id], expectedDs[:,id], expectedPn[:,id], expectedPs[:,id], summarySfs[id,:] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
 
-		α_nopos[:,id] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
+	# 	α_nopos[:,id] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
 
-		boolArr = α_nopos[end,:] .> α[end,:]
-	end
+	# 	boolArr = α_nopos[end,:] .> α[end,:]
+	# end
 
 	##########
 	# Output #
@@ -307,6 +310,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	end
 
 	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
+	alphas = repeat(alphas,outer=[2,1])
 
 	expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs)
 
@@ -331,3 +335,54 @@ function summaryStatistics(fileName::String,summStats::Array{Float64})
 	end
 
 end
+
+function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
+
+	# Model
+	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
+
+	# Data
+	count        = convert(Int64,ceil(cutoff * size(alphaValues,1)))
+	alphaTrim    = convert(Array,view(alphaValues,1:count,1))
+
+	# Fit values
+	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0])
+	asymp          = asympModel(count,fitted.param)
+	ciLow,ciHigh   = LsqFit.confidence_interval(fitted)[1]
+
+	# plot(x,alphaTrim)
+	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
+
+	return [asymp ciLow ciHigh]
+end
+
+# function scipyFit(alphaValues::Array{Float64,2})
+
+# 	x = collect(1:size(alphaValues,1))
+# 	py"""
+# 	import numpy as np
+# 	from scipy import optimize
+
+# 	def exp_model(x,a,b,c):
+# 		return a + b*np.exp(-x*c)
+
+# 	def test(x1,al):
+# 		res = {}
+# 		model = optimize.curve_fit(exp_model,x1, al, method='dogbox')
+
+# 		res['a'] = model[0][0]
+# 		res['b'] = model[0][1]
+# 		res['c'] = model[0][2]
+
+# 		# alpha for predicted model
+# 		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
+# 		return(res['alpha'])
+# 	"""
+		
+# 	# plot(x,alphaTrim)
+# 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
+
+# 	return py"test"(PyObject(x),PyObject(alphaValues[:,1]))
+
+# end
+

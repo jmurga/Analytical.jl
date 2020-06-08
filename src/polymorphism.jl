@@ -45,6 +45,7 @@ function DiscSFSNeutDown()
 	return 	view(out,2:lastindex(out)-1,:)
 end
 
+
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
 """

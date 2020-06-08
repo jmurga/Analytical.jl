@@ -30,7 +30,7 @@ RUN wget --quiet https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-1.0.
 RUN  tar -zxvf /root/julia-1.0.5-linux-x86_64.tar.gz -C /root
 #RUN echo "export PATH="/root/julia-1.0.5/bin:$PATH"" >> /root/.bashrc
 
-RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","SpecialFunctions","Distributions","Roots","IJulia","CSV","GZip","QuadGK","Documenter"])'
+RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","SpecialFunctions","Distributions","Roots","IJulia","CSV","GZip","Documenter","OrderedCollections","ArbNumerics","DataFrames"])'
 
 ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
 ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb

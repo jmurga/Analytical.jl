@@ -211,10 +211,10 @@ function setPpos()
 	if pposL < 0.0
 	 	pposL = 0.0
 	end
-	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-	if (pposH < 0.0 || pposH < 9e-15)
+	if pposH < 0.0
 		pposH = 0.0
-	end
+   end
+	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
 
 	adap.pposL,adap.pposH = pposL, pposH
 end
