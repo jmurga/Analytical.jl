@@ -333,10 +333,9 @@ function summaryAlpha(x::AbstractArray,y::AbstractArray)
 	return out
 end
 
-function summaryStatistics(fileName::String,summStats::DataFrame)
+function summaryStatistics(fileName::String,summStats)
 
 	for i in 1:size(summStats,1)
-		tmp = summStats[i,:]
 		write(fileName * string(i) * ".tsv", summStats[i:i,:], delim='\t', append=true)
 	end
 
