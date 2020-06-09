@@ -20,7 +20,7 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Array{Float64,1}, λds::Float64, λdn::Float64)
+function poissonFixation(;observedValues::Array{Int64,1}, λds::Float64, λdn::Float64)
 
 	ds = λds / (λds + λdn)
 	dn =  λdn / (λds + λdn)
@@ -57,7 +57,7 @@ The success rate managing the Poisson distribution by the observed count each fr
  - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism(;observedValues::Union{Array{Float64,1},Array{Float64,2}}, λps::Array{Float64,1}, λpn::Array{Float64,1})
+function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2}}, λps::Array{Float64,1}, λpn::Array{Float64,1})
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
@@ -78,7 +78,7 @@ function poissonPolymorphism(;observedValues::Union{Array{Float64,1},Array{Float
 	return (sampledPn, sampledPs)
 end
 
-function sampledAlpha(;d::Array{Float64,1},afs::Union{Array{Float64,1},Array{Float64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
+function sampledAlpha(;d::Array{Int64,1},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
 
 	# Return expected values or not. Not using in no_pos
 	if expV
@@ -86,13 +86,20 @@ function sampledAlpha(;d::Array{Float64,1},afs::Union{Array{Float64,1},Array{Flo
 		## Outputs
 		expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 		expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
+		cumulativePnExpPn = view(permutedims(reduceSfs(expPn,20)) |> cumulativeSfs,1:bins,:)
+		cumulativePnExpPs = view(permutedims(reduceSfs(expPs,20)) |> cumulativeSfs,1:bins,:)
 
+		## Alpha from rates
 		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
 		cumulativePn = view(cumulativeSfs(λpol[:,2]),1:size(λpol[:,2],1),:)
 
 		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (cumulativePn./cumulativePs))
 
-		return α,expDn,expDs,expPn,expPs,reduceSfs(expPn,bins)
+		## Alpha from expected values. Used as summary statistics
+		ssAlpha = 1 .- ((expDs./expDn) .* (cumulativePnExpPn./cumulativePnExpPs))
+		ssAlpha = round.(ssAlpha,digits=4)
+
+		return α,expDn,expDs,expPn,expPs,ssAlpha
 	else
 		
 		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
@@ -256,12 +263,10 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	selN .= DiscSFSSelNegDown(pposH+pposL)
 
 	sel = (selH+selL)+selN
-	# sel = view(sel,1:lastindex(sel)-1,:)
-	# neut = view(neut,1:lastindex(neut)-1,:)
 
 	## Outputs
-	α, expectedDn, expectedDs, expectedPn, expectedPs, summarySfs = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
-
+	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+	# d=D;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
 	α = view(α,1:convert(Int64,ceil(adap.nn*0.9)),:)
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -312,7 +317,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
 	alphas = repeat(alphas,outer=[2,1])
 
-	expectedValues = hcat(alphas,Dn,Ds,Pn,Ps,summarySfs)
+	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
 
 	return (α,α_nopos,expectedValues)
 end
@@ -328,10 +333,11 @@ function summaryAlpha(x::AbstractArray,y::AbstractArray)
 	return out
 end
 
-function summaryStatistics(fileName::String,summStats::Array{Float64})
+function summaryStatistics(fileName::String,summStats::DataFrame)
 
-	for i in 1:2
-		write(fileName * string(i) * ".tsv", DataFrame(summStats[i,:] |> transpose), delim='\t', append=true)
+	for i in 1:size(summStats,1)
+		tmp = summStats[i,:]
+		write(fileName * string(i) * ".tsv", summStats[i:i,:], delim='\t', append=true)
 	end
 
 end

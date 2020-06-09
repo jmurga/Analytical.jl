@@ -27,11 +27,11 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 
 	if (data isa String)
 
-		P       = Array{Float64}(undef,1)
-		D       = Array{Float64}(undef,1)
-		sfs     = Array{Float64}(undef, adap.nn -1 ,1)
-		summSfs = Array{Float64}(undef, adap.nn -1 ,1)
-		newData = Array{Float64}(undef, 1,24)
+		P       = Array{Int64}(undef,1)
+		D       = Array{Int64}(undef,1)
+		sfs     = Array{Int64}(undef, adap.nn -1 ,1)
+		summSfs = Array{Int64}(undef, adap.nn -1 ,1)
+		# newData = Array{Float64}(undef, 1,24)
 
 		df = read(data,header=false,delim=' ')
 		df = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
@@ -43,21 +43,28 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 		# Empirical data to analytical estimations
 		tmpSfs   =  merge(+,pn,ps)
 		sfs = reduce(vcat,values(merge(+,freq,tmpSfs)))
-		summSfs = reduce(vcat,values(merge(+,freq,pn)))
 		P = [sum(sfs)]
 		D = [convert(Matrix,df[:,divColumns]) |> sum]
+		
 		# Dn, Ds, Pn, Ps, sfs
-		newData = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs,bins)]
+		Dn        = sum(df[:,divColumns[1]])
+		Ds        = sum(df[:,divColumns[2]])
+		Pn        = sum(values(pn))
+		Ps        = sum(values(ps))
+		sfsPn     = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins))),1:bins,:)
+		sfsPs     = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins))),1:bins,:)
+		α         = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=4)
+		newData   = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 
-		write(output * ".tsv", DataFrame(newData), delim='\t',writeheader=false)
+		write(output * ".tsv", newData, delim='\t',writeheader=false)
 		return [P,sfs,D]
 	else
 
-		P   = Array{Float64}(undef,length(data))
-		D   = Array{Float64}(undef,length(data))
-		sfs = Array{Float64}(undef,length(data),adap.nn-1)
-		summSfs = Array{Float64}(undef,length(data),adap.nn-1)
-		newData = Array{Float64}(undef,length(data),4+bins)
+		P         = Array{Int64}(undef,length(data))
+		D         = Array{Int64}(undef,length(data))
+		sfs       = Array{Int64}(undef,length(data),adap.nn-1)
+		summSfs   = Array{Float64}(undef,length(data),adap.nn-1)
+		# newData   = DataFrame(undef,length(data),4+bins)
 
 		for i in 1:length(data)
 
@@ -68,14 +75,22 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 			ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
 			# Empirical data to analytical estimations
-			tmpSfs       = merge(+,pn,ps)
-			sfs[i,:]     = reduce(vcat,values(merge(+,freq,tmpSfs)))
-			summSfs[i,:] = reduce(vcat,values(merge(+,freq,pn)))
-			P[i]         = sum(sfs[i,:])
-			D[i]         = convert(Matrix,df[:,divColumns]) |> sum
+			tmpSfs   = merge(+,pn,ps)
+			sfs[i,:] = reduce(vcat,values(merge(+,freq,tmpSfs)))
+			P[i]        = sum(sfs[i,:])
+			D[i]        = convert(Matrix,df[:,divColumns]) |> sum
 
-			newData[i,:] = [sum(df[:,divColumns[1]]) sum(df[:,divColumns[2]]) sum(values(pn)) sum(values(ps)) reduceSfs(summSfs[i,:],bins)]
-			write(output * string(i) * ".tsv", DataFrame(newData[i,:] |> transpose),delim='\t',writeheader=false)
+			# Dn, Ds, Pn, Ps, sfs
+			Dn           = sum(df[:,divColumns[1]])
+			Ds           = sum(df[:,divColumns[2]])
+			Pn           = sum(values(pn))
+			Ps           = sum(values(ps))
+			sfsPn        = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins))),1:bins,:)
+			sfsPs        = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins))),1:bins,:)
+			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=4)
+			newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+
+			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 
 		end
 		return [P,permutedims(sfs),D]
