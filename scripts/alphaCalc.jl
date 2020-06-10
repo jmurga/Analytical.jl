@@ -72,10 +72,10 @@ function analyticalApproach(iter::Int64)
 		gH        = rand(300:500)
 
 		fac       = rand(-2:0.05:2)
-		# afac      = 0.184*(2^fac)
-		afac      = 0.184
-		# bfac      = 0.000402*(2^fac)
-		bfac      = 0.000402
+		afac      = 0.184*(2^fac)
+		# afac      = 0.184
+		bfac      = 0.000402*(2^fac)
+		# bfac      = 0.000402
 
 		alTot     = rand(collect(0.05:0.05:0.4))
 		alLow     = rand(collect(0.0:0.05:alTot))

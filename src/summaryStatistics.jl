@@ -353,10 +353,10 @@ function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
 	# Fit values
 	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0])
 	asymp          = asympModel(counts,fitted.param)
-	ciLow,ciHigh   = try
-		LsqFit.confidence_interval(fitted)[1]
+	asymp, ciLow, ciHigh   = try
+		asymp, LsqFit.confidence_interval(fitted)[1]
 	catch err
-		(0.0,0.0)
+		(0.0,0.0,0.0)
 	end
 	# plot(x,alphaTrim)
 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
