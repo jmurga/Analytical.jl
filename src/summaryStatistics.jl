@@ -209,7 +209,7 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	c2 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.8)),:)
 	c3 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.75)),:)
 
-	return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
+	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 	return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
 
@@ -347,14 +347,17 @@ function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
 
 	# Data
-	count        = convert(Int64,ceil(cutoff * size(alphaValues,1)))
-	alphaTrim    = convert(Array,view(alphaValues,1:count,1))
+	counts        = convert(Int64,ceil(cutoff * size(alphaValues,1)))
+	alphaTrim    = convert(Array,view(alphaValues,1:counts,1))
 
 	# Fit values
 	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0])
-	asymp          = asympModel(count,fitted.param)
-	ciLow,ciHigh   = LsqFit.confidence_interval(fitted)[1]
-
+	asymp          = asympModel(counts,fitted.param)
+	ciLow,ciHigh   = try
+		LsqFit.confidence_interval(fitted)[1]
+	catch err
+		(0.0,0.0)
+	end
 	# plot(x,alphaTrim)
 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
 
