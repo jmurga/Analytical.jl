@@ -86,8 +86,8 @@ function sampledAlpha(;d::Array{Int64,1},afs::Union{Array{Int64,1},Array{Int64,2
 		## Outputs
 		expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 		expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
-		cumulativePnExpPn = view(permutedims(reduceSfs(expPn,20)) |> cumulativeSfs,1:bins,:)
-		cumulativePnExpPs = view(permutedims(reduceSfs(expPs,20)) |> cumulativeSfs,1:bins,:)
+		cumulativePnExpPn = view(permutedims(reduceSfs(expPn,bins)) |> cumulativeSfs,1:bins,:)
+		cumulativePnExpPs = view(permutedims(reduceSfs(expPs,bins)) |> cumulativeSfs,1:bins,:)
 
 		## Alpha from rates
 		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
