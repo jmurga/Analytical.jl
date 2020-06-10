@@ -52,6 +52,66 @@ end
 summStats(1,empiricalValues,"/home/jmurga/priorFifty",50)
 summStats(117648,empiricalValues,"/home/jmurga/priorFifty",50)
 
+
+# Custom function to perform 10^6 random solutions
+function analyticalApproach(iter::Int64)
+	# @threads
+	result = Array{Float64}(undef,iter*17,5)
+	resultNopos = Array{Float64}(undef,iter*17,5)
+
+	it = 1
+	@showprogress for i in 1:iter
+	# for i in 1:iter
+
+
+		alTot=rand(collect(0.0:0.05:0.4))
+		alLow=rand(collect(0.0:0.05:alTot))
+
+		gam_neg   = -457
+		gL        = rand(10:40)
+		gH        = rand(300:500)
+
+		fac       = rand(-2:0.05:2)
+		# afac      = 0.184*(2^fac)
+		afac      = 0.184
+		# bfac      = 0.000402*(2^fac)
+		bfac      = 0.000402
+
+		alTot     = rand(collect(0.05:0.05:0.4))
+		alLow     = rand(collect(0.0:0.05:alTot))
+
+
+		for j in adap.bRange
+		# j = 0.999
+
+			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=afac,be=bfac,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
+
+			Analytical.set_theta_f()
+			theta_f = adap.theta_f
+			adap.B = 0.999
+			Analytical.set_theta_f()
+			Analytical.setPpos()
+			adap.theta_f = theta_f
+			adap.B = j
+			x1,y1,a1,a2 = Analytical.analyticalAlpha(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH)
+
+			result[it,:] = a1
+			resultNopos[it,:] = a2
+			# x,y,z = alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=20)
+
+			it = it + 1
+			# summaryStatistics(output, z)
+
+		end
+
+	end
+	return result,resultNopos
+end
+
+
+p2 = boxplot(["lastValue" "asymp" "90%" "80%" "75%"],b)
+
+
 # using Plots, Plots.PlotMeasures, StatsPlots, LaTeXStrings, ProgressMeter, BenchmarkTools, DataFrames
 
 # function plotPosterior(data,imgSize)
