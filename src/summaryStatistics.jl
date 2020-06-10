@@ -348,13 +348,13 @@ function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
 
 	# Data
 	counts        = convert(Int64,ceil(cutoff * size(alphaValues,1)))
-	alphaTrim    = convert(Array,view(alphaValues,1:counts,1))
+	alphaTrim     = convert(Array,view(alphaValues,1:counts,1))
 
 	# Fit values
 	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0])
 	asymp          = asympModel(counts,fitted.param)
 	asymp, ciLow, ciHigh   = try
-		asymp, LsqFit.confidence_interval(fitted)[1]
+		asymp, LsqFit.confidence_interval(fitted)[1][1],LsqFit.confidence_interval(fitted)[1][2]
 	catch err
 		(0.0,0.0,0.0)
 	end
