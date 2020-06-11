@@ -364,33 +364,33 @@ function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
 	return [asymp ciLow ciHigh]
 end
 
-function scipyFit(alphaValues::Array{Float64,2})
+# function scipyFit(alphaValues::Array{Float64,2})
 
-	x = collect(1:size(alphaValues,1))
-	py"""
-	import numpy as np
-	from scipy import optimize
+# 	x = collect(1:size(alphaValues,1))
+# 	py"""
+# 	import numpy as np
+# 	from scipy import optimize
 
-	def exp_model(x,a,b,c):
-		return a + b*np.exp(-x*c)
+# 	def exp_model(x,a,b,c):
+# 		return a + b*np.exp(-x*c)
 
-	def test(x1,al):
-		res = {}
-		model = optimize.curve_fit(exp_model,x1, al, method='dogbox')
+# 	def test(x1,al):
+# 		res = {}
+# 		model = optimize.curve_fit(exp_model,x1, al, method='dogbox')
 
-		res['a'] = model[0][0]
-		res['b'] = model[0][1]
-		res['c'] = model[0][2]
+# 		res['a'] = model[0][0]
+# 		res['b'] = model[0][1]
+# 		res['c'] = model[0][2]
 
-		# alpha for predicted model
-		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
-		return(res['alpha'])
-	"""
+# 		# alpha for predicted model
+# 		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
+# 		return(res['alpha'])
+# 	"""
 		
-	# plot(x,alphaTrim)
-	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
+# 	# plot(x,alphaTrim)
+# 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
 
-	return py"test"(PyObject(x),PyObject(alphaValues[:,1]))
+# 	return py"test"(PyObject(x),PyObject(alphaValues[:,1]))
 
-end
+# end
 
