@@ -15,9 +15,6 @@ function summStats(iter::Int64,data::Array,output::String,b::Int64)
 	@showprogress for i in 1:iter
 	# for i in 1:iter
 
-		alTot=rand(collect(0.0:0.05:0.4))	
-		alLow=rand(collect(0.0:0.05:alTot))
-		
 		gam_neg   = -457
 		gL        = rand(10:40)
 		gH        = rand(300:500)
@@ -108,6 +105,10 @@ function analyticalApproach(iter::Int64)
 	return result,resultNopos
 end
 
+a,b=analyticalApproach(100)
+
+dfA = DataFrame(a[a[:,2] .!= 0,:],[:lastValue, :asymp, :c1,:c2,:c3]) |> stack
+dfB = DataFrame(b[b[:,2] .!= 0,:],[:lastValue, :asymp, :c1,:c2,:c3]) |> stack
 
 p2 = boxplot(["lastValue" "asymp" "90%" "80%" "75%"],b)
 
