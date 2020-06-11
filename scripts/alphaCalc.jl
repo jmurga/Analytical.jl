@@ -7,7 +7,7 @@ Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/dataFifty",sfsColumns=[3,5],divColumns=[6,7],bins=50)
+empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/dataFifty",sfsColumns=[3,5],divColumns=[6,7],bins=20)
 
 # # Custom function to perform 10^6 random solutions
 function summStats(iter::Int64,data::Array,output::String,b::Int64)
@@ -15,16 +15,20 @@ function summStats(iter::Int64,data::Array,output::String,b::Int64)
 	@showprogress for i in 1:iter
 	# for i in 1:iter
 
+
 		gam_neg   = -457
-		gL        = rand(10:40)
-		gH        = rand(300:500)
+		gL        = 10
+		gH        = 500
 
 		fac       = rand(-2:0.05:2)
 		afac      = 0.184*(2^fac)
+		# afac      = 0.184
 		bfac      = 0.000402*(2^fac)
+		# bfac      = 0.000402
 
-		alTot     = rand(collect(0.05:0.05:0.4))
-		alLow     = rand(collect(0.0:0.05:alTot))
+		alTot     = rand(collect(0.05:0.01:0.4))
+		alLow     = rand(collect(0.0:0.01:alTot))
+
 		
 		for j in adap.bRange
 		# j = 0.999
@@ -40,14 +44,18 @@ function summStats(iter::Int64,data::Array,output::String,b::Int64)
 			adap.B = j
 			x,y,z = Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=b)
 			
-			Analytical.summaryStatistics(output, z)
+			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
+				continue
+			else
+				Analytical.summaryStatistics(output, z)
+			end
 
 		end
 	end
 end
 
-summStats(1,empiricalValues,"/home/jmurga/priorFifty",50)
-summStats(117648,empiricalValues,"/home/jmurga/priorFifty",50)
+summStats(1,empiricalValues,"/home/jmurga/prior",20)
+summStats(117648,empiricalValues,"/home/jmurga/prior",20)
 
 
 # Custom function to perform 10^6 random solutions
@@ -60,13 +68,9 @@ function analyticalApproach(iter::Int64)
 	@showprogress for i in 1:iter
 	# for i in 1:iter
 
-
-		alTot=rand(collect(0.0:0.05:0.4))
-		alLow=rand(collect(0.0:0.05:alTot))
-
 		gam_neg   = -457
-		gL        = rand(10:40)
-		gH        = rand(300:500)
+		gL        = 10
+		gH        = 500
 
 		fac       = rand(-2:0.05:2)
 		afac      = 0.184*(2^fac)
@@ -74,8 +78,8 @@ function analyticalApproach(iter::Int64)
 		bfac      = 0.000402*(2^fac)
 		# bfac      = 0.000402
 
-		alTot     = rand(collect(0.05:0.05:0.4))
-		alLow     = rand(collect(0.0:0.05:alTot))
+		alTot     = rand(collect(0.05:0.01:0.4))
+		alLow     = rand(collect(0.0:0.01:alTot))
 
 
 		for j in adap.bRange

@@ -201,16 +201,16 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	# Output #
 	##########
 	# Asymp values
-	alphas = hcat(α,α_nopos)
-	asymp1 = asympFit(α,1.0)
-	asymp2 = asympFit(α_nopos,1.0)
+	# alphas = hcat(α,α_nopos)
+	# asymp1 = asympFit(α,1.0)
+	# asymp2 = asympFit(α_nopos,1.0)
 	
-	c1 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.9)),:)
-	c2 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.8)),:)
-	c3 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.75)),:)
+	# c1 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.9)),:)
+	# c2 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.8)),:)
+	# c3 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.75)),:)
 
+	return (α,α_nopos)
 	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
-	return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
 
 """
@@ -267,7 +267,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	## Outputs
 	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
 	# d=D;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
-	α = view(α,1:convert(Int64,ceil(adap.nn*0.9)),:)
+	# α = view(α,1:convert(Int64,ceil(adap.nn*0.9)),:)
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -286,7 +286,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 
 	## Outputs
 	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
-	α_nopos = view(α_nopos,1:convert(Int64,ceil(adap.nn*0.9)),:)
+	# α_nopos = view(α_nopos,1:convert(Int64,ceil(adap.nn*0.9)),:)
 
 	# boolArr = transpose(hcat(α[end,:],α_nopos[end,:]) .>=0)
 
@@ -364,33 +364,33 @@ function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
 	return [asymp ciLow ciHigh]
 end
 
-# function scipyFit(alphaValues::Array{Float64,2})
+function scipyFit(alphaValues::Array{Float64,2})
 
-# 	x = collect(1:size(alphaValues,1))
-# 	py"""
-# 	import numpy as np
-# 	from scipy import optimize
+	x = collect(1:size(alphaValues,1))
+	py"""
+	import numpy as np
+	from scipy import optimize
 
-# 	def exp_model(x,a,b,c):
-# 		return a + b*np.exp(-x*c)
+	def exp_model(x,a,b,c):
+		return a + b*np.exp(-x*c)
 
-# 	def test(x1,al):
-# 		res = {}
-# 		model = optimize.curve_fit(exp_model,x1, al, method='dogbox')
+	def test(x1,al):
+		res = {}
+		model = optimize.curve_fit(exp_model,x1, al, method='dogbox')
 
-# 		res['a'] = model[0][0]
-# 		res['b'] = model[0][1]
-# 		res['c'] = model[0][2]
+		res['a'] = model[0][0]
+		res['b'] = model[0][1]
+		res['c'] = model[0][2]
 
-# 		# alpha for predicted model
-# 		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
-# 		return(res['alpha'])
-# 	"""
+		# alpha for predicted model
+		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
+		return(res['alpha'])
+	"""
 		
-# 	# plot(x,alphaTrim)
-# 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
+	# plot(x,alphaTrim)
+	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
 
-# 	return py"test"(PyObject(x),PyObject(alphaValues[:,1]))
+	return py"test"(PyObject(x),PyObject(alphaValues[:,1]))
 
-# end
+end
 
