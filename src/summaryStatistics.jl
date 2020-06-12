@@ -285,25 +285,10 @@ function alphaByFrequencies(param::parameters,observedData::AbstractArray,bins::
 	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
 	α_nopos = view(α_nopos,1:convert(Int64,ceil(param.nn*cutoff)),:)
 
-	# boolArr = transpose(hcat(α[end,:],α_nopos[end,:]) .>=0)
-
-	# while sum(boolArr) < size(boolArr,1)
-	# 	## Outputs
-	# 	id = findall(x -> x == false, boolArr)
-
-	# 	# α[:,id] = sampledAlpha(d=D[id,:],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn))
-	# 	α[:,id], expectedDn[:,id], expectedDs[:,id], expectedPn[:,id], expectedPs[:,id], summarySfs[id,:] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(ps,pn),expV=true,bins=bins)
-
-	# 	α_nopos[:,id] = sampledAlpha(d=D[id],afs=sfs[:,id],λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(ps_nopos,pn_nopos),expV=false,bins=bins)
-
-	# 	boolArr = α_nopos[end,:] .> α[end,:]
-	# end
 
 	##########
 	# Output #
 	##########
-
-
 	# Handling error to return any array size
 	Dn,Ds,Pn,Ps = try
 		permutedims(expectedDn),permutedims(expectedDs),permutedims(sum(expectedPn,dims=1)),permutedims(sum(expectedPs,dims=1))
