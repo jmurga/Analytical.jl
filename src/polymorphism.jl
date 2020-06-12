@@ -20,9 +20,9 @@ Expected rate of neutral allele frequency reduce by background selection. The sp
 # Return:
  - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
-function DiscSFSNeutDown()
+function DiscSFSNeutDown(param::parameters)
 
-	NN2 = convert(Int64,ceil(adap.NN*adap.B))
+	NN2 = convert(Int64,ceil(param.NN*param.B))
 	# Allocating variables
 	x                = Array{Int64}(undef,NN2 + 1)
 	solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
@@ -38,9 +38,9 @@ function DiscSFSNeutDown()
 	x                = collect(0:NN2)
 	solvedNeutralSfs = x .|> neutralSfs
 
-	# c = similar(adap.bn[adap.B][:,1])
+	# c = similar(param.bn[param.B][:,1])
 
-	out::Array{Float64} = adap.B*(adap.theta_mid_neutral)*0.255*(adap.bn[adap.B]*solvedNeutralSfs)
+	out::Array{Float64} = param.B*(param.theta_mid_neutral)*0.255*(param.bn[param.B]*solvedNeutralSfs)
 
 	return 	view(out,2:lastindex(out)-1,:)
 end
@@ -60,21 +60,21 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
+function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
-		out = zeros(Float64,adap.nn + 1)
+		out = zeros(Float64,param.nn + 1)
 	else
 
-		red_plus = phiReduction(gammaValue)
+		red_plus = phiReduction(param,gammaValue)
 
 		# Solving sfs
-		NN2 = convert(Int64,ceil(adap.NN*adap.B))
+		NN2 = convert(Int64,ceil(param.NN*param.B))
 		xa  = collect(0:NN2)
 		xa  = xa/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gammaCorrected = gammaValue*adap.B
+		gammaCorrected = gammaValue*param.B
 		if isinf(exp(2*gammaCorrected))
 			# Checked mpmath, BigFloat, DecFP.Dec128, Quadmath.Float128
 			gammaExp1 = exp(ArbFloat(gammaCorrected*2))
@@ -88,12 +88,6 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
 		function positiveSfs(i,gammaExp1=gammaExp1,gammaExp2=gammaExp2,ppos=ppos)
 			if i > 0 && i < 1.0
-				# if gammaExp1 is Float64
-				# if gammaValue < 20
-				# 	randGammaExp = rand(Distributions.Exponential(gammaCorrected))
-				# 	gammaExp1    = exp(randGammaExp*2)
-				# 	gammaExp2    = exp(randGammaExp*-2)
-				# end
 				local out = ppos*0.5*(gammaExp1*(1- gammaExp2^(1.0-i))/((gammaExp1-1.0)*i*(1.0-i)))
 				return Float64(out)
 			else
@@ -107,7 +101,7 @@ function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
 
 		solvedPositiveSfs = (1.0/(NN2)) * (positiveSfs.(xa))
 		replace!(solvedPositiveSfs, NaN => 0.0)
-		out               = (adap.theta_mid_neutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
+		out               = (param.theta_mid_neutral)*red_plus*0.745*(param.bn[param.B]*solvedPositiveSfs)
 	end
 
 	return view(out,2:lastindex(out)-1,:)
@@ -149,7 +143,7 @@ end
 ######Slightly deleterious######
 """
 
-	DiscSFSSelNegDown(ppos)
+	DiscSFSSelNegDown(param,ppos)
 
 Expected rate of positive selected allele frequency reduce by background selection. Spectrum drawn on a gamma DFE. It depends on the number of individuals.
 
@@ -158,22 +152,24 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected negative selected alleles frequencies.
 """
-function DiscSFSSelNegDown(ppos::Float64)
-	out::Array = adap.B*(adap.theta_mid_neutral)*0.745*(adap.bn[adap.B]*DiscSFSSelNeg(ppos))
+function DiscSFSSelNegDown(param::parameters,ppos::Float64)
+	subsetDict = get(param.bn,param.B,1)
+
+	out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*DiscSFSSelNeg(param,ppos))
 	return out[2:lastindex(out)-1]
 end
 
-function DiscSFSSelNeg(ppos::Float64)
+function DiscSFSSelNeg(param::parameters,ppos::Float64)
 
-	beta     = adap.be/(1.0*adap.B)
-	NN2      = convert(Int64, ceil(adap.NN*adap.B))
+	beta     = param.be/(1.0*param.B)
+	NN2      = convert(Int64, ceil(param.NN*param.B))
 	xa       = collect(0:NN2)/NN2
 
 	solveZ   = similar(xa)
 
-	z(x::Float64,ppos::Float64=ppos) = (1.0-ppos)*(2.0^-adap.al)*(beta^adap.al)*(-SpecialFunctions.zeta(adap.al,x+beta/2.0) + SpecialFunctions.zeta(adap.al,(2+beta)/2.0))/((-1.0+x)*x)
+	z(x::Float64,ppos::Float64=ppos) = (1.0-ppos)*(2.0^-param.al)*(beta^param.al)*(-SpecialFunctions.zeta(param.al,x+beta/2.0) + SpecialFunctions.zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
 
-	solveZ   = xa .|> z
+	solveZ   = z.(xa)
 
 	if (solveZ[1] == Inf || isnan(solveZ[1]))
 		solveZ[1] = 0.0
@@ -190,7 +186,7 @@ end
 
 Changing SFS considering all values above a frequency *x*. The original asymptotic-MK approach takes Pn(x) and Ps(x) as the number of polymorphic sites at frequency *x* rather than above *x*, but this approach scales poorly as sample size increases. We define the polymorphic spectrum as stated above since these quantities trivially have the same asymptote but are less affected by changing sample size.
 """
-function cumulativeSfs(sfsTemp)
+function cumulativeSfs(sfsTemp::Array)
 
 	out      = Array{Float64}(undef, size(sfsTemp,1) + 1,size(sfsTemp,2))
 	out[1,:] = sum(sfsTemp,dims=1)

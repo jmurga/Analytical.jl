@@ -6,7 +6,7 @@ module Analytical
 	include("summaryStatistics.jl")
 	include("inferTools.jl")
 
-	using Parameters, PyCall, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit
+	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit
 
 	import CSV: read
 	import CSV: write

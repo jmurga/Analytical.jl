@@ -24,10 +24,10 @@ import Parameters: @with_kw
 	TE::Float64                = 5.0
 	diploid::Bool			   = false
 
-	NN::Int64 = 1000
-	nn::Int64 = 500
+	NN::Int64 = 2*N
+	nn::Int64 = 2*n
 
-	bn::Dict = Dict(bRange[i] => zeros(nn+1,NN) for i in 1:length(bRange))
+	bn::Dict = Dict()
 end
 
 """
@@ -75,7 +75,7 @@ Mutable structure containing the variables required to solve the analytical appr
  - `TE::Float64`:
 
 """
-global adap = parameters()
+# global adap = parameters()
 
 """
 	changeParameters()
@@ -155,12 +155,12 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 # Returns
  - `Float64`: expected reduction in diversity given a non-coding length, mutation rate and defined recombination.
 """
-function Br(Lmax::Int64,theta::Float64)
+function Br(param::parameters,Lmax::Int64,theta::Float64)
 
-	ρ::Float64     = adap.rho
-	t::Float64     = -1.0*adap.gam_neg/(adap.NN+0.0)
-	μ::Float64     = theta/(2.0*adap.NN)
-	r::Float64     = ρ/(2.0*adap.NN)
+	ρ::Float64     = param.rho
+	t::Float64     = -1.0*param.gam_neg/(param.NN+0.0)
+	μ::Float64     = theta/(2.0*param.NN)
+	r::Float64     = ρ/(2.0*param.NN)
 
 	out::Float64  = ℯ^(-4*μ*Lmax/(2*Lmax*r+t))
 	return out
@@ -168,84 +168,112 @@ end
 
 # Set mutation rate given the expected reduction in nucleotide diversity (B value ) in a locus.
 """
-	set_theta_f()
+	set_theta_f(param)
 
 Find the optimum mutation given the expected reduction in nucleotide diversity (B value ) in a locus.
 
 # Returns
  - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
-function set_theta_f()
+function set_theta_f(param::parameters)
 
-	i(θ)         = Br(adap.Lf,θ)-adap.B
+	i(θ,p=param) = Br(p,param.Lf,θ)-param.B
 	theta_f      = Roots.find_zero(i,0.0)
-	adap.theta_f = theta_f
+	param.theta_f = theta_f
 end
 
-function alphaExpSimLow(pposL::Float64,pposH::Float64)
-	return fixPosSim(adap.gL,0.5*pposL)/(fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH) + fixNegB(0.5*pposL+0.5*pposH))
+function alphaExpSimLow(param::parameters,pposL::Float64,pposH::Float64)
+	return fixPosSim(param,param.gL,0.5*pposL)/(fixPosSim(param,param.gL,0.5*pposL)+fixPosSim(param,param.gH,0.5*pposH) + fixNegB(param,0.5*pposL+0.5*pposH))
 end
 
-function alphaExpSimTot(pposL::Float64,pposH::Float64)
-	return (fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH))/(fixPosSim(adap.gL,0.5*pposL)+fixPosSim(adap.gH,0.5*pposH)+fixNegB(0.5*pposL+0.5*pposH))
+function alphaExpSimTot(param::parameters,pposL::Float64,pposH::Float64)
+	return (fixPosSim(param,param.gL,0.5*pposL)+fixPosSim(param,param.gH,0.5*pposH))/(fixPosSim(param,param.gL,0.5*pposL)+fixPosSim(param,param.gH,0.5*pposH)+fixNegB(param,0.5*pposL+0.5*pposH))
 end
 
-function solvEqns(params)
+function solvEqns(param,config)
 
-	pposL,pposH = params
-	return (alphaExpSimTot(pposL,pposH)-adap.alTot,alphaExpSimLow(pposL,pposH)-adap.alLow)
+	pposL,pposH = config
+	return (alphaExpSimTot(param,pposL,pposH)-param.alTot,alphaExpSimLow(param,pposL,pposH)-param.alLow)
 end
 
 """
-	setPpos()
+	setPpos(param)
 
 Find the probabilty of positive selected alleles given the model. It solves a equation system taking into account fixations probabilities of weakly and strong beneficial alleles.
 
 # Returns
  - `Tuple{Float64,Float64}`: weakly and strong beneficial alleles probabilites.
 """
-function setPpos()
- 	sc          = pyimport("scipy.optimize")
-	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
 
-	if pposL < 0.0
-	 	pposL = 0.0
+function setPpos(;param::parameters)
+
+	function f!(F,x,param=adap)
+		F[1] = alphaExpSimTot(param,x[1],x[2])-param.alTot
+		F[2] = alphaExpSimLow(param,x[1],x[2])-param.alLow
 	end
+ 
+	pposL,pposH = NLsolve.nlsolve(f!,[0.0; 0.0]).zero
+ 
+	if pposL < 0.0
+		 pposL = 0.0
+	end  
 	if pposH < 0.0
-		pposH = 0.0
-   end
-	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+		 pposH = 0.0
+	end
 
-	adap.pposL,adap.pposH = pposL, pposH
-end
+	param.pposL,param.pposH = pposL, pposH
+
+ end
+
+ 
+# function setPpos()
+#  	sc          = pyimport("scipy.optimize")
+# 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
+
+# 	if pposL < 0.0
+# 	 	pposL = 0.0
+# 	end
+# 	if pposH < 0.0
+# 		pposH = 0.0
+#    end
+# 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+
+# 	param.pposL,param.pposH = pposL, pposH
+# end
 
 """
-	binomOp(B)
+	binomOp(param)
 
 Site Frequency Spectrum convolution depeding on background selection values. Pass the SFS to a binomial distribution to sample the allele frequencies probabilites.
 
 # Returns
  - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
 """
-function binomOp(B::Float64)
+function binomOp(param::parameters)
+        
+    bn = Dict(param.bRange[i] => zeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
 
-	NN2          = convert(Int64,ceil(adap.NN*B))
-	samples      =  [i for i in 0:adap.nn]
-	samplesFreqs = [j for j in 0:NN2]
-	samplesFreqs = permutedims(samplesFreqs/NN2)
+    for bVal in param.bRange
 
-	f(x) = Distributions.Binomial(adap.nn,x)
-	z    = samplesFreqs .|> f
+        NN2          = convert(Int64,ceil(param.NN*bVal))
+        samples      =  [i for i in 0:param.nn]
+        samplesFreqs = [j for j in 0:NN2]
+        samplesFreqs = permutedims(samplesFreqs/NN2)
+    
+        f(x) = Distributions.Binomial(param.nn,x)
+        z    = f.(samplesFreqs)     
+    
+        out  = Array{Float64}(undef,(param.nn+1,NN2))
+        out  = Distributions.pdf.(z,samples)
+        param.bn[bVal] = out
 
-	# out  = Array{Float64}(undef,(nn+1,NN))
-	out  = Array{Float64}(undef,(adap.nn+1,NN2))
-	out  = Distributions.pdf.(z,samples)
-	return out
+	end
 end
+
 
 """
 
-	phiReduction(gamma,ppos)
+	phiReduction(param,gamma,ppos)
 
 
 Reduction in fixation probabilty due to background selection and linkage. The formulas used have been subjected to several theoretical works ([Charlesworth B., 1994](https://doi.org/10.1017/S0016672300032365), [Hudson et al., 1995](https://www.genetics.org/content/141/4/1605), [Nordborg et al. 1995](https://doi.org/10.1017/S0016672300033619), [Barton NH., 1995](https://www.genetics.org/content/140/2/821)).
@@ -273,37 +301,16 @@ Multiplying across all deleterious linkes sites, we find:
  - `Float64`: expected rate of positive fixations under background selection.
 
 """
-function phiReduction(gammaValue::Int64)
-	S::Float64 = abs(adap.gam_neg/(1.0*adap.NN))
-	r::Float64 = adap.rho/(2.0*adap.NN)
-	μ::Float64 = adap.theta_f/(2.0*adap.NN)
-	s::Float64 = gammaValue/(adap.NN*1.0)
+function phiReduction(param::parameters,gammaValue::Int64)
+	S::Float64 = abs(param.gam_neg/(1.0*param.NN))
+	r::Float64 = param.rho/(2.0*param.NN)
+	μ::Float64 = param.theta_f/(2.0*param.NN)
+	s::Float64 = gammaValue/(param.NN*1.0)
 
 	Ψ0::Float64 = SpecialFunctions.polygamma(1,(s+S)/r)
-	Ψ1::Float64 = SpecialFunctions.polygamma(1,(r+adap.Lf*r+s+S)/r)
+	Ψ1::Float64 = SpecialFunctions.polygamma(1,(r+param.Lf*r+s+S)/r)
 	CC::Float64 = 1.0
 
 	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 	return out
 end
-
-# function setPpos_nlsolve()
-
-#    function f!(F,x)
-#    	F[1] = alphaExpSimTot(x[1],x[2])-adap.alTot
-#    	F[2] = alphaExpSimLow(x[1],x[2])-adap.alLow
-#    end
-
-#    pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
-
-#    if pposL < 0.0
-# 		pposL = 0.0
-#    end
-
-#    # Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-#    if (pposH < 0.0 || pposH < 9e-15)
-# 	   pposH = 0.0
-#    end
-
-#    adap.pposL,adap.pposH = pposL, pposH
-# end

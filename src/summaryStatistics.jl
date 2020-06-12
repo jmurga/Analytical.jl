@@ -112,7 +112,7 @@ function sampledAlpha(;d::Array{Int64,1},afs::Union{Array{Int64,1},Array{Int64,2
 end
 
 """
-	alphaByFrequencies(gammaL,gammaH,pposL,pposH,observedData,nopos)
+	alphaByFrequencies(gammaL,gammaH,pposL,param.pposH,observedData,nopos)
 
 Analytical α(x) estimation. Solve α(x) from the expectation generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
@@ -124,37 +124,37 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
  - `gammaL::Int64`: strength of weakly positive selection
  - `gammaH::Int64`: strength of strong positive selection
  - `pposL`::Float64: probability of weakly selected allele
- - `pposH`::Float64: probability of strong selected allele
+ - `param.pposH`::Float64: probability of strong selected allele
  - `observedData::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
  - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
 
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64)
+function analyticalAlpha(;param::parameters)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
 	##############################################################
 
 	# Fixation
-	fN     = adap.B*fixNeut()
-	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-	fPosL  = fixPosSim(gammaL,0.5*pposL)
-	fPosH  = fixPosSim(gammaH,0.5*pposH)
+	fN     = param.B*fixNeut(param)
+	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
 
 	ds = fN
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = Array{Float64}(undef,adap.nn-1,1)
+	neut = Array{Float64}(undef,param.nn-1,1)
 	selH = similar(neut);selL = similar(neut);selN = similar(neut);
 
-	neut .= DiscSFSNeutDown()
+	neut .= DiscSFSNeutDown(param)
 
-	selH .= DiscSFSSelPosDown(gammaH,pposH)
-	selL .= DiscSFSSelPosDown(gammaL,pposL)
-	selN .= DiscSFSSelNegDown(pposH+pposL)
+	selH .= DiscSFSSelPosDown(param,param.gH,param.pposH)
+	selL .= DiscSFSSelPosDown(param,param.gL,param.pposL)
+	selN .= DiscSFSSelNegDown(param,param.pposH+param.pposL)
 	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
@@ -181,10 +181,10 @@ function analyticalAlpha(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Floa
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fN_nopos     = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
 
 	ds_nopos = fN_nopos
 	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
@@ -233,7 +233,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::Float64,observedData::AbstractArray,bins::Int64)
+function alphaByFrequencies(param::parameters,observedData::AbstractArray,bins::Int64,cutoff::Float64)
 
 	D   = observedData[3]
 	sfs = observedData[2]
@@ -244,38 +244,35 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 	##############################################################
 
 	# Fixation
-	fN     = adap.B*fixNeut()
-	fNeg   = adap.B*fixNegB(0.5*pposH+0.5*pposL)
-	fPosL  = fixPosSim(gammaL,0.5*pposL)
-	fPosH  = fixPosSim(gammaH,0.5*pposH)
+	fN     = param.B*fixNeut(param)
+	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
 
 	ds = fN
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = Array{Float64}(undef,adap.nn-1,1)
-	selH = similar(neut);selL = similar(neut);selN = similar(neut);
+	neut = DiscSFSNeutDown(param)
 
-	neut = DiscSFSNeutDown()
-
-	selH .= DiscSFSSelPosDown(gammaH,pposH)
-	selL .= DiscSFSSelPosDown(gammaL,pposL)
-	selN .= DiscSFSSelNegDown(pposH+pposL)
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH)
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL)
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL)
 
 	sel = (selH+selL)+selN
 
 	## Outputs
 	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
 	# d=D;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
-	# α = view(α,1:convert(Int64,ceil(adap.nn*0.9)),:)
+	α = view(α,1:convert(Int64,ceil(param.nn*cutoff)),:)
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos     = fN*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fNeg_nopos   = fNeg*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fPosL_nopos  = fPosL*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
-	fPosH_nopos  = fPosH*(adap.theta_mid_neutral/2.)*adap.TE*adap.NN
+	fN_nopos     = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
 
 	ds_nopos = fN_nopos
 	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
@@ -286,7 +283,7 @@ function alphaByFrequencies(;gammaL::Int64,gammaH::Int64,pposL::Float64,pposH::F
 
 	## Outputs
 	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
-	# α_nopos = view(α_nopos,1:convert(Int64,ceil(adap.nn*0.9)),:)
+	α_nopos = view(α_nopos,1:convert(Int64,ceil(param.nn*0.9)),:)
 
 	# boolArr = transpose(hcat(α[end,:],α_nopos[end,:]) .>=0)
 
@@ -341,7 +338,7 @@ function summaryStatistics(fileName::String,summStats)
 
 end
 
-function asympFit(alphaValues::Array{Float64,2},cutoff::Float64)
+function asympFit(alphaValues::Array,cutoff::Float64)
 
 	# Model
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])

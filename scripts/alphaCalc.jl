@@ -7,7 +7,7 @@ Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/dataFifty",sfsColumns=[3,5],divColumns=[6,7],bins=20)
+empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=20)
 
 # # Custom function to perform 10^6 random solutions
 function summStats(iter::Int64,data::Array,output::String,b::Int64)
@@ -54,8 +54,8 @@ function summStats(iter::Int64,data::Array,output::String,b::Int64)
 	end
 end
 
-summStats(1,empiricalValues,"/home/jmurga/prior",20)
-summStats(117648,empiricalValues,"/home/jmurga/prior",20)
+summStats(1,empiricalValues,"/home/jmurga/priorPp",20)
+summStats(117648,empiricalValues,"/home/jmurga/priorPp",20)
 
 
 # Custom function to perform 10^6 random solutions

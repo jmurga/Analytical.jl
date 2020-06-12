@@ -19,18 +19,17 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
 """
-function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
+function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
 
 	g(x) = parse.(Float64,x[2:end-1])
-
-	freq = OrderedDict(round.(collect(1:adap.nn-1)/adap.nn,digits=4) .=> 0)
+	freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
 	if (data isa String)
 
 		P       = Array{Int64}(undef,1)
 		D       = Array{Int64}(undef,1)
-		sfs     = Array{Int64}(undef, adap.nn -1 ,1)
-		summSfs = Array{Int64}(undef, adap.nn -1 ,1)
+		sfs     = Array{Int64}(undef, param.nn -1 ,1)
+		summSfs = Array{Int64}(undef, param.nn -1 ,1)
 		# newData = Array{Float64}(undef, 1,24)
 
 		df = read(data,header=false,delim=' ')
@@ -62,8 +61,8 @@ function parseSfs(;data::Union{String,Array{String,1}},output::String,sfsColumns
 
 		P         = Array{Int64}(undef,length(data))
 		D         = Array{Int64}(undef,length(data))
-		sfs       = Array{Int64}(undef,length(data),adap.nn-1)
-		summSfs   = Array{Float64}(undef,length(data),adap.nn-1)
+		sfs       = Array{Int64}(undef,length(data),param.nn-1)
+		summSfs   = Array{Float64}(undef,length(data),param.nn-1)
 		# newData   = DataFrame(undef,length(data),4+bins)
 
 		for i in 1:length(data)
