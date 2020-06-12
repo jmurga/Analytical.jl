@@ -283,7 +283,7 @@ function alphaByFrequencies(param::parameters,observedData::AbstractArray,bins::
 
 	## Outputs
 	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
-	α_nopos = view(α_nopos,1:convert(Int64,ceil(param.nn*0.9)),:)
+	α_nopos = view(α_nopos,1:convert(Int64,ceil(param.nn*cutoff)),:)
 
 	# boolArr = transpose(hcat(α[end,:],α_nopos[end,:]) .>=0)
 
