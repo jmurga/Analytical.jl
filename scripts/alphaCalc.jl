@@ -1,24 +1,20 @@
 using Analytical, ProgressMeter
 
-# Set up sfs
-Analytical.changeParameters(N=1000,n=661,diploid=true,convoluteBinomial=true)
+# Set up model
+adap = Analytical.parameters(N=1000,n=661,gam_neg=-457, gL=10,gH=500)
+Analytical.binomOp(adap)
 
 # # Open empirical data
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=20)
+empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=20)
 
 # # Custom function to perform 10^6 random solutions
 function summStats(iter::Int64,data::Array,output::String,b::Int64)
 	# @threads
 	@showprogress for i in 1:iter
-	# for i in 1:iter
 
-
-		gam_neg   = -457
-		gL        = 10
-		gH        = 500
 
 		fac       = rand(-2:0.05:2)
 		afac      = 0.184*(2^fac)
@@ -33,16 +29,18 @@ function summStats(iter::Int64,data::Array,output::String,b::Int64)
 		for j in adap.bRange
 		# j = 0.999
 
-			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=afac,be=bfac,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
+			adap.al = afac; adap.be = bfac; 
+			adap.alLow = alLow; adap.alTot = alTot; adap.B = j
 
-			Analytical.set_theta_f()
+			
+			Analytical.set_theta_f(adap)
 			theta_f = adap.theta_f
 			adap.B = 0.999
-			Analytical.set_theta_f()
-			Analytical.setPpos()
+			Analytical.set_theta_f(adap)
+			Analytical.setPpos(param=adap)
 			adap.theta_f = theta_f
 			adap.B = j
-			x,y,z = Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=b)
+			x,y,z = Analytical.alphaByFrequencies()
 			
 			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
 				continue

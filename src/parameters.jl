@@ -207,7 +207,7 @@ Find the probabilty of positive selected alleles given the model. It solves a eq
 
 function setPpos(;param::parameters)
 
-	function f!(F,x,param=adap)
+	function f!(F,x,param=param)
 		F[1] = alphaExpSimTot(param,x[1],x[2])-param.alTot
 		F[2] = alphaExpSimLow(param,x[1],x[2])-param.alLow
 	end
