@@ -1,7 +1,7 @@
 using Analytical, ProgressMeter
 
 # Set up model
-adap = Analytical.parameters(N=1000,n=661,gam_neg=-457, gL=10,gH=500)
+adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500)
 Analytical.binomOp(adap)
 
 # # Open empirical data
@@ -10,9 +10,9 @@ files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
 empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
 
-adap.n = 25
-adap.nn = 50
-Analytical.binomOp(adap);
+# adap.n = 25
+# adap.nn = 50
+# Analytical.binomOp(adap);
 # # Custom function to perform 10^6 random solutions
 function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::String,b::Int64,c::Float64)
 	# @threads
@@ -46,18 +46,19 @@ function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::
 			x,y,z = Analytical.alphaByFrequencies(param,data,b,c)
 			# x,y,z = Analytical.analyticalAlpha(param=param)
 			
-			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
-				continue
-			else
-				Analytical.summaryStatistics(output, z)
-			end
+			println(z)
+			# if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
+			# 	continue
+			# else
+			# 	Analytical.summaryStatistics(output, z)
+			# end
 
 		end
 	end
 end
 
-summStats(adap,1,empiricalValues,"/home/jmurga/test",50,0.98)
-summStats(adap,117648,empiricalValues,"/home/jmurga/priorSample",20,0.999)
+summStats(adap,1,empiricalValues,"/home/jmurga/test",50,0.999)
+summStats(adap,58900,empiricalValues,"/home/jmurga/priorSample",50,0.999)
 
 
 # Custom function to perform 10^6 random solutions

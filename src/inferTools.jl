@@ -90,7 +90,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
 			newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 
-			# write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
+			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 
 		end
 		return [P,permutedims(sfs),D]
