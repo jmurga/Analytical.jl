@@ -8,10 +8,11 @@ Analytical.binomOp(adap)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=20)
+empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
 
-adap.n = 100
-adap.nn = 200
+adap.n = 25
+adap.nn = 50
+Analytical.binomOp(adap);
 # # Custom function to perform 10^6 random solutions
 function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::String,b::Int64,c::Float64)
 	# @threads
@@ -43,6 +44,7 @@ function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::
 			param.theta_f = theta_f
 			param.B = j
 			x,y,z = Analytical.alphaByFrequencies(param,data,b,c)
+			# x,y,z = Analytical.analyticalAlpha(param=param)
 			
 			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
 				continue
@@ -54,8 +56,8 @@ function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::
 	end
 end
 
-summStats(1,empiricalValues,"/home/jmurga/priorPp",20,0.9)
-summStats(117648,empiricalValues,"/home/jmurga/priorPp",20,0.9)
+summStats(adap,1,empiricalValues,"/home/jmurga/test",50,0.98)
+summStats(adap,117648,empiricalValues,"/home/jmurga/priorSample",20,0.999)
 
 
 # Custom function to perform 10^6 random solutions

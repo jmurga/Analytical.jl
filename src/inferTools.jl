@@ -22,9 +22,9 @@ Function to parse polymorphism and divergence by subset of genes. The input data
 function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
 
 	g(x) = parse.(Float64,x[2:end-1])
-	freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
 	if (data isa String)
+		freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
 		P       = Array{Int64}(undef,1)
 		D       = Array{Int64}(undef,1)
@@ -56,7 +56,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 		newData   = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 
 		write(output * ".tsv", newData, delim='\t',writeheader=false)
-		return [P,sfs,D]
+		return [P,reduceSfs(reduce(vcat,values(tmpSfs)),bins),D]
 	else
 
 		P         = Array{Int64}(undef,length(data))
@@ -66,6 +66,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 		# newData   = DataFrame(undef,length(data),4+bins)
 
 		for i in 1:length(data)
+			freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
 			df   = read(data[i],header=false,delim=' ')
 			df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
@@ -76,8 +77,8 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			# Empirical data to analytical estimations
 			tmpSfs   = merge(+,pn,ps)
 			sfs[i,:] = reduce(vcat,values(merge(+,freq,tmpSfs)))
-			P[i]        = sum(sfs[i,:])
-			D[i]        = convert(Matrix,df[:,divColumns]) |> sum
+			P[i]     = sum(sfs[i,:])
+			D[i]     = convert(Matrix,df[:,divColumns]) |> sum
 
 			# Dn, Ds, Pn, Ps, sfs
 			Dn           = sum(df[:,divColumns[1]])
@@ -86,10 +87,10 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			Ps           = sum(values(ps))
 			sfsPn        = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins))),1:bins,:)
 			sfsPs        = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins))),1:bins,:)
-			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=4)
+			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
 			newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 
-			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
+			# write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 
 		end
 		return [P,permutedims(sfs),D]

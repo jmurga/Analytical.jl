@@ -155,14 +155,14 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 # Returns
  - `Float64`: expected reduction in diversity given a non-coding length, mutation rate and defined recombination.
 """
-function Br(param::parameters,Lmax::Int64,theta::Float64)
+function Br(param::parameters,theta::Float64)
 
 	ρ::Float64     = param.rho
 	t::Float64     = -1.0*param.gam_neg/(param.NN+0.0)
 	μ::Float64     = theta/(2.0*param.NN)
 	r::Float64     = ρ/(2.0*param.NN)
 
-	out::Float64  = ℯ^(-4*μ*Lmax/(2*Lmax*r+t))
+	out::Float64  = ℯ^(-4*μ*param.Lf/(2*param.Lf*r+t))
 	return out
 end
 
@@ -170,14 +170,14 @@ end
 """
 	set_theta_f(param)
 
-Find the optimum mutation given the expected reduction in nucleotide diversity (B value ) in a locus.
+Find the optimum mutation given the expected reduction in nucleotide diversity (B value) in a locus.
 
 # Returns
  - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
 function set_theta_f(param::parameters)
 
-	i(θ,p=param) = Br(p,param.Lf,θ)-param.B
+	i(θ,p=param) = Br(p,θ)-p.B
 	theta_f      = Roots.find_zero(i,0.0)
 	param.theta_f = theta_f
 end
@@ -205,7 +205,7 @@ Find the probabilty of positive selected alleles given the model. It solves a eq
  - `Tuple{Float64,Float64}`: weakly and strong beneficial alleles probabilites.
 """
 
-function setPpos(;param::parameters)
+function setPpos(param::parameters)
 
 	function f!(F,x,param=param)
 		F[1] = alphaExpSimTot(param,x[1],x[2])-param.alTot

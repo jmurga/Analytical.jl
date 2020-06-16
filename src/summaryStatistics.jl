@@ -264,7 +264,7 @@ function alphaByFrequencies(param::parameters,observedData::AbstractArray,bins::
 	## Outputs
 	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
 	# d=D;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
-	α = view(α,1:convert(Int64,ceil(param.nn*cutoff)),:)
+	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
