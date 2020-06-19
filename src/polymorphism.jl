@@ -20,31 +20,23 @@ Expected rate of neutral allele frequency reduce by background selection. The sp
 # Return:
  - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
+
 function DiscSFSNeutDown(param::parameters)
 
 	NN2 = convert(Int64,ceil(param.NN*param.B))
 	# Allocating variables
-	x                = Array{Int64}(undef,NN2 + 1)
-	solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
-	out              = Array{Float64}(undef,NN2 + 1)
 
-	function neutralSfs(i::Int64)
-		if i > 0 && i < NN2
-			 return 1.0/(i)
-		end
-		return 0.0
-	end
+	neutralSfs(i::Int64) = 1.0/(i)
 
-	x                = collect(0:NN2)
-	solvedNeutralSfs = x .|> neutralSfs
-
-	# c = similar(param.bn[param.B][:,1])
-
+	x = collect(0:NN2)
+	solvedNeutralSfs = neutralSfs.(x)
+	replace!(solvedNeutralSfs, Inf => 0.0)
+	
+	subsetDict = param.bn[param.B]
 	out::Array{Float64} = param.B*(param.theta_mid_neutral)*0.255*(param.bn[param.B]*solvedNeutralSfs)
-
-	return 	view(out,2:lastindex(out)-1,:)
+	out = @view out[2:end-1,:]
+	return 	out
 end
-
 
 ############Positive############
 # Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
@@ -64,6 +56,7 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
+		out = @view out[2:end-1,:]
 	else
 
 		red_plus = phiReduction(param,gammaValue)
@@ -86,9 +79,9 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 
 		# Original
 		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
-		function positiveSfs(i,gammaExp1=gammaExp1,gammaExp2=gammaExp2,ppos=ppos)
+		function positiveSfs(i::Float64,g1::Union{Float64,ArbFloat{128}}=gammaExp1,g2::Union{Float64,ArbFloat{128}}=gammaExp2,ppos::Float64=ppos)
 			if i > 0 && i < 1.0
-				local out = ppos*0.5*(gammaExp1*(1- gammaExp2^(1.0-i))/((gammaExp1-1.0)*i*(1.0-i)))
+				local out = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
 				return Float64(out)
 			else
 				return 0.0
@@ -102,9 +95,11 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 		solvedPositiveSfs = (1.0/(NN2)) * (positiveSfs.(xa))
 		replace!(solvedPositiveSfs, NaN => 0.0)
 		out               = (param.theta_mid_neutral)*red_plus*0.745*(param.bn[param.B]*solvedPositiveSfs)
+		out = @view out[2:end-1,:]
+
 	end
 
-	return view(out,2:lastindex(out)-1,:)
+	return out
 end
 
 # function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
@@ -156,7 +151,8 @@ function DiscSFSSelNegDown(param::parameters,ppos::Float64)
 	subsetDict = get(param.bn,param.B,1)
 
 	out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*DiscSFSSelNeg(param,ppos))
-	return out[2:lastindex(out)-1]
+	out = @view out[2:end-1]
+	return out
 end
 
 function DiscSFSSelNeg(param::parameters,ppos::Float64)
@@ -167,7 +163,7 @@ function DiscSFSSelNeg(param::parameters,ppos::Float64)
 
 	solveZ   = similar(xa)
 
-	z(x::Float64,ppos::Float64=ppos) = (1.0-ppos)*(2.0^-param.al)*(beta^param.al)*(-SpecialFunctions.zeta(param.al,x+beta/2.0) + SpecialFunctions.zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
+	z(x::Float64,p::Float64=ppos) = (1.0-p)*(2.0^-param.al)*(beta^param.al)*(-SpecialFunctions.zeta(param.al,x+beta/2.0) + SpecialFunctions.zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
 
 	solveZ   = z.(xa)
 

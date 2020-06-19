@@ -256,15 +256,15 @@ function binomOp(param::parameters)
     for bVal in param.bRange
 
         NN2          = convert(Int64,ceil(param.NN*bVal))
-        samples      =  [i for i in 0:param.nn]
-        samplesFreqs = [j for j in 0:NN2]
+        samples      = collect(0:param.nn)
+        samplesFreqs = collect(0:NN2)
         samplesFreqs = permutedims(samplesFreqs/NN2)
     
         f(x) = Distributions.Binomial(param.nn,x)
         z    = f.(samplesFreqs)     
     
-        out  = Array{Float64}(undef,(param.nn+1,NN2))
-        out  = Distributions.pdf.(z,samples)
+        out  = Array{Float64}(undef,(param.nn+1,NN2+1))
+        out  .= Distributions.pdf.(z,samples)
         param.bn[bVal] = out
 
 	end

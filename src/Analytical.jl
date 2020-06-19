@@ -15,6 +15,4 @@ module Analytical
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 
-	export adap
-
 end

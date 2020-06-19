@@ -93,7 +93,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 
 		end
-		return [P,permutedims(sfs),D]
+		return (P,permutedims(sfs),D)
 	end
 end
 

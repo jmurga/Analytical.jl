@@ -20,7 +20,7 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Array{Int64,1}, λds::Float64, λdn::Float64)
+function poissonFixation(;observedValues::Union{Int64,Array{Int64,1}}, λds::Float64, λdn::Float64)
 
 	ds = λds / (λds + λdn)
 	dn = λdn / (λds + λdn)
@@ -33,7 +33,8 @@ function poissonFixation(;observedValues::Array{Int64,1}, λds::Float64, λdn::F
 	# sampledDs = rand.(poissonS,1)
 	# sampledDn = rand.(poissonD,1)
 
-	out::Tuple{Array{Int64,2},Array{Int64,2}} = (reduce(hcat,sampledDn),reduce(hcat,sampledDs))
+
+	out = reduce(vcat,sampledDn),reduce(vcat,sampledDs)
 	return out
 end
 """
@@ -84,35 +85,29 @@ function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2
 	return (sampledPn, sampledPs)
 end
 
-function sampledAlpha(;d::Array{Int64,1},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
+function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
+
+
+	cumulativePs = cumulativeSfs(λpol[:,1])[:,1]
+	cumulativePn = cumulativeSfs(λpol[:,2])[:,1]
 
 	# Return expected values or not. Not using in no_pos
 	if expV
-
 		## Outputs
 		expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
-		expPn, expPs = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2])
-		# cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)) |> cumulativeSfs,1:bins,:)
-		cumulativeExpPn = cumulativeSfs(expPn)
-		# cucumulativeExpPsmulativeExpPs = view(permutedims(reduceSfs(expPs,bins)) |> cumulativeSfs,1:bins,:)
-		cumulativeExpPs = cumulativeSfs(expPs)
-
-		## Alpha from rates
-		cumulativePs = cumulativeSfs(λpol[:,1])
-		cumulativePn = cumulativeSfs(λpol[:,2])
-
-		α = @. 1 - (((λdiv[1])/(λdiv[2])) * (cumulativePn./cumulativePs))
+		expPn, expPs = poissonPolymorphism(observedValues=afs,λps=cumulativePs,λpn=cumulativePn)
+		cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:)
+		# cumulativeExpPn = cumulativeSfs(expPn)
+		cumulativeExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:)
+		# cumulativeExpPs = cumulativeSfs(expPs)
 
 		## Alpha from expected values. Used as summary statistics
-		ssAlpha = @. 1 - ((expDs/expDn) * (cumulativeExpPn./cumulativeExpPs))
+		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
 		ssAlpha = round.(ssAlpha,digits=4)
 
-		return α,expDn,expDs,expPn,expPs,ssAlpha
+		return expDn,expDs,expPn,expPs,ssAlpha
 	else
 		
-		cumulativePs = view(cumulativeSfs(λpol[:,1]),1:size(λpol[:,1],1),:)
-		cumulativePn = view(cumulativeSfs(λpol[:,2]),1:size(λpol[:,2],1),:)
-
 		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (cumulativePn./cumulativePs))
 
 		return α
@@ -235,11 +230,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,data::AbstractArray,bins::Int64,cutoff::Float64)
-
-	D   = data[3]
-	sfs = data[2]
-	P   = data[1]
+function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -264,9 +255,26 @@ function alphaByFrequencies(param::parameters,data::AbstractArray,bins::Int64,cu
 	sel = (selH+selL)+selN
 
 	## Outputs
-	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
-	# d=D;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
+	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=false,bins=bins)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
+	expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+	d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
+	
+	boolArr = summStat[end,:] .> 0 
+	
+	while sum(boolArr) < size(summStat,2)
+		id = findall(x ->x == false, boolArr)
+		
+		if size(id,1) < 2
+			id = id[1]
+		end
+
+		expectedDn[id], expectedDs[id], expectedPn[:,id], expectedPs[:,id], summStat[:,id] = sampledAlpha(d=divergence[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+		# println(summStat)
+		boolArr[id] = summStat[end,id] .> 0 
+
+	end
+
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -284,18 +292,20 @@ function alphaByFrequencies(param::parameters,data::AbstractArray,bins::Int64,cu
 	sel_nopos = selN
 
 	## Outputs
-	α_nopos = sampledAlpha(d=D,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
+	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
 	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
 
 	##########
 	# Output #
 	##########
 	# Handling error to return any array size
-	Dn,Ds,Pn,Ps = try
-		permutedims(expectedDn),permutedims(expectedDs),permutedims(sum(expectedPn,dims=1)),permutedims(sum(expectedPs,dims=1))
-	catch err
-		expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
-	end
+	# Dn,Ds,Pn,Ps = try
+	# 	permutedims(expectedDn),permutedims(expectedDs),permutedims(sum(expectedPn,dims=1)),permutedims(sum(expectedPs,dims=1))
+	# catch err
+	# 	expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
+	# end
+
+	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 
 	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
 	alphas = repeat(alphas,outer=[2,1])
@@ -324,7 +334,7 @@ function summaryStatistics(fileName::String,summStats)
 
 end
 
-function asympFit(alphaValues::Array)
+function asympFit(alphaValues::Array{Float64,1})
 
 	# Model
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
@@ -334,7 +344,7 @@ function asympFit(alphaValues::Array)
 	alphaTrim     = convert(Array,view(alphaValues,1:counts,1))
 
 	# Fit values
-	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0])
+	fitted         = LsqFit.curve_fit(asympModel,collect(1:size(alphaTrim,1)),alphaTrim,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
 	asymp          = asympModel(counts,fitted.param)
 	# ciLow, ciHigh   = try
 	# 	LsqFit.confidence_interval(fitted)[1][1],LsqFit.confidence_interval(fitted)[1][2]
