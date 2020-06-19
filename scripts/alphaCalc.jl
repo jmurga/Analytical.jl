@@ -1,18 +1,16 @@
 using Analytical, ProgressMeter
 
 # Set up model
-adap = Analytical.parameters(N=500,n=25,gam_neg=-457, gL=10,gH=500)
+adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500)
 Analytical.binomOp(adap)
 
 # # Open empirical data
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
+empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 
-# adap.n = 25
-# adap.nn = 50
-# Analytical.binomOp(adap);
+
 # # Custom function to perform 10^6 random solutions
 function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::String,b::Int64,c::Float64)
 	# @threads
