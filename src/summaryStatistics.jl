@@ -103,7 +103,7 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 
 		## Alpha from expected values. Used as summary statistics
 		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
-		ssAlpha = round.(ssAlpha,digits=4)
+		ssAlpha = round.(ssAlpha,digits=5)
 
 		return expDn,expDs,expPn,expPs,ssAlpha
 	else
@@ -307,7 +307,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 
-	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=4)
+	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=5)
 	alphas = repeat(alphas,outer=[2,1])
 
 	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
