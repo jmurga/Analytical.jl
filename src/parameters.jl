@@ -2,36 +2,6 @@
 ####### Define parameters ######
 ################################
 
-import Parameters: @with_kw
-@with_kw mutable struct parameters
-	gam_neg::Int64             = -83
-	gL::Int64                  = 10
-	gH::Int64                  = 500
-	alLow::Float64             = 0.2
-	alTot::Float64             = 0.2
-	theta_f::Float64           = 1e-3
-	theta_mid_neutral::Float64 = 1e-3
-	al::Float64                = 0.184
-	be::Float64                = 0.000402
-	B::Float64                 = 0.999
-	bRange::Array{Float64,1}   = [0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999]
-	pposL::Float64             = 0.001
-	pposH::Float64             = 0
-	N::Int64                   = 500
-	n::Int64                   = 250
-	Lf::Int64                  = 10^6
-	rho::Float64               = 0.001
-	TE::Float64                = 5.0
-	diploid::Bool			   = false
-
-	NN::Int64 = 2*N
-	nn::Int64 = 2*n
-
-	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
-
-end
-
-
 """
 	adap(
 		gam_neg::Int64,
@@ -77,67 +47,37 @@ Mutable structure containing the variables required to solve the analytical appr
  - `TE::Float64`:
 
 """
-# global adap = parameters()
+import Parameters: @with_kw
+@with_kw mutable struct parameters
+	gam_neg::Int64             = -83
+	gL::Int64                  = 10
+	gH::Int64                  = 500
+	alLow::Float64             = 0.2
+	alTot::Float64             = 0.2
+	theta_f::Float64           = 1e-3
+	theta_mid_neutral::Float64 = 1e-3
+	al::Float64                = 0.184
+	be::Float64                = 0.000402
+	B::Float64                 = 0.999
+	bRange::Array{Float64,1}   = [0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999]
+	pposL::Float64             = 0.001
+	pposH::Float64             = 0
+	N::Int64                   = 500
+	n::Int64                   = 250
+	Lf::Int64                  = 10^6
+	rho::Float64               = 0.001
+	TE::Float64                = 5.0
+	diploid::Bool			   = false
 
-"""
-	changeParameters()
+	NN::Int64 = 2*N
+	nn::Int64 = 2*n
 
-Function to re-assign values to mutable struct *adap*. When values is not defined, it will be reset to the default value.
+	# bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
+	bn::Dict = Dict{Float64,Array{Float64,2}}()
 
-# Parameters
- - `gam_neg::Int64`:
- - `gL::Int64`:
- - `gH::Int64`:
- - `alLow::Float64`:
- - `alTot::Float64`:
- - `theta_f::Float64`:
- - `theta_mid_neutral::Float64`:
- - `al::Float64`:
- - `be::Float64`:
- - `B::Float64`:
- - `bRange::Array{Float64,1}`:
- - `pposL::Float64`:
- - `pposH::Float64`:
- - `N::Int64`:
- - `n::Int64`:
- - `Lf::Int64`:
- - `rho::Float64`:
- - `TE::Float64`:
-
-"""
-function changeParameters(;gam_neg::Int64=-83,gL::Int64=10,gH::Int64=500,alLow::Float64=0.2,alTot::Float64=0.2,theta_f::Float64=1e-3,theta_mid_neutral::Float64=1e-3,al::Float64=0.184,be::Float64=0.000402,bRange::Array{Float64,1}=[0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.999],B::Float64=0.999,pposL::Float64=0.001,pposH::Float64=0.0,N::Int64=1000,n::Int64=661,Lf::Int64=10^6,rho::Float64=0.001,TE::Float64=5.0,diploid::Bool=true,convoluteBinomial::Bool=true)
-
-	adap.gam_neg           = gam_neg
-	adap.gL                = gL
-	adap.gH                = gH
-	adap.alLow             = alLow
-	adap.alTot             = alTot
-	adap.theta_f           = theta_f
-	adap.theta_mid_neutral = theta_mid_neutral
-	adap.al                = al
-	adap.be                = be
-	adap.bRange            = bRange
-	adap.B                 = B
-	adap.pposL             = pposL
-	adap.pposH             = pposH
-	adap.N                 = N
-	adap.n                 = n
-	adap.Lf                = Lf
-	adap.rho               = rho
-	adap.TE                = TE
-
-	if diploid == false
-		adap.NN = N
-		adap.nn = n
-	else
-		adap.NN = (N*2)
-		adap.nn = (n*2)
-	end
-
-	if convoluteBinomial == true
-		adap.bn = Dict(bRange[i] => binomOp(bRange[i]) for i in 1:length(bRange))
-	end
 end
+
+# global adap = parameters()
 
 ################################
 ###### Solving parameters ######
