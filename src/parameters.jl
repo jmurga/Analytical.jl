@@ -267,7 +267,8 @@ function binomOp(param::parameters)
     
         out  = Distributions.pdf.(z,samples)
 		outS  = round.(out,digits=10)
-        param.bn[bVal] = SparseArrays.sparse(outS)
+        # param.bn[bVal] = SparseArrays.sparse(outS)
+        param.bn[bVal] = outS
 
 	end
 end

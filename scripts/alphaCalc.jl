@@ -11,8 +11,9 @@ files = path .* filter(x -> occursin(suffix,x), readdir(path))
 pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 
 function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
+# function summStats(param::Analytical.parameters,iter::Int64)
 	# @threads
-	@showprogress for i in 1:iter
+	Threads.@threads  for i in 1:iter
 	# for i in 1:iter
 
 
@@ -27,7 +28,6 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 		# j = 0.999
 			param.al = afac; param.be = bfac; 
 			param.alLow = alLow; param.alTot = alTot; param.B = j
-
 			Analytical.set_theta_f(param)
 			theta_f = param.theta_f
 			param.B = 0.999
@@ -36,18 +36,18 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 			param.theta_f = theta_f
 			param.B = j
 			x,y = Analytical.analyticalAlpha(param=param)
-			x,y,z = Analytical.alphaByFrequencies(param,div,sfs,b,c)
+			# x,y,z = Analytical.alphaByFrequencies(param,div,sfs,b,c)
 			
 			
 			# println(z)
 
-			Analytical.summaryStatistics(output, z)
+			# Analytical.summaryStatistics(output, z)
 
 		end
 	end
 end
 
-summStats(adap,1,div,sfs,"/home/jmurga/prior100Cut",100,0.9)
+summStats(adap,58824,div,sfs,"/home/jmurga/test",100,0.9)
 
 
 # Custom function to perform 10^6 random solutions
