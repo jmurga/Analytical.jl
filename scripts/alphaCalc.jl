@@ -8,32 +8,26 @@ Analytical.binomOp(adap)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 
-
-# # Custom function to perform 10^6 random solutions
-function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::String,b::Int64,c::Float64)
+function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
 	# @threads
 	@showprogress for i in 1:iter
+	# for i in 1:iter
 
 
 		fac       = rand(-2:0.05:2)
 		afac      = 0.184*(2^fac)
-		# afac      = 0.184
 		bfac      = 0.000402*(2^fac)
-		# bfac      = 0.000402
-
+		
 		alTot     = rand(collect(0.05:0.01:0.4))
 		alLow     = rand(collect(0.0:0.01:alTot))
 
-		
 		for j in param.bRange
 		# j = 0.999
-
 			param.al = afac; param.be = bfac; 
 			param.alLow = alLow; param.alTot = alTot; param.B = j
 
-			
 			Analytical.set_theta_f(param)
 			theta_f = param.theta_f
 			param.B = 0.999
@@ -41,22 +35,19 @@ function summStats(param::Analytical.parameters,iter::Int64,data::Array,output::
 			Analytical.setPpos(param)
 			param.theta_f = theta_f
 			param.B = j
-			x,y,z = Analytical.alphaByFrequencies(param,data,b,c)
-			# x,y,z = Analytical.analyticalAlpha(param=param)
+			x,y = Analytical.analyticalAlpha(param=param)
+			x,y,z = Analytical.alphaByFrequencies(param,div,sfs,b,c)
+			
 			
 			# println(z)
-			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
-				continue
-			else
-				Analytical.summaryStatistics(output, z)
-			end
+
+			Analytical.summaryStatistics(output, z)
 
 		end
 	end
 end
 
-summStats(adap,1,empiricalValues,"/home/jmurga/test",50,0.999)
-summStats(adap,58900,empiricalValues,"/home/jmurga/test",50,0.999)
+summStats(adap,1,div,sfs,"/home/jmurga/prior100Cut",100,0.9)
 
 
 # Custom function to perform 10^6 random solutions
@@ -147,4 +138,59 @@ p2 = boxplot(["lastValue" "asymp" "90%" "80%" "75%"],b)
 
 # posteriorVip, resultVip = Analytical.ABCreg(data="/home/jmurga/dataAbc/dataVip.gz",prior="/home/jmurga/dataAbc/priorVip.gz", nparams=3, nsummaries=24, outputPath="/home/jmurga/dataAbc/", outputPrefix="vip", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
 
-# plotPosterior(posteriorVip[1],(600,400))
+# plotPosterior(posteriusing Analytical, ProgressMeter
+
+# Set up model
+adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500)
+Analytical.binomOp(adap)
+
+# # Open empirical data
+path= "/home/jmurga/mktest/data/";suffix="txt";
+files = path .* filter(x -> occursin(suffix,x), readdir(path))
+
+div,sfs,pol = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
+
+function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
+	# @threads
+	@showprogress for i in 1:iter
+	# for i in 1:iter
+
+
+		fac       = rand(-2:0.05:2)
+		afac      = 0.184*(2^fac)
+		bfac      = 0.000402*(2^fac)
+
+		
+		alTot     = rand(collect(0.05:0.01:0.4))
+		alLow     = rand(collect(0.0:0.01:alTot))
+
+		for j in param.bRange
+		# j = 0.999
+			param.al = afac; param.be = bfac; 
+			param.alLow = alLow; param.alTot = alTot; param.B = j
+
+			Analytical.set_theta_f(param)
+			theta_f = param.theta_f
+			param.B = 0.999
+			Analytical.set_theta_f(param)
+			Analytical.setPpos(param)
+			param.theta_f = theta_f
+			param.B = j
+			# x,y = Analytical.analyticalAlpha(param=param)
+			x,y,z = Analytical.alphaByFrequencies(param,div,sfs,b,c)
+			
+			
+			# println(z)
+			if sum(convert(Array,z[1:1,1:3]) .> 0) < 3
+				# println("param.B=" * string(param.B) * ";param.al=" *string(param.al) *";param.be=" *string(param.be) * ";param.alTot="* string(param.alTot) *";param.alLow=" *string(param.alLow))
+				# println(hcat(x[end],y[end]))
+				# println(param)
+				continue
+			else
+				Analytical.summaryStatistics(output, z)
+			end
+
+		end
+	end
+end
+orVip[1],(600,400))

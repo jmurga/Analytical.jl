@@ -27,8 +27,10 @@ import Parameters: @with_kw
 	NN::Int64 = 2*N
 	nn::Int64 = 2*n
 
-	bn::Dict = Dict()
+	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
+
 end
+
 
 """
 	adap(
@@ -263,9 +265,9 @@ function binomOp(param::parameters)
         f(x) = Distributions.Binomial(param.nn,x)
         z    = f.(samplesFreqs)     
     
-        out  = Array{Float64}(undef,(param.nn+1,NN2+1))
-        out  .= Distributions.pdf.(z,samples)
-        param.bn[bVal] = out
+        out  = Distributions.pdf.(z,samples)
+		outS  = round.(out,digits=10)
+        param.bn[bVal] = SparseArrays.sparse(outS)
 
 	end
 end

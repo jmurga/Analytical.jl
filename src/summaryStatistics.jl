@@ -248,9 +248,9 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	## Polymorphism
 	neut = DiscSFSNeutDown(param)
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH)
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL)
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL)
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH);
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
 
 	sel = (selH+selL)+selN
 
@@ -258,8 +258,6 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=false,bins=bins)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
-	d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
-	
 	boolArr = summStat[end,:] .> 0 
 	
 	while sum(boolArr) < size(summStat,2)

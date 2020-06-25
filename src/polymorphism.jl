@@ -32,8 +32,8 @@ function DiscSFSNeutDown(param::parameters)
 	solvedNeutralSfs = neutralSfs.(x)
 	replace!(solvedNeutralSfs, Inf => 0.0)
 	
-	subsetDict = param.bn[param.B]
-	out::Array{Float64} = param.B*(param.theta_mid_neutral)*0.255*(param.bn[param.B]*solvedNeutralSfs)
+	subsetDict = get(param.bn,param.B,1)
+	out::Array{Float64} = param.B*(param.theta_mid_neutral)*0.255*(subsetDict*solvedNeutralSfs)
 	out = @view out[2:end-1,:]
 	return 	out
 end
@@ -89,12 +89,11 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 		end
 
 		# Allocating outputs
-		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
-		out              = Array{Float64}(undef,NN2 + 1)
-
 		solvedPositiveSfs = (1.0/(NN2)) * (positiveSfs.(xa))
 		replace!(solvedPositiveSfs, NaN => 0.0)
-		out               = (param.theta_mid_neutral)*red_plus*0.745*(param.bn[param.B]*solvedPositiveSfs)
+
+		subsetDict = get(param.bn,param.B,1)
+		out               = (param.theta_mid_neutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
 		out = @view out[2:end-1,:]
 
 	end
@@ -149,8 +148,8 @@ Expected rate of positive selected allele frequency reduce by background selecti
 """
 function DiscSFSSelNegDown(param::parameters,ppos::Float64)
 	subsetDict = get(param.bn,param.B,1)
-
-	out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*DiscSFSSelNeg(param,ppos))
+	solvedNegative = DiscSFSSelNeg(param,ppos)
+	out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*solvedNegative)
 	out = @view out[2:end-1]
 	return out
 end
@@ -187,7 +186,7 @@ function cumulativeSfs(sfsTemp::Array)
 	out      = Array{Float64}(undef, size(sfsTemp,1),size(sfsTemp,2))
 	out[1,:] = sum(sfsTemp,dims=1)
 
-	for i in 2:(size(sfsTemp)[1])
+	@simd for i in 2:(size(sfsTemp)[1])
 
 		app = view(out,i-1,:) .- view(sfsTemp,i-1,:)
 
