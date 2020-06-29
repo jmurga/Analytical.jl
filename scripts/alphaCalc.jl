@@ -1,14 +1,17 @@
 using Analytical, ProgressMeter
-
 # Set up model
-adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500)
+adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500,Lf=2*10^5,B=0.999,alTot=0.4,alLow=0.4)
 Analytical.binomOp(adap)
+# analyticalApproach(adap)[1:1000,:]
+
 
 # # Open empirical data
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
 pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+
+sfs = convert.(Int64,Analytical.cumulativeSfs(sfs))
 
 function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
 	# @threads
@@ -23,10 +26,18 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 		alTot     = rand(collect(0.05:0.01:0.4))
 		alLow     = rand(collect(0.0:0.01:alTot))
 
-		for j in param.bRange
-		# j = 0.999
+		# println((thread=Threads.threadid(), iteration=i))
+		bgsIter(param,afac,bfac,alTot,alLow,div,sfs,output,b,c)
+	end
+end
+
+function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
+
+	for j in param.bRange
+			# j = 0.999
 			param.al = afac; param.be = bfac; 
 			param.alLow = alLow; param.alTot = alTot; param.B = j
+
 			Analytical.set_theta_f(param)
 			theta_f = param.theta_f
 			param.B = 0.999
@@ -43,67 +54,32 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 			Analytical.summaryStatistics(output, z)
 
 		end
-	end
 end
+	
 
 summStats(adap,1,div,sfs,"/home/jmurga/test",100,0.9)
-
+summStats(adap,7200,div,sfs,"/home/jmurga/test",100,0.9)
 
 # Custom function to perform 10^6 random solutions
-function analyticalApproach(iter::Int64)
-	# @threads
-	result = Array{Float64}(undef,iter*17,5)
-	resultNopos = Array{Float64}(undef,iter*17,5)
+function analyticalApproach(param)
 
-	it = 1
-	@showprogress for i in 1:iter
-	# for i in 1:iter
+	Analytical.set_theta_f(param)
+	theta_f = param.theta_f
+	println(theta_f)
+	param.B = 0.999
+	Analytical.set_theta_f(param)
+	Analytical.setPpos(param)
+	param.theta_f = theta_f
+	adap.B = param.B
+	x,y = Analytical.analyticalAlpha(param=param)
 
-		gam_neg   = -457
-		gL        = 10
-		gH        = 500
-
-		fac       = rand(-2:0.05:2)
-		afac      = 0.184*(2^fac)
-		# afac      = 0.184
-		bfac      = 0.000402*(2^fac)
-		# bfac      = 0.000402
-
-		alTot     = rand(collect(0.05:0.01:0.4))
-		alLow     = rand(collect(0.0:0.01:alTot))
-
-
-		for j in adap.bRange
-		# j = 0.999
-
-			Analytical.changeParameters(gam_neg=gam_neg,gL=gL,gH=gH,alLow=alLow,alTot=alTot,theta_f=1e-3,theta_mid_neutral=1e-3,al=afac,be=bfac,B=j,bRange=adap.bRange,pposL=0.001,pposH=0.0,N=1000,n=661,Lf=10^6,rho=adap.rho,TE=5.0,diploid=true,convoluteBinomial=false)
-
-			Analytical.set_theta_f()
-			theta_f = adap.theta_f
-			adap.B = 0.999
-			Analytical.set_theta_f()
-			Analytical.setPpos()
-			adap.theta_f = theta_f
-			adap.B = j
-			x1,y1,a1,a2 = Analytical.analyticalAlpha(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH)
-
-			result[it,:] = a1
-			resultNopos[it,:] = a2
-			# x,y,z = alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data,bins=20)
-
-			it = it + 1
-			# summaryStatistics(output, z)
-
-		end
-
-	end
-	return result,resultNopos
+	return hcat(x,y)
 end
 
 a,b=analyticalApproach(100)
 
 dfA = DataFrame(a[a[:,2] .!= 0,:],[:lastValue, :asymp, :c1,:c2,:c3]) |> stack
-dfB = DataFrame(b[b[:,2] .!= 0,:],[:lastValue, :asymp, :c1,:c2,:c3]) |> stack
+dfB = DataFrame(b[xb[:,2] .!= 0,:],[:lastValue, :asymp, :c1,:c2,:c3]) |> stack
 
 p2 = boxplot(["lastValue" "asymp" "90%" "80%" "75%"],b)
 

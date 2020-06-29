@@ -26,37 +26,31 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 	if (data isa String)
 		freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
-		P       = Array{Int64}(undef,1)
-		D       = Array{Int64}(undef,1)
-		sfs     = Array{Int64}(undef, param.nn -1 ,1)
-		summSfs = Array{Int64}(undef, param.nn -1 ,1)
-		# newData = Array{Float64}(undef, 1,24)
-
-		df = read(data,header=false,delim=' ')
-		df = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
-
+		df   = read(data,header=false,delim=' ')
+		df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
 		tmp  = split.(df[:,sfsColumns], ",")
 		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
 		ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
 		# Empirical data to analytical estimations
-		tmpSfs   =  merge(+,pn,ps)
+		tmpSfs   = merge(+,pn,ps)
 		sfs = reduce(vcat,values(merge(+,freq,tmpSfs)))
-		P = [sum(sfs)]
-		D = [convert(Matrix,df[:,divColumns]) |> sum]
-		
-		# Dn, Ds, Pn, Ps, sfs
-		Dn        = sum(df[:,divColumns[1]])
-		Ds        = sum(df[:,divColumns[2]])
-		Pn        = sum(values(pn))
-		Ps        = sum(values(ps))
-		sfsPn     = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins))),1:bins,:)
-		sfsPs     = view(cumulativeSfs(permutedims(reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins))),1:bins,:)
-		α         = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=4)
-		newData   = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+		P     = sum(sfs)
+		D     = convert(Matrix,df[:,divColumns]) |> sum
 
-		write(output * ".tsv", newData, delim='\t',writeheader=false)
-		return [P,reduceSfs(reduce(vcat,values(tmpSfs)),bins),D]
+		# Dn, Ds, Pn, Ps, sfs
+		Dn           = sum(df[:,divColumns[1]])
+		Ds           = sum(df[:,divColumns[2]])
+		Pn           = sum(values(pn))
+		Ps           = sum(values(ps))
+		sfsPn        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,pn)))),bins)'
+		sfsPs        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))),bins)'
+		α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
+		newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+
+		write(output * ".tsv", newData,delim='\t',writeheader=false)
+
+		return (P,sfs,D)
 	else
 
 		P         = Array{Int64}(undef,length(data))

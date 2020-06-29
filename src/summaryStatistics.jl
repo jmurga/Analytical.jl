@@ -104,8 +104,9 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 		## Alpha from expected values. Used as summary statistics
 		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
 		ssAlpha = round.(ssAlpha,digits=5)
-
-		return expDn,expDs,expPn,expPs,ssAlpha
+		
+		α = @. 1 - ((expDs/expDn)' * (expPn./expPs))
+		return α,expDn,expDs,expPn,expPs,ssAlpha
 	else
 		
 		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (cumulativePn./cumulativePs))
@@ -255,10 +256,13 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	sel = (selH+selL)+selN
 
 	## Outputs
-	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=false,bins=bins)
+	# α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=false,bins=bins)
+	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
+
+	α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
-	expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
-	boolArr = summStat[end,:] .> 0 
+	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);expV=true;bins=bins
+	boolArr = α[end,:] .> 0 
 	
 	while sum(boolArr) < size(summStat,2)
 		id = findall(x ->x == false, boolArr)
@@ -267,9 +271,10 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 			id = id[1]
 		end
 
-		expectedDn[id], expectedDs[id], expectedPn[:,id], expectedPs[:,id], summStat[:,id] = sampledAlpha(d=divergence[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+		tmpAlpha,expectedDn[id], expectedDs[id], expectedPn[:,id], expectedPs[:,id], summStat[:,id] = sampledAlpha(d=divergence[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+		α[:,id] = tmpAlpha
 		# println(summStat)
-		boolArr[id] = summStat[end,id] .> 0 
+		boolArr[id] = tmpAlpha[end,id] .> 0 
 
 	end
 
