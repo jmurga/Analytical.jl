@@ -6,7 +6,7 @@ Analytical.binomOp(adap)
 
 
 # # Open empirical data
-path= "/home/jmurga/mktest/data/";suffix="txt";
+path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
 pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
@@ -58,7 +58,7 @@ end
 	
 
 summStats(adap,1,div,sfs,"/home/jmurga/test",100,0.9)
-summStats(adap,7200,div,sfs,"/home/jmurga/test",100,0.9)
+summStats(adap,7400,div,sfs,"/home/jmurga/test",100,0.9)
 
 # Custom function to perform 10^6 random solutions
 function analyticalApproach(param)

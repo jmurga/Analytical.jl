@@ -272,9 +272,10 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 		end
 
 		tmpAlpha,expectedDn[id], expectedDs[id], expectedPn[:,id], expectedPs[:,id], summStat[:,id] = sampledAlpha(d=divergence[id],afs=sfs[:,id],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),expV=true,bins=bins)
+		tmpAlpha = view(tmpAlpha,1:trunc(Int64,param.nn*cutoff),:)
 		α[:,id] = tmpAlpha
 		# println(summStat)
-		boolArr[id] = tmpAlpha[end,id] .> 0 
+		boolArr[id] = α[end,id] .> 0 
 
 	end
 
@@ -295,7 +296,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	sel_nopos = selN
 
 	## Outputs
-	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=false)
+	α_nopos, expectedDn_nopos, expectedDs_nopos, expectedPn_nopos, expectedPs_nopos, summStat  = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=true)
 	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
 
 	##########
@@ -311,7 +312,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 
 	alphas = round.(summaryAlpha(view(α,size(α,1),:),view(α_nopos,size(α_nopos,1),:)),digits=5)
-	alphas = repeat(alphas,outer=[2,1])
+	# alphas = repeat(alphas,outer=[2,1])
 
 	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
 
