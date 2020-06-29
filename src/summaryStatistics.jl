@@ -299,6 +299,14 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α_nopos, expectedDn_nopos, expectedDs_nopos, expectedPn_nopos, expectedPs_nopos, summStat  = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=true)
 	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
 
+	alBoolArray = α_nopos[end,:] .> α[end,:]
+	while sum(alBoolArray) < size(α,2)
+		α_nopos, expectedDn_nopos, expectedDs_nopos, expectedPn_nopos, expectedPs_nopos, summStat  = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=true)
+		α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
+	
+		alBoolArray = α_nopos[end,:] .> α[end,:]
+
+	end
 	##########
 	# Output #
 	##########
