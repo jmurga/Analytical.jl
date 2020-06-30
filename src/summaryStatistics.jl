@@ -101,10 +101,9 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
 		ssAlpha = round.(ssAlpha,digits=5)
 		
-		tmp = @. 1 - ((expDs/expDn)' * (expPn/expPs))
-		α   = tmp[1189,1]
+		αS = @. 1 - ((expDs/expDn)' * (expPn/expPs))
 
-		return α,expDn,expDs,expPn,expPs,ssAlpha
+		return αS,expDn,expDs,expPn,expPs,ssAlpha
 	else
 		
 		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (pn./ps))
@@ -134,6 +133,7 @@ function resampleByIndex(;param::parameters,bArr::BitArray{1},alpha::Array{Float
 		tmpAlpha = @. 1 - ((Ds[id]/Dn[id])' * (tmpPn/tmpPs))
 		alpha[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
 		bArr[id,:] = alpha[id,:] .> 0 
+		
 	end
 
 	return alpha,stats
@@ -256,6 +256,72 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
 function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN     = param.B*fixNeut(param)
+	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
+
+	ds = fN
+	dn = fNeg + fPosL + fPosH
+
+	## Polymorphism
+	neut = DiscSFSNeutDown(param)
+
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH);
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
+
+	sel = (selH+selL)+selN;
+
+	cumulativePs = cumulativeSfs(neut)[:,1]
+	cumulativePn = cumulativeSfs(sel)[:,1]
+
+	## Outputs
+	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=false,bins=bins)
+	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
+	
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos     = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
+
+	ds_nopos = fN_nopos
+	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+
+	## Polymorphism
+	sel_nopos = selN
+	cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
+
+	## Outputs
+	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn_nopos),expV=false,bins=bins)
+	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
+	
+	##########
+	# Output #
+	##########
+	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
+
+	alphas = round.(hcat(α[end], α_nopos[end] .- α[end], α_nopos[end]),digits=5)
+	alphas = repeat(alphas,outer=[2,1])
+
+	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
+
+	return (α,α_nopos,expectedValues)
+end
+
+function alphaByFrequenciesSampled(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
