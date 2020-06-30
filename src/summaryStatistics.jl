@@ -288,7 +288,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
 	# α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
-	expDn, expDs    = poissonFixation(observedValues=d,λds=ds,λdn=dn);
+	expDn, expDs    = poissonFixation(observedValues=divergence,λds=ds,λdn=dn);
 	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=cumulativePs,λpn=cumulativePn);
 	reduceExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:);
 	reduceExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:);

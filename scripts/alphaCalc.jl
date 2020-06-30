@@ -5,7 +5,7 @@ Analytical.binomOp(adap)
 # analyticalApproach(adap)[1:1000,:]
 
 
-# # Open empirical data
+## Open empirical data
 path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
