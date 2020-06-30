@@ -58,7 +58,7 @@ end
 	
 
 summStats(adap,1,div,sfs,"/home/jmurga/test",100,0.9)
-summStats(adap,7200,div,sfs,"/home/jmurga/test",100,0.9)
+summStats(adap,7400,div,sfs,"/home/jmurga/test",100,0.9)
 # Custom function to perform 10^6 random solutions
 function analyticalApproach(param)
 

@@ -113,6 +113,31 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 	end
 end
 
+function resampleByIndex(;param::parameters,bArr::BitArray{1},alpha::Array{Float64,1},afs::Array{Int64,2},pn::Array{Float64,1},ps::Array{Float64,1},Pn::Array{Int64,2},Ps::Array{Int64,2},Dn::Array{Int64,1},Ds::Array{Int64,1},stats::Array{Float64,2},bins::Int64,cutoff::Float64)
+	
+	while sum(bArr) < size(alpha,1)
+		id = findall(x ->x == false, bArr)
+	
+		if size(id,1) < 2
+			id = id[1]
+		end
+	
+		tmpPn, tmpPs    = poissonPolymorphism(observedValues=afs[:,id],λps=ps,λpn=pn)
+
+		Pn[:,id] = tmpPn; Ps[:,id] = tmpPs;
+		reduceExpPn = view(reduceSfs(tmpPn,bins)',1:bins,:);
+		reduceExpPs = view(reduceSfs(tmpPs,bins)',1:bins,:);
+	
+		stats[:,id] = @. 1 - ((expDs[id]/expDn[id])' * (reduceExpPn./reduceExpPs));
+		stats = round.(stats,digits=5);
+
+		tmpAlpha = @. 1 - ((Ds[id]/Dn[id])' * (tmpPn/tmpPs))
+		alpha[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
+		bArr[id,:] = alpha[id,:] .> 0 
+	end
+
+	return alpha,stats
+end
 
 """
 	alphaByFrequencies(gammaL,gammaH,pposL,param.pposH,data,nopos)
@@ -269,34 +294,14 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	## Alpha from expected values. Used as summary statistics
 	summStat = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
-	summStat = round.(summStat,digits=5);
+	summStat = round.(summStat,digits=5)
 	
 	tmp = @. 1 - ((expDs/expDn)' * (expPn/expPs));
-	α = @view tmp[trunc(Int64,param.nn*cutoff),:]
+	α = tmp[trunc(Int64,param.nn*cutoff),:]
 
 	boolArr = (α .> 0) .& (α .< param.alTot)
 
-	while sum(boolArr) < size(summStat,2)
-		id = findall(x ->x == false, boolArr)
-		
-		if size(id,1) < 2
-			id = id[1]
-		end
-	
-		tmpPn, tmpPs    = poissonPolymorphism(observedValues=sfs[:,id],λps=cumulativePs,λpn=cumulativePn)
-
-		expPn[:,id] = tmpPn; expPs[:,id] = tmpPs;
-
-		tmpAlpha = @. 1 - ((expDs[id]/expDn[id])' * (tmpPn/tmpPs))
-
-		summStat = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
-		summStat = round.(summStat,digits=5);
-		
-		α[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
-		# println(summStat)
-		boolArr[id,:] = α[id,:] .> 0 
-
-	end
+	α, summStat = resampleByIndex(param=param,bArr=boolArr,alpha=α,afs=sfs,pn=cumulativePn,ps=cumulativePs,Pn=expPn,Ps=expPs,Dn=expDn,Ds=expDs,stats=summStat,bins=bins,cutoff=cutoff)
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -318,26 +323,29 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	expPn_nopos, expPs_nopos    = poissonPolymorphism(observedValues=sfs,λps=cumulativePs,λpn=cumulativePn_nopos)
 
 	tmp_nopos = @. 1 - ((expDs/expDn)' * (expPn_nopos/expPs_nopos))
-	α_nopos = @view tmp_nopos[trunc(Int64,param.nn*cutoff),:]
+	α_nopos = tmp_nopos[trunc(Int64,param.nn*cutoff),:]
 	
-	# alBoolArray j== α_nopos[end,:] .> α[end,:]
-	# while sum(alBoolArray) < size(α,2)
-	# 	α_nopos, expectedDn_nopos, expectedDs_nopos, expectedPn_nopos, expectedPs_nopos, summStat  = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(neut,sel_nopos),expV=true)
-	# 	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
-	
-	# 	alBoolArray = α_nopos[end,:] .> α[end,:]
+	alBoolArr = α_nopos .> α
 
-	# end
+	while sum(alBoolArr) < size(α_nopos,1)
+		id = findall(x ->x == false, alBoolArr)
+	
+		if size(id,1) < 2
+			id = id[1]
+		end
+	
+		tmpPn, tmpPs = poissonPolymorphism(observedValues=sfs[:,id],λps=cumulativePs,λpn=cumulativePn_nopos)
+		expPn_nopos[:,id] = tmpPn; expPs_nopos[:,id] = tmpPs;
+
+		tmpAlpha = @. 1 - ((expDs[id]/expDn[id])' * (tmpPn/tmpPs))
+		α_nopos[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
+		alBoolArr[id,:] = α_nopos[id,:] .> α[id,:]
+
+	end
+
 	##########
 	# Output #
 	##########
-	# Handling error to return any array size
-	# Dn,Ds,Pn,Ps = try
-	# 	permutedims(expectedDn),permutedims(expectedDs),permutedims(sum(expectedPn,dims=1)),permutedims(sum(expectedPs,dims=1))
-	# catch err
-	# 	expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
-	# end
-
 	Dn,Ds,Pn,Ps = expDn,expDs,sum(view(expPn,1,:),dims=2),sum(view(expPs,1,:),dims=2)
 
 	alphas = round.(hcat(α, α_nopos .- α, α_nopos),digits=5)
