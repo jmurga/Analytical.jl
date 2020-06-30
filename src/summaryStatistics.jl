@@ -114,32 +114,6 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 end
 
 
-function newSampling(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
-
-	# Return expected values or not. Not using in no_pos
-	if expV
-		## Outputs
-		expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
-		expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
-		cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:)
-		cumulativeExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:)
-
-		## Alpha from expected values. Used as summary statistics
-		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
-		ssAlpha = round.(ssAlpha,digits=5)
-		
-		tmp = @. 1 - ((expDs/expDn)' * (expPn/expPs))
-		α   = tmp[1189,1]
-
-		return α,expDn,expDs,expPn,expPs,ssAlpha
-	else
-		
-		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (pn./ps))
-
-		return α
-	end
-end
-
 """
 	alphaByFrequencies(gammaL,gammaH,pposL,param.pposH,data,nopos)
 
@@ -289,20 +263,18 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	# α, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
 	expDn, expDs    = poissonFixation(observedValues=divergence,λds=ds,λdn=dn);
-	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=cumulativePs,λpn=cumulativePn);
+	expPn, expPs    = poissonPolymorphism(observedValues=sfs,λps=cumulativePs,λpn=cumulativePn);
 	reduceExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:);
 	reduceExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:);
 
 	## Alpha from expected values. Used as summary statistics
-	ssAlpha = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
-	ssAlpha = round.(ssAlpha,digits=5);
+	summStat = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
+	summStat = round.(summStat,digits=5);
 	
 	tmp = @. 1 - ((expDs/expDn)' * (expPn/expPs));
-	α = @view tmp[trunc(Int64,param.nn*cutoff),:];
-	α 
-	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
+	α = @view tmp[trunc(Int64,param.nn*cutoff),:]
 
-	boolArr = α .> 0 
+	boolArr = (α .> 0) .& (α .< param.alTot)
 
 	while sum(boolArr) < size(summStat,2)
 		id = findall(x ->x == false, boolArr)
@@ -311,9 +283,14 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 			id = id[1]
 		end
 	
-		expPn, expPs    = poissonPolymorphism(observedValues=afs[:,id],λps=cumulativePs,λpn=cumulativePn)
-		
-		tmpAlpha = @. 1 - ((expDs[id]/expDn[id])' * (expPn/expPs))
+		tmpPn, tmpPs    = poissonPolymorphism(observedValues=sfs[:,id],λps=cumulativePs,λpn=cumulativePn)
+
+		expPn[:,id] = tmpPn; expPs[:,id] = tmpPs;
+
+		tmpAlpha = @. 1 - ((expDs[id]/expDn[id])' * (tmpPn/tmpPs))
+
+		summStat = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
+		summStat = round.(summStat,digits=5);
 		
 		α[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
 		# println(summStat)
@@ -334,13 +311,11 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
 
 	## Polymorphism
-	# sel_nopos = view(selN,1:lastindex(selN)-1,:)
 	sel_nopos = selN
 	cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
 
 	## Outputs
-	# α_nopos, expectedDn_nopos, expectedDs_nopos, expectedPn_nopos, expectedPs_nopos, summStat_nopos  = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds_nopos,dn_nopos),λpol=hcat(cumulativePs,cumulativePn_nopos),expV=true)
-	expPn_nopos, expPs_nopos    = poissonPolymorphism(observedValues=afs,λps=cumulativePs,λpn=cumulativePn_nopos)
+	expPn_nopos, expPs_nopos    = poissonPolymorphism(observedValues=sfs,λps=cumulativePs,λpn=cumulativePn_nopos)
 
 	tmp_nopos = @. 1 - ((expDs/expDn)' * (expPn_nopos/expPs_nopos))
 	α_nopos = @view tmp_nopos[trunc(Int64,param.nn*cutoff),:]
@@ -363,7 +338,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	# 	expectedDn,expectedDs,sum(expectedPn,dims=1),sum(expectedPs,dims=1)
 	# end
 
-	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
+	Dn,Ds,Pn,Ps = expDn,expDs,sum(view(expPn,1,:),dims=2),sum(view(expPs,1,:),dims=2)
 
 	alphas = round.(hcat(α, α_nopos .- α, α_nopos),digits=5)
 	# alphas = repeat(alphas,outer=[2,1])
