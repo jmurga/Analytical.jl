@@ -128,7 +128,7 @@ function resampleByIndex(;param::parameters,bArr::BitArray{1},alpha::Array{Float
 		reduceExpPn = view(reduceSfs(tmpPn,bins)',1:bins,:);
 		reduceExpPs = view(reduceSfs(tmpPs,bins)',1:bins,:);
 	
-		stats[:,id] = @. 1 - ((expDs[id]/expDn[id])' * (reduceExpPn./reduceExpPs));
+		stats[:,id] = @. 1 - ((Ds[id]/Dn[id])' * (reduceExpPn./reduceExpPs));
 		stats = round.(stats,digits=5);
 
 		tmpAlpha = @. 1 - ((Ds[id]/Dn[id])' * (tmpPn/tmpPs))
@@ -321,12 +321,10 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	## Outputs
 	expPn_nopos, expPs_nopos    = poissonPolymorphism(observedValues=sfs,λps=cumulativePs,λpn=cumulativePn_nopos)
-
 	tmp_nopos = @. 1 - ((expDs/expDn)' * (expPn_nopos/expPs_nopos))
 	α_nopos = tmp_nopos[trunc(Int64,param.nn*cutoff),:]
 	
 	alBoolArr = α_nopos .> α
-
 	while sum(alBoolArr) < size(α_nopos,1)
 		id = findall(x ->x == false, alBoolArr)
 	
