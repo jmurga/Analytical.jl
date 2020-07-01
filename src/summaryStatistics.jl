@@ -186,18 +186,11 @@ function analyticalAlpha(;param::parameters)
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
 
-	# if (isnan(sel[1]))
-	# 	sel[1]=0
-	# elseif(isnan(sel[end]))
-	# 	sel[end]=0
-	# end
-
-	ps = similar(neut); pn = similar(neut)
-	ps .= @. neut / (sel+neut)
-	pn .= @. sel / (sel+neut)
+	# ps = @. neut / (sel+neut)
+	# pn = @. sel / (sel+neut)
 
 	## Outputs
-	α = @. 1 - ((fN/(fPosL + fPosH +  fNeg + 0.0)) * (sel/neut))
+	α = @. 1 - ((ds/dn) * (sel/neut))
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -213,24 +206,15 @@ function analyticalAlpha(;param::parameters)
 
 	## Polymorphism
 	sel_nopos = selN
-	ps_nopos  = similar(neut); pn_nopos = similar(neut)
-	ps_nopos .= @. neut / (sel_nopos + neut)
-	pn_nopos .= @. sel_nopos / (sel_nopos + neut)
+	ps_nopos = @. neut / (sel_nopos + neut)
+	pn_nopos = @. sel_nopos / (sel_nopos + neut)
 
-	α_nopos = 1 .- (fN_nopos/(fPosL_nopos + fPosH_nopos +  fNeg_nopos + 0.0)) .* (sel_nopos./neut)
+	α_nopos = 1 .- (ds_nopos/dn_nopos) .* (sel_nopos./neut)
 
 	##########
 	# Output #
 	##########
-	# Asymp values
-	# alphas = hcat(α,α_nopos)
-	# asymp1 = asympFit(α,1.0)
-	# asymp2 = asympFit(α_nopos,1.0)
 	
-	# c1 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.9)),:)
-	# c2 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.8)),:)
-	# c3 = view(alphas,convert(Int64,ceil(size(alphas,1)*0.75)),:)
-
 	return (α,α_nopos)
 	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
@@ -306,7 +290,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	## Outputs
 	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn_nopos),expV=false,bins=bins)
-	α_nopos = view(α_nopos,1:trunc(Int64,param.nn*cutoff),:)
+	# α_nopos = view(α_nopos,1:trunc(Int64,param.nn * cutoff),:)
 	
 	##########
 	# Output #
