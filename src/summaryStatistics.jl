@@ -85,32 +85,25 @@ function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2
 	return (sampledPn, sampledPs)
 end
 
-function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},expV::Bool,bins::Int64=20)
+function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
 
 	pn = λpol[:,2]
 	ps = λpol[:,1]
-	# Return expected values or not. Not using in no_pos
-	if expV
 
-		## Outputs
-		expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
-		expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
-		cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:)
-		cumulativeExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:)
+	## Outputs
+	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
+	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
+	cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:)
+	cumulativeExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:)
 
-		## Alpha from expected values. Used as summary statistics
-		ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
-		ssAlpha = round.(ssAlpha,digits=5)
-		
-		αS = @. 1 - ((expDs/expDn)' * (expPn/expPs))
+	## Alpha from expected values. Used as summary statistics
+	ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
+	ssAlpha = round.(ssAlpha,digits=5)
+	
+	αS = @. 1 - ((expDs/expDn)' * (expPn/expPs))
 
-		return αS,expDn,expDs,expPn,expPs,ssAlpha
-	else
-		
-		α = 1 .- (((λdiv[1])./(λdiv[2])) .* (pn./ps))
+	return αS,expDn,expDs,expPn,expPs,ssAlpha
 
-		return α
-	end
 end
 
 function resampleByIndex(;param::parameters,bArr::BitArray{1},alpha::Array{Float64,1},afs::Array{Int64,2},pn::Array{Float64,1},ps::Array{Float64,1},Pn::Array{Int64,2},Ps::Array{Int64,2},Dn::Array{Int64,1},Ds::Array{Int64,1},stats::Array{Float64,2},bins::Int64,cutoff::Float64)
@@ -261,17 +254,16 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	selH = DiscSFSSelPosDown(param,param.gH,param.pposH);
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
-	sel = (selH+selL)+selN;
-
-	cumulativePs = cumulativeSfs(neut)[:,1]
-	cumulativePn = cumulativeSfs(sel)[:,1]
+	neut, selH, selL, selN = splitColumns(tmp)
+	sel = (selH+selL)+selN
 
 	## Outputs
-	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=false,bins=bins)
+	α = @. 1 - (ds/dn) * (sel/neut)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),bins=bins)
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -284,24 +276,25 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	ds_nopos = fN_nopos
 	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+	dnS_nopos = dn_nopos - fPosL_nopos
 
 	## Polymorphism
 	sel_nopos = selN
-	cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
+	# cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
 
 	## Outputs
-	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn_nopos),expV=false,bins=bins)
-	# α_nopos = view(α_nopos,1:trunc(Int64,param.nn * cutoff),:)
-	
+	αW = param.alLow/param.alTot
+	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	αW_nopos = α_nopos * αW
+	αS_nopos  =  α_nopos - αW_nopos
+		
 	##########
 	# Output #
 	##########
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
-
-	# alphas = round.(hcat(α[end], α_nopos[end] .- α[end], α_nopos[end]),digits=5)
-	# alphas = repeat(alphas,outer=[2,1])	
-	alphas = hcat(param.alLow,param.alTot-param.alLow,param.alTot)
-	alphas = repeat(alphas,outer=[2,1])
+	
+	alphas = round.(hcat(α_nopos[end] .- αS_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)
+	alphas = repeat(alphas,outer=[2,1])	
 
 	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
 
