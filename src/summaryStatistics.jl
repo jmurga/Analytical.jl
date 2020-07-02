@@ -264,7 +264,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α = @. 1 - (ds/dn) * (sel/neut)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),bins=bins)
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
