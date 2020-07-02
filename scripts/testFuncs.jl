@@ -1,5 +1,5 @@
 # Open empirical data
-param = parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.8,alLow=0.4) ;binomOp(param)
+param = parameters(N=1000,n=661,B=0.2,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.15) ;binomOp(param)
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
 # path= "/home/jmurga/mktest/data/";suffix="txt";
 # files = path .* filter(x -> occursin(suffix,x), readdir(path))
@@ -52,7 +52,6 @@ function analyticalAlpha(;param::parameters)
 	## Outputs
 	α = @. 1 - ((ds/dn) * (sel/neut))
 
-
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -72,7 +71,6 @@ function analyticalAlpha(;param::parameters)
 	α_nopos  = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 	αW_nopos = α_nopos * αW
 	αS_nopos  =  α_nopos - αW_nopos
-
     
 	##########
 	# Output #

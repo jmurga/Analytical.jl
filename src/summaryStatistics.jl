@@ -255,6 +255,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
@@ -287,7 +288,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 	αW_nopos = α_nopos * αW
 	αS_nopos  =  α_nopos - αW_nopos
-		
+
 	##########
 	# Output #
 	##########
