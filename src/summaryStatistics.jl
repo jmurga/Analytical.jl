@@ -91,6 +91,7 @@ function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},
 	ps = λpol[:,1]
 	# Return expected values or not. Not using in no_pos
 	if expV
+
 		## Outputs
 		expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 		expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
@@ -271,7 +272,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
 	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
-
+	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -297,7 +298,9 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	##########
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 
-	alphas = round.(hcat(α[end], α_nopos[end] .- α[end], α_nopos[end]),digits=5)
+	# alphas = round.(hcat(α[end], α_nopos[end] .- α[end], α_nopos[end]),digits=5)
+	# alphas = repeat(alphas,outer=[2,1])	
+	alphas = hcat(param.alLow,param.alTot-param.alLow,param.alTot)
 	alphas = repeat(alphas,outer=[2,1])
 
 	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)

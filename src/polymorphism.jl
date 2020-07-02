@@ -199,3 +199,19 @@ function cumulativeSfs(sfsTemp::Array)
 
 	return out
 end
+
+
+function reduceSfs(sfsTemp,bins)
+
+	freq  = collect(0:size(sfsTemp,1)-1)/size(sfsTemp,1)
+	h1    = fit(Histogram,freq,0:(1/bins):1)
+	xmap1 = StatsBase.binindex.(Ref(h1), freq)
+
+	tmp = hcat(sfsTemp,xmap1)
+	out = Array{Int64}(undef,bins,size(sfsTemp,2))
+	for i in unique(xmap1)
+		out[i,:] = sum(tmp[tmp[:,end] .== i,1:end-1],dims=1)
+	end
+
+	return (permutedims(out))
+end
