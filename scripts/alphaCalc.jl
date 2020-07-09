@@ -24,10 +24,12 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 		bfac      = 0.000402*(2^fac)
 		
 		alTot     = rand(collect(0.05:0.01:0.4))
-		alLow     = rand(collect(0.0:0.01:alTot))
+		lfac      = rand(collect(0.1:0.1:1))
+		alLow     = round(alTot * lfac,digits=2)
 
 		# println((thread=Threads.threadid(), iteration=i))
 		bgsIter(param,afac,bfac,alTot,alLow,div,sfs,output,b,c)
+		
 	end
 end
 

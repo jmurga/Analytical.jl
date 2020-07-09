@@ -20,23 +20,23 @@ Divergence sampling from º distribution. The expected neutral and selected fixa
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Union{Int64,Array{Int64,1}}, λds::Float64, λdn::Float64)
+function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64)
 
 	ds = λds / (λds + λdn)
 	dn = λdn / (λds + λdn)
 
 	# poissonS  = (ds .* observedValues) .|> Poisson
 	# poissonD  = (dn .* observedValues) .|> Poisson
-	sampledDs  = PoissonRandom.pois_rand.(ds .* observedValues)
-	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues) 
-
 	# sampledDs = rand.(poissonS,1)
 	# sampledDn = rand.(poissonD,1)
 
+	sampledDs  = PoissonRandom.pois_rand.(ds .* observedValues)
+	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues) 
 
-	out = reduce(vcat,sampledDn),reduce(vcat,sampledDs)
+	out = sampledDn, sampledDs
 	return out
 end
+
 """
 	poissonPolymorphism(observedValues,λps,λpn)
 
@@ -60,7 +60,7 @@ The success rate managing the Poisson distribution by the observed count each fr
  - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2}}, λps::Array{Float64,1}, λpn::Array{Float64,1})
+function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λpn::Array{Float64,1})
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
@@ -85,7 +85,7 @@ function poissonPolymorphism(;observedValues::Union{Array{Int64,1},Array{Int64,2
 	return (sampledPn, sampledPs)
 end
 
-function sampledAlpha(;d::Union{Int64,Array{Int64,1}},afs::Union{Array{Int64,1},Array{Int64,2}},λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
+function sampledAlpha(;d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
 
 	pn = λpol[:,2]
 	ps = λpol[:,1]
@@ -233,7 +233,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
+function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins::Int64,cutoff::Float64)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -264,8 +264,8 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	α = @. 1 - (ds/dn) * (sel/neut)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
-	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
+	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -287,22 +287,23 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	αW = param.alLow/param.alTot
 	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 	αW_nopos = α_nopos * αW
-	αS_nopos  =  α_nopos * (1 - αW)
+	αS_nopos =  α_nopos * (1 - αW)
 
 	##########
 	# Output #
 	##########
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 	
-	alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)
-	alphas = repeat(alphas,outer=[2,1])	
+	# alphas = round.(hcat(param.alTot - alLow, param.alLow, param.alTot),digits=5)
+	alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*0.9),:], αS_nopos[trunc(Int64,param.nn*0.9),:], α_nopos[trunc(Int64,param.nn*0.9),:]),digits=5)	
+	alphas = repeat(alphas,outer=[size(div,1),1])	
 
-	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(summStat)),makeunique=true)
+	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
 
 	return (α,α_nopos,expectedValues)
 end
 
-function alphaByFrequenciesSampled(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
+function alphaByFrequenciesSampled(param::parameters,divergence::Array,sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #

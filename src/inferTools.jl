@@ -50,7 +50,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 
 		write(output * ".tsv", newData,delim='\t',writeheader=false)
 
-		return (P,sfs,D)
+		return ([P],sfs,[D])
 	else
 
 		P         = Array{Int64}(undef,length(data))

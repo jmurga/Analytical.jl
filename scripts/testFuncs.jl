@@ -146,3 +146,20 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 
 	return (α,α_nopos,expectedValues)
 end
+
+
+
+# function setPpos()
+#  	sc          = pyimport("scipy.optimize")
+# 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
+
+# 	if pposL < 0.0
+# 	 	pposL = 0.0
+# 	end
+# 	if pposH < 0.0
+# 		pposH = 0.0
+#    end
+# 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
+
+# 	param.pposL,param.pposH = pposL, pposH
+# end

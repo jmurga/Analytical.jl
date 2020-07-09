@@ -242,19 +242,3 @@ function phiReduction(param::parameters,gammaValue::Int64)
 	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 	return out
 end
-
-
-# function setPpos()
-#  	sc          = pyimport("scipy.optimize")
-# 	pposL,pposH = sc.fsolve(solvEqns,(0.0,0.0))
-
-# 	if pposL < 0.0
-# 	 	pposL = 0.0
-# 	end
-# 	if pposH < 0.0
-# 		pposH = 0.0
-#    end
-# 	# Scipy probably cannot solve due to floats, Julia does so I implemented the same version forcing from the original results
-
-# 	param.pposL,param.pposH = pposL, pposH
-# end
