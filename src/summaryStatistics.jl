@@ -258,7 +258,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 
 	## Outputs
 	# αW = param.alLow/param.alTot
-	# α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 	# αW_nopos = α_nopos * αW
 	# αS_nopos =  α_nopos * (1 - αW)
 
