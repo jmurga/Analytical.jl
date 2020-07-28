@@ -21,7 +21,7 @@ import Parameters: @with_kw
 	Lf::Int64                  = 10^6
 	rho::Float64               = 0.001
 	TE::Float64                = 5.0
-	diploid::Bool			   = false
+	diploid::Bool              = false
 
 	NN::Int64 = 2*N
 	nn::Int64 = 2*n

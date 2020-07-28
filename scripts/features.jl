@@ -2,19 +2,19 @@ using QuadGK
 using SpecialFunctions
 using Roots
 
-function GammaDist(gamma)
+function Gammadist(gamma)
 	return ((adap.be^adap.al)/SpecialFunctions.gamma(adap.al))*(gamma^(adap.al-1))*exp(-adap.be*gamma)
 end
 
-function PiP0(gamma)
+function pip0(gamma)
 	U = 4*adap.theta_f*adap.Lf/(2.0*adap.NN)
 	R = 2*adap.Lf*adap.rho/(2.0*adap.NN)
-	return GammaDist(gamma)*exp(-(GammaDist(gamma)*U/(2.0*adap.NN))/(gamma/(adap.NN+0.0)+R/(2.0*adap.NN)))
+	return Gammadist(gamma)*exp(-(Gammadist(gamma)*U/(2.0*adap.NN))/(gamma/(adap.NN+0.0)+R/(2.0*adap.NN)))
 end
 
-function intPiP0()
+function intpip0()
 
-	f(gam) = PiP0(gam)
+	f(gam) = pip0(gam)
 	return QuadGK.quadgk(f,0,1000)[1]
 end
 
@@ -65,3 +65,46 @@ function get_B_vals()
 	end
 	return ret
 end
+
+
+function eMKT(sfs, div, m,cutoff):
+
+	p_0 = convert(Integer,sfs[:,3] |> sum)
+    p_i = convert(Integer,sfs[:,2] |> sum)
+    d_0 = convert(Integer,div[2])
+    d_i = convert(Integer,div[1])
+    m_0 = convert(Integer,m[2])
+ 	m_i = convert(Integer,m[1])
+
+    # divergence metrics
+    ka = di / mi
+    ks = d0 / m0
+    omega = ka/ks
+
+    ### Estimating alpha with pi/p0 ratio
+    piMinus   = sfs[sfs[:,1] .<= cutoff,2] |> sum
+    piGreater = sfs[sfs[:,1] .> cutoff,2] |> sum
+    p0Minus   = sfs[sfs[:,1] .<= cutoff,3] |> sum
+    p0Greater = sfs[sfs[:,1] .> cutoff,3] |> sum
+
+	ratiop0 = p0Minus / p0Greater
+	
+    deleterious = piMinus - (piGreater * ratiop0)
+    piNeutral   = convert(Integer,round(p_i - deleterious))
+
+    alpha = 1 - (((p_i - deleterious) / p_0) * (d_0 / d_i))
+
+    ## Estimation of b: weakly deleterious
+    b = (deleterious / p_0) * (m0 / mi)
+
+    ## Estimation of f: neutral sites
+    f = (m0 * piNeutral) / (mi * p_0)
+
+    ## Estimation of d, strongly deleterious sites
+    d = 1 - (f + b)
+
+    # pvalue =  HypothesisTests.FisherExactTest(p_0, d_0, piNeutral, d_i)
+
+
+    return alpha
+

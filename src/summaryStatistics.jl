@@ -257,19 +257,18 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
 
 	## Outputs
-	αW = param.alLow/param.alTot
-	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	αW_nopos = α_nopos * αW
-	αS_nopos =  α_nopos * (1 - αW)
+	# αW = param.alLow/param.alTot
+	# α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	# αW_nopos = α_nopos * αW
+	# αS_nopos =  α_nopos * (1 - αW)
 
 	##########
 	# Output #
 	##########
 	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 	
-	# alphas = round.(hcat(param.alTot - alLow, param.alLow, param.alTot),digits=5)
-	alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)	
-	# alphas = round.(hcat(param.alLow, param.alTot-param.alLow,param.alTot),digits=5)	
+	alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
+	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)	
 	alphas = repeat(alphas,outer=[size(divergence,1),1])	
 
 	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
@@ -302,16 +301,18 @@ function asympFit(alphaValues::Array{Float64,1})
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
 	
 	# Fit values
-	fitted   = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
-	asymp    = asympModel(size(alphaValues,1),fitted.param)
+	fitted1   = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
 
+	fitted2   = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
 
-	# ciLow, ciHigh   = try
-	# 	LsqFit.confidence_interval(fitted)[1][1],LsqFit.confidence_interval(fitted)[1][2]
-	# catch err
-	# 	(0.0,0.0)
-	# end
+	asymp    = asympModel(size(alphaValues,1),fitted2.param)
 
-	# return [asymp ciLow ciHigh]
-	return asymp
+	ciLow, ciHigh   = try
+		LsqFit.confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]
+	catch err
+		(0.0,0.0)
+	end
+
+	return [asymp ciLow ciHigh]
+	# return asymp
 end
