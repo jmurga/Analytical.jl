@@ -257,21 +257,23 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
 
 	## Outputs
-	# αW = param.alLow/param.alTot
+	αW = param.alLow/param.alTot
 	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	# αW_nopos = α_nopos * αW
-	# αS_nopos =  α_nopos * (1 - αW)
+	αW_nopos = α_nopos * αW
+	αS_nopos =  α_nopos * (1 - αW)
 
 	##########
 	# Output #
 	##########
-	Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
+	# Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
 	
-	alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
+	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
 	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)	
+	alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)	
 	alphas = repeat(alphas,outer=[size(divergence,1),1])	
 
-	expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
+	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
+	expectedValues = hcat(DataFrame(alphas),DataFrame(permutedims(alxSummStat)),makeunique=true)
 
 	return (α,α_nopos,expectedValues)
 end

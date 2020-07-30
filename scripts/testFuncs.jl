@@ -1,8 +1,8 @@
 # Open empirical data
 param = parameters(N=1000,n=661,B=0.2,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.15) ;binomOp(param)
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
-# path= "/home/jmurga/mktest/data/";suffix="txt";
-# files = path .* filter(x -> occursin(suffix,x), readdir(path))
+path= "/home/jmurga/mktest/data/";suffix="txt";
+files = path .* filter(x -> occursin(suffix,x), readdir(path))
 j = param.B
 set_theta_f(param)
 theta_f = param.theta_f
