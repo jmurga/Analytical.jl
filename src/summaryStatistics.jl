@@ -292,7 +292,7 @@ end
 function summaryStatistics(fileName::String,summStats)
 
 	for i in 1:size(summStats,1)
-		write(fileName * string(i) * ".tsv", summStats[i:i,:], delim='\t', append=true)
+		write(fileName * "_" * string(i) * ".tsv", summStats[i:i,:], delim='\t', append=true)
 	end
 
 end
