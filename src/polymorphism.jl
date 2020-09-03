@@ -200,7 +200,7 @@ function cumulativeSfs(sfsTemp::Array)
 	return out
 end
 
-function reduceSfs(sfsTemp::Array{Float64,1},bins::Array{Float64,1})
+function reduceSfs(sfsTemp::Array{Float64,2},bins::Array{Float64,1})
 
 	freq  = collect(0:size(sfsTemp,1)-1)/size(sfsTemp,1)
 	h1    = fit(Histogram,freq,0:(1/bins):1)
