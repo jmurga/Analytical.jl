@@ -85,7 +85,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 	return (sampledPn, sampledPs)
 end
 
-function sampledAlpha(;d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
+function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
 
 	pn = λpol[:,2]
 	ps = λpol[:,1]
@@ -244,7 +244,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
 	
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
