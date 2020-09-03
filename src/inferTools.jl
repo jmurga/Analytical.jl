@@ -46,7 +46,8 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 		sfsPn        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,pn)))),bins)'
 		sfsPs        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))),bins)'
 		α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
-		newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+		# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+		newData      = DataFrame(permutedims(α))
 
 		write(output * ".tsv", newData,delim='\t',writeheader=false)
 
@@ -82,7 +83,8 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			sfsPn        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,pn)))),bins)'
 			sfsPs        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))),bins)'
 			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
-			newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+			# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
+			newData      = DataFrame(permutedims(α))
 
 			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 

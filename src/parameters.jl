@@ -152,12 +152,12 @@ function setPpos(param::parameters)
 		F[1] = alphaExpSimTot(param,x[1],x[2])-param.alTot
 		F[2] = alphaExpSimLow(param,x[1],x[2])-param.alLow
 	end
- 
+
 	pposL,pposH = NLsolve.nlsolve(f!,[0.0; 0.0]).zero
- 
+
 	if pposL < 0.0
 		 pposL = 0.0
-	end  
+	end
 	if pposH < 0.0
 		 pposH = 0.0
 	end
@@ -166,7 +166,7 @@ function setPpos(param::parameters)
 
  end
 
- 
+
 
 """
 	binomOp(param)
@@ -176,8 +176,8 @@ Site Frequency Spectrum convolution depeding on background selection values. Pas
 # Returns
  - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
 """
-function binomOp(param::parameters)
-        
+function binomOp!(param::parameters)
+
     bn = Dict(param.bRange[i] => zeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
 
     for bVal in param.bRange
@@ -186,14 +186,14 @@ function binomOp(param::parameters)
         samples      = collect(0:param.nn)
         samplesFreqs = collect(0:NN2)
         samplesFreqs = permutedims(samplesFreqs/NN2)
-    
+
         f(x) = Distributions.Binomial(param.nn,x)
-        z    = f.(samplesFreqs)     
-    
+        z    = f.(samplesFreqs)
+
         out  = Distributions.pdf.(z,samples)
 		outS  = round.(out,digits=10)
-        param.bn[bVal] = SparseArrays.sparse(outS)
-        param.bn[bVal] = outS
+        param.bn[bVal] = SparseArrays.dropzeros(SparseArrays.sparse(outS))
+        # param.bn[bVal] = outS
 
 	end
 end

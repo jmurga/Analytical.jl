@@ -93,14 +93,21 @@ function sampledAlpha(;d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{
 	## Outputs
 	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
-	cumulativeExpPn = view(permutedims(reduceSfs(expPn,bins)),1:bins,:)
-	cumulativeExpPs = view(permutedims(reduceSfs(expPs,bins)),1:bins,:)
+
+	if bins == (param.nn - 1)
+		cumulativeExpPn = view(expPn,1:bins,:)
+		cumulativeExpPs = view(expPs,1:bins,:)
+	else
+		cumulativeExpPn = view(reduceSfs(expPn,bins)',1:bins,:)
+		cumulativeExpPs = view(reduceSfs(expPs,bins)',1:bins,:)
+	end
+	
 
 	## Alpha from expected values. Used as summary statistics
 	ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
 	ssAlpha = round.(ssAlpha,digits=5)
 	
-	αS = @. 1 - ((expDs/expDn)' * (expPn/expPs))
+	αS = @. round(1 - ((expDs/expDn)' * (expPn/expPs)),digits=5)
 
 	return αS,expDn,expDs,expPn,expPs,ssAlpha
 
@@ -227,17 +234,18 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	selH = DiscSFSSelPosDown(param,param.gH,param.pposH);
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
-	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
+	# tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	# splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
 
-	neut, selH, selL, selN = splitColumns(tmp)
+	# neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
 
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
-	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
+	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 	
 	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
+	
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #

@@ -1,8 +1,11 @@
 # Open empirical data
-param = parameters(N=1000,n=661,B=0.2,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.15) ;binomOp(param)
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
+
+param = parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2,Lf=2*10^5)
+binomOp!(param)
+
 j = param.B
 set_theta_f(param)
 theta_f = param.theta_f
@@ -12,9 +15,65 @@ setPpos(param)
 param.theta_f = theta_f
 param.B = j
 
+
+function summStats(param::parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
+    # @threads
+    
+        @showprogress for i in 1:iter
+        # for i in 1:iter
+
+
+                fac       = rand(-2:0.05:2)
+                afac      = 0.184*(2^fac)
+                bfac      = 0.000402*(2^fac)
+                
+                # alTot     = rand(collect(0.01:0.01:0.4))
+                alTot     = rand(collect(0.05:0.05:0.4))
+                # alLow     = round(rand(collect((alTot/10):(alTot/10):alTot)),digits=5)
+                lfac      = rand(collect(0.1:0.1:0.9))
+                alLow     = round(alTot * lfac,digits=5)
+        # println((thread=Threads.threadid(), iteration=i))
+        
+                bgsIter(param,afac,bfac,alTot,alLow,div,sfs,output,b,c)
+        end
+end
+
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
+
+        for j in param.bRange
+                # j = 0.999
+                param.al = afac; param.be = bfac; 
+                param.alLow = alLow; param.alTot = alTot; param.B = j
+
+                set_theta_f(param)
+                theta_f = param.theta_f
+                param.B = 0.999
+                set_theta_f(param)
+                setPpos(param)
+                param.theta_f = theta_f
+                param.B = j
+                # x,y = analyticalAlpha(param=param)
+                x,y,z = alphaByFrequencies(param,div,sfs,b,c)
+                # println(z)
+
+                summaryStatistics(output, z)
+
+        end
+end
+
 # pol,sfs,div = parseSfs(param=param,data=files[1],output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
 pol,sfs,div = parseSfs(param=param,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
 sfs = convert.(Int64,cumulativeSfs(sfs))
+
+	
+Plots.theme(:vibrant)
+p = hcat(α,α_nopos,a,b,alxSummStat)
+lb=["Analytical α" "Analytical α_nopos" "Simulated α" "Simulated α_nopos" "Sampled α"]
+l = @layout [a; b; c]
+fn = plot(p,legend = :outertopright,label=lb)
+fn1 = plot(α,label="Analytical α",legend = :outertopright) 
+fn2 = plot(alxSummStat,label="Sampled α",legend = :outertopright,linecolor="#d43625")
+plot(fn,fn1,fn2,layout=l)
 
 # x,y = analyticalAlpha(param=param)
 
