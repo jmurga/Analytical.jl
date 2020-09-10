@@ -17,7 +17,7 @@ We provide a Docker image based on Debian including Julia and all packages neede
 # Pull the image
 docker pull jmurga/mktest
 # Run docker bash interactive session linking to some local volume to export data
-docker run -i -t -p 8888:8888 -v ${HOME}/<anyData>:/data/<anyData> -e HOSTID=$(id -u) jmurga/mktest
+docker run -i -t -v ${HOME}/<anyData>:/data/<anyData> jmurga/abcmk julia -J /root/mktest.so
 # Run only jupyter notebook from docker image. Change the port if 8888 is already used
-docker run -i -t -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
+docker run -i -t -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```

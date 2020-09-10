@@ -22,31 +22,31 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.7.12-Linux-x86
 ENV LD_LIBRARY_PATH /opt/miniconda/lib:$LD_LIBRARY_PATH
 
 RUN conda update -n base -c defaults conda
-RUN conda install -c conda-forge jupyterlab numpy scipy mpmath -y
 RUN conda init bash
+RUN conda install -c conda-forge jupyterlab numpy scipy mpmath pandas -y
 
+RUN wget --quiet https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.1-linux-x86_64.tar.gz -P /root
+RUN  tar -zxvf /root/julia-1.5.1-linux-x86_64.tar.gz -C /root
+RUN echo "export PATH="/root/julia-1.5.1/bin:$PATH"" >> /root/.bashrc
 
-RUN wget --quiet https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-1.0.5-linux-x86_64.tar.gz -P /root
-RUN  tar -zxvf /root/julia-1.0.5-linux-x86_64.tar.gz -C /root
-#RUN echo "export PATH="/root/julia-1.0.5/bin:$PATH"" >> /root/.bashrc
+RUN /root/julia-1.5.1/bin/julia -e 'using Pkg;Pkg.add(["IJulia","Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays","OrderedCollections","GZip","DataFrames","Parsers","CSV","PackageCompiler"])'
 
-RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(["Parameters","PyCall","SpecialFunctions","Distributions","Roots","IJulia","CSV","GZip","Documenter","OrderedCollections","ArbNumerics","DataFrames"])'
-
-ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
-ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb
-ADD scripts/results.ipynb /analysis/results.ipynb
-ADD scripts/alphaCalc.jl  /analysis/alphaCalc.jl
+# ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
+# ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb
+# ADD scripts/results.ipynb /analysis/results.ipynb
+ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN /root/julia-1.0.5/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/AnalyticalMK.jl"))'
+RUN /root/julia-1.5.1/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
+RUN /root/julia-1.5.1/bin/julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/root/mktest.so", precompile_execution_file="/root/precompile_mktest.jl")'
 
 RUN git clone https://github.com/molpopgen/ABCreg.git /root/ABCreg
 RUN cd /root/ABCreg/src && make
 
-ENV PATH /root/julia-1.0.5/bin:$PATH
+ENV PATH /root/julia-1.5.1/bin:$PATH
 ENV PATH /root/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
-CMD [ "/bin/bash" ]
+# CMD [ "julia" ]

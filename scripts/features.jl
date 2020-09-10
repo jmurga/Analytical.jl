@@ -66,8 +66,7 @@ function get_B_vals()
 	return ret
 end
 
-
-function eMKT(sfs, div, m,cutoff):
+function eMKT(sfs, div, m,cutoff)
 
 	p_0 = convert(Integer,sfs[:,3] |> sum)
     p_i = convert(Integer,sfs[:,2] |> sum)

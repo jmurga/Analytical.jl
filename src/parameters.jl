@@ -116,7 +116,7 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 # Returns
  - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
-function set_theta_f(param::parameters)
+function set_theta_f!(param::parameters)
 
 	i(θ,p=param) = Br(p,θ)-p.B
 	theta_f      = Roots.find_zero(i,0.0)
@@ -146,7 +146,7 @@ Find the probabilty of positive selected alleles given the model. It solves a eq
  - `Tuple{Float64,Float64}`: weakly and strong beneficial alleles probabilites.
 """
 
-function setPpos(param::parameters)
+function setPpos!(param::parameters)
 
 	function f!(F,x,param=param)
 		F[1] = alphaExpSimTot(param,x[1],x[2])-param.alTot

@@ -74,10 +74,10 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 	λ2 .= @. λpn / (λps + λpn)
 	# λ2 = sum(λpn) / (sum(λps) + sum(λpn))
 
-	# psPois(x,z=λ1) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
-	# pnPois(x,z=λ2) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
-	psPois(x,z=λ1) = PoissonRandom.pois_rand.((z .* x ))
-	pnPois(x,z=λ2) = PoissonRandom.pois_rand.((z .* x ))
+	psPois(x,z=λ1) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
+	pnPois(x,z=λ2) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
+	# psPois(x,z=λ1) = PoissonRandom.pois_rand.((z .* x ))
+	# pnPois(x,z=λ2) = PoissonRandom.pois_rand.((z .* x ))
 
 	sampledPs = psPois(observedValues)
 	sampledPn = pnPois(observedValues)

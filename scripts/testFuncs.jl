@@ -3,18 +3,49 @@
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-param = parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2,Lf=2*10^5)
-binomOp!(param)
+# sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
+sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/sfs.tsv")))
+sfs = sfs[:,2:end]
+
+sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs))
+
+sfsPos   = sCumu[:,1] + sCumu[:,2]
+sfsNopos = sCumu[:,4] + sCumu[:,2] 
+
+divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
+d = [convert(Int64,sum(divergence[1:2]))]
+
+rSfs     = Analytical.reduceSfs(sfs,100)'
+alpha    = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
+rSfsCumu    = Analytical.reduceSfs(sCumu,100)'
+alphaCumu   = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[:,2],digits=5)'
+
+
+param = Analytical.parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=2*10^5)
+Analytical.binomOp!(param)
 
 j = param.B
-set_theta_f(param)
+Analytical.set_theta_f(param)
 theta_f = param.theta_f
 param.B = 0.999
-set_theta_f(param)
-setPpos(param)
+Analytical.set_theta_f(param)
+Analytical.setPpos(param)
 param.theta_f = theta_f
 param.B = j
 
+x3 ,y3 = Analytical.analyticalAlpha(param=param)
+
+x1,y1,z1 = alphaByFrequencies(param,d,s,b,c)
+x2,y2,z2 = alphaByFrequencies(param,d,sum(sCumu,dims=2),b,c)
+
+Plots.theme(:vibrant)
+p = hcat(x,y,reverse(alphaCumu'),convert(Array,z2[:,4:end])')
+lb=["Analytical α" "Analytical α_nopos" "Simulated α" "Sampled α"]
+fn = plot(p,legend = :outertopright,label=lb,layout=4)
+fn1 = plot(α,label="Analytical α",legend = :outertopright) 
+fn2 = plot(alxSummStat,label="Sampled α",legend = :outertopright,linecolor="#d43625")
+l = @layout [a; b; c]
+plot(fn,fn1,fn2,layout=l)
 
 function summStats(param::parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
     # @threads
