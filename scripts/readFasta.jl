@@ -22,8 +22,8 @@ function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{S
 	return matrix
 end
 
-function degenerancy(data::String,codonDict::String)
-	#DEGENERANCY DICTIONARIES
+function degeneracy(data::String,codonDict::String)
+	#degeneracy DICTIONARIES
 	standardDict = Dict{String,String}(
 		"TTT"=> "002", "TTC"=> "002", "TTA"=> "202", "TTG"=> "202",
 		"TCT"=> "004", "TCC"=> "004", "TCA"=> "004", "TCG"=> "004",
@@ -61,7 +61,7 @@ function degenerancy(data::String,codonDict::String)
 	return degen
 end
 
-function sfsFromMultiFasta(file::String,reference::String,codonTable::String)
+function fastaMatrix(file::String,reference::String,codonTable::String)
 
 	multiFasta = readfasta(file)
 	ref        = readfasta(reference)
@@ -71,7 +71,7 @@ function sfsFromMultiFasta(file::String,reference::String,codonTable::String)
 
 	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
 
-	degenCode = collect(degenerancy(ref[1][2],codonTable));
+	degenCode = collect(degeneracy(ref[1][2],codonTable));
 
 	multiFastaMatrix[1,:] = degenCode
 
@@ -79,12 +79,10 @@ function sfsFromMultiFasta(file::String,reference::String,codonTable::String)
 	return m
 end
 
-function uSfsFromFasta(sequenceMatrix::Array{Char,2})
-	# output = Array{Any,1}[]
+function uSfsFromFasta(sequenceMatrix::Array{Char,2},samples::Int64,bins::Int64)
+	
 	output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
-	# sfs = Array{Any,2}[]
-	# div = Array{Any,2}[]
-
+	
 	for n in eachcol(sequenceMatrix)
 
 		degen = n[1]
@@ -134,7 +132,7 @@ function uSfsFromFasta(sequenceMatrix::Array{Char,2})
 			end
 		end
 	end
-	
+
 	# tmp = convert(Array,output)
 	# sfs = tmp[tmp[:,2].!=1,:]
 	# div = tmp[tmp[:,2].==1,:]
@@ -149,11 +147,11 @@ function formatSfs(rawSfsOutput::DataFrame,samples::Int64,bins::Int64)
 	sfs = rawSfsOutput[rawSfsOutput[:,2].!=1,[1,3]]
 	pn = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .!= "4fold",1])))
 	ps = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .== "4fold",1])))
-	
+
 	sfsPn        = reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins)'[:,1]
 	sfsPs        = reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins)'[:,1]
 	daf          = DataFrame(f=collect(1:bins)/bins,p0=sfsPs,pi=sfsPn)
-	
+
 	divergence = rawSfsOutput[rawSfsOutput[:,2].==1,2:3]
 
 	div = DataFrame(countmap(divergence[:degen]))
