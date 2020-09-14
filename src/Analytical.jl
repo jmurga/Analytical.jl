@@ -5,7 +5,7 @@ module Analytical
 	include("polymorphism.jl")
 	include("summaryStatistics.jl")
 	include("inferTools.jl")
-	# include("readFasta.jl")
+	include("readFasta.jl")
 
 	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays
 
@@ -15,6 +15,6 @@ module Analytical
 	import GZip: open
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
-	# import FastaIO: readfasta
+	import FastaIO: readfasta
 
 end

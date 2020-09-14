@@ -61,27 +61,10 @@ function degeneracy(data::String,codonDict::String)
 	return degen
 end
 
-function fastaMatrix(file::String,reference::String,codonTable::String)
-
-	multiFasta = readfasta(file)
-	ref        = readfasta(reference)
-
-	samples = size(multiFasta,1)
-	seqLen  = length(ref[1][2])
-
-	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
-
-	degenCode = collect(degeneracy(ref[1][2],codonTable));
-
-	multiFastaMatrix[1,:] = degenCode
-
-	m = multiFastaMatrix[:,(multiFastaMatrix[1,:] .== '4') .| (multiFastaMatrix[1,:] .=='0')]
-	return m
-end
-
-function uSfsFromFasta(sequenceMatrix::Array{Char,2},samples::Int64,bins::Int64)
+function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 	
-	output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
+	# output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
+	output = Array{Any,2}[]
 	
 	for n in eachcol(sequenceMatrix)
 
@@ -107,7 +90,7 @@ function uSfsFromFasta(sequenceMatrix::Array{Char,2},samples::Int64,bins::Int64)
 			# Check if pol != AA and monomorphic
 			if (size(unique(pol),1) == 1 && unique(pol)!= aa)
 					div = 1; af = 0
-					tmp = [af,div,functionalClass]
+					tmp = [af div functionalClass]
 					push!(output,tmp);
 			else
 					div = 0
@@ -126,21 +109,17 @@ function uSfsFromFasta(sequenceMatrix::Array{Char,2},samples::Int64,bins::Int64)
 							continue
 						end
 					end
-					tmp = [af,div,functionalClass]
+					tmp = [af div functionalClass]
 					# println(tmp);
 					push!(output,tmp);
 			end
 		end
 	end
 
-	# tmp = convert(Array,output)
-	# sfs = tmp[tmp[:,2].!=1,:]
-	# div = tmp[tmp[:,2].==1,:]
-	# return sfs,div
-	return output
+	return reduce(vcat,output)
 end
 
-function formatSfs(rawSfsOutput::DataFrame,samples::Int64,bins::Int64)
+function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 
 	freq = OrderedDict(round.(collect(1:samples-1)/samples,digits=5) .=> 0)
 
@@ -150,13 +129,34 @@ function formatSfs(rawSfsOutput::DataFrame,samples::Int64,bins::Int64)
 
 	sfsPn        = reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins)'[:,1]
 	sfsPs        = reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins)'[:,1]
-	daf          = DataFrame(f=collect(1:bins)/bins,p0=sfsPs,pi=sfsPn)
+	daf          = DataFrame(f=collect(1:bins)/bins,pi=sfsPn,p0=sfsPs)
 
 	divergence = rawSfsOutput[rawSfsOutput[:,2].==1,2:3]
 
-	div = DataFrame(countmap(divergence[:degen]))
-
+	div = DataFrame(countmap(divergence[:,2]))
 	return(daf,div)
+end
+
+function uSfsFromFasta(file::String,reference::String,samples::Int64,bins::Int64,codonTable::String)
+
+	multiFasta = readfasta(file)
+	ref        = readfasta(reference)
+
+	samples = size(multiFasta,1)
+	seqLen  = length(ref[1][2])
+
+	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
+
+	degenCode = collect(degeneracy(ref[1][2],codonTable));
+
+	multiFastaMatrix[1,:] = degenCode
+
+	m = multiFastaMatrix[:,(multiFastaMatrix[1,:] .== '4') .| (multiFastaMatrix[1,:] .=='0')]
+	
+	joinedSfsDiv = iterFastaMatrix(m)
+
+	sfs, div = formatSfs(joinedSfsDiv,samples,bins)
+	return sfs,div
 end
 
 function uSfsFromVcf(file::String)
