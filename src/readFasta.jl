@@ -1,7 +1,4 @@
 
-# file      = "/home/jmurga/Downloads/subset.fa";
-# reference = "/home/jmurga/Downloads/ref.fa";
-
 function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{String,String},1})
 
 	matrix = Array{Char}(undef,samples ,length)
@@ -66,8 +63,8 @@ end
 
 function sfsFromMultiFasta(file::String,reference::String,codonTable::String)
 
-	multiFasta = FastaIO.readfasta(file)
-	ref        = FastaIO.readfasta(reference)
+	multiFasta = readfasta(file)
+	ref        = readfasta(reference)
 
 	samples = size(multiFasta,1)
 	seqLen  = length(ref[1][2])
@@ -85,6 +82,8 @@ end
 function uSfsFromFasta(sequenceMatrix::Array{Char,2})
 	# output = Array{Any,1}[]
 	output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
+	# sfs = Array{Any,2}[]
+	# div = Array{Any,2}[]
 
 	for n in eachcol(sequenceMatrix)
 
@@ -96,14 +95,16 @@ function uSfsFromFasta(sequenceMatrix::Array{Char,2})
 			continue
 		# Monomorphic sites. Try to clean out of the loop
 		elseif (size(unique(n[2:end][n[2:end] .!= 'N']),1) == 1)
+
 			continue
 		else
 
-			if degen == "4"
-					functionalClass = "4fold"
+			if degen == '4'
+				functionalClass = "4fold"
 			else
-					functionalClass = "0fold"
+				functionalClass = "0fold"
 			end
+
 
 			# Check if pol != AA and monomorphic
 			if (size(unique(pol),1) == 1 && unique(pol)!= aa)
@@ -128,17 +129,37 @@ function uSfsFromFasta(sequenceMatrix::Array{Char,2})
 						end
 					end
 					tmp = [af,div,functionalClass]
+					# println(tmp);
 					push!(output,tmp);
 			end
 		end
 	end
+	
+	# tmp = convert(Array,output)
+	# sfs = tmp[tmp[:,2].!=1,:]
+	# div = tmp[tmp[:,2].==1,:]
+	# return sfs,div
 	return output
 end
 
-#
-tmp = sfsFromMultiFasta("/home/jmurga/Downloads/subset.fa","/home/jmurga/Downloads/ref.fa","standard");
-#
-rawSfs = uSfsFromFasta(tmp)
+function formatSfs(rawSfsOutput::DataFrame,samples::Int64,bins::Int64)
+
+	freq = OrderedDict(round.(collect(1:samples-1)/samples,digits=5) .=> 0)
+
+	sfs = rawSfsOutput[rawSfsOutput[:,2].!=1,[1,3]]
+	pn = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .!= "4fold",1])))
+	ps = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .== "4fold",1])))
+	
+	sfsPn        = reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins)'[:,1]
+	sfsPs        = reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins)'[:,1]
+	daf          = DataFrame(f=collect(1:bins)/bins,p0=sfsPs,pi=sfsPn)
+	
+	divergence = rawSfsOutput[rawSfsOutput[:,2].==1,2:3]
+
+	div = DataFrame(countmap(divergence[:degen]))
+
+	return(daf,div)
+end
 
 function uSfsFromVcf(file::String)
 
@@ -169,4 +190,3 @@ function uSfsFromVcf(file::String)
 	close(reader)
 	return output
 end
-# a= uSfsFromVcf("/home/jmurga/chr22CEU.vcf.gz");
