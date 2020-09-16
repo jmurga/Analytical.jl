@@ -220,13 +220,13 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	##############################################################
 
 	# Fixation
-	fN     = param.B*fixNeut(param)
-	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
-	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
-	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
+	fN       = param.B*fixNeut(param)
+	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH)
 
-	ds = fN
-	dn = fNeg + fPosL + fPosH
+	ds       = fN
+	dn       = fNeg + fPosL + fPosH
 
 	## Polymorphism
 	neut = DiscSFSNeutDown(param)
@@ -251,24 +251,23 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos     = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fNeg_nopos   = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosL_nopos  = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosH_nopos  = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fN_nopos       = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fNeg_nopos     = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosL_nopos    = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fPosH_nopos    = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
 
-	ds_nopos = fN_nopos
-	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
-	dnS_nopos = dn_nopos - fPosL_nopos
+	ds_nopos       = fN_nopos
+	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
+	dnS_nopos      = dn_nopos - fPosL_nopos
 
 	## Polymorphism
 	sel_nopos = selN
-	# cumulativePn_nopos = cumulativeSfs(sel_nopos)[:,1]
 
 	## Outputs
-	αW = param.alLow/param.alTot
-	α_nopos  =  @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	αW_nopos = α_nopos * αW
-	αS_nopos =  α_nopos * (1 - αW)
+	αW         = param.alLow/param.alTot
+	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	αW_nopos   = α_nopos * αW
+	αS_nopos   = α_nopos * (1 - αW)
 
 	##########
 	# Output #
@@ -281,26 +280,16 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	alphas = repeat(alphas,outer=[size(divergence,1),1])	
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
-	expectedValues = hcat(DataFrame(alphas),DataFrame(permutedims(alxSummStat)),makeunique=true)
+	expectedValues = hcat(alphas,permutedims(alxSummStat))
 
 	return (α,α_nopos,expectedValues)
 end
 
-function summaryAlpha(x::AbstractArray,y::AbstractArray)
-
-	out   = Array{Float64}(undef,size(x,1),3)
-
-	for i in 1:size(x,1)
-		out[i,:] .= x[i], abs.(y[i])-abs.(x[i]), y[i]
-	end
-
-	return out
-end
-
 function summaryStatistics(fileName::String,summStats)
 
+	names = collect('a':'z')
 	for i in 1:size(summStats,1)
-		write(fileName * "_" * string(i) * ".tsv", summStats[i:i,:], delim='\t', append=true)
+		write(fileName * "_" * names[i] * ".tsv", summStats[i:i,:], delim='\t', append=true)
 	end
 
 end
@@ -311,11 +300,9 @@ function asympFit(alphaValues::Array{Float64,1})
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
 	
 	# Fit values
-	fitted1   = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
-
-	fitted2   = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
-
-	asymp    = asympModel(size(alphaValues,1),fitted2.param)
+	fitted1    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
+	fitted2    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
+	asymp      = asympModel(size(alphaValues,1),fitted2.param)
 
 	ciLow, ciHigh   = try
 		LsqFit.confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]

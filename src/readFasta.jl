@@ -68,15 +68,14 @@ function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 	
 	for n in eachcol(sequenceMatrix)
 
-		degen = n[1]
-		aa = n[end]
-		pol = n[2:end-1]
+		degen   = n[1]
+		aa      = n[end]
+		pol     = n[2:end-1]
 		# Undefined Ancestra Allele. Try to clean out of the loop
 		if (aa == 'N' || aa == '-')
 			continue
 		# Monomorphic sites. Try to clean out of the loop
 		elseif (size(unique(n[2:end][n[2:end] .!= 'N']),1) == 1)
-
 			continue
 		else
 
@@ -93,9 +92,9 @@ function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 					tmp = [af div functionalClass]
 					push!(output,tmp);
 			else
-					div = 0
-					an = size(pol,1)
-					ac = countmap(pol)
+					div    = 0
+					an     = size(pol,1)
+					ac     = countmap(pol)
 
 					if (aa ∉ keys(ac))
 						continue

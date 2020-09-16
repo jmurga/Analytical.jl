@@ -1,16 +1,16 @@
 
 using Distributed
 addprocs()
-@everywhere using Analytical
+@everywhere using Analytical, DataFrames, CSV
 # Set up model
-adap = Analytical.parameters(N=1000,n=661,gam_neg=-457, gL=10,gH=500,Lf=2*10^5,B=0.999,alTot=0.4,alLow=0.2)
-Analytical.binomOp(adap);
+adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500,Lf=2*10^5,B=0.999,alTot=0.4,alLow=0.2)
+Analytical.binomOp!(adap);
 # analyticalApproach(adap)[1:1000,:]
 
 
 ## Open empirical data
 path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
-files = path .* filter(x -> occursin(suffix,x), readdir(path))
+files = path .* filter(x -> occursin(suffix,x), readdir(path))[1]
 
 pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 sfs = sfs[:,1]
@@ -23,15 +23,15 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
     afac      = @. 0.184*(2^fac)
     bfac      = @. 0.000402*(2^fac)
     
-    alTot     = rand(collect(0.05:0.01:0.4),iter)
-    lfac      = rand(collect(0.1:0.1:1),iter)
+    alTot     = rand(collect(0.01:0.01:0.6),iter)
+    lfac      = rand(collect(0.1:0.1:0.9),iter)
     alLow     = @. round(alTot * lfac,digits=2)
     nParam = [param for i in 1:iter]
     nDiv = [div for i in 1:iter]
     nSfs = [sfs for i in 1:iter]
 
     wp = CachingPool(workers())
-    b = pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,nDiv,nSfs)
+    b = pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,nDiv,nSfs);
 	return(b)
 	# return(reduce(vcat,b))
 end
@@ -45,11 +45,11 @@ end
 	for j in param.bRange
         param.B = j
 
-        Analytical.set_theta_f(param)
+        Analytical.set_theta_f!(param)
         theta_f = param.theta_f
         param.B = 0.999
-        Analytical.set_theta_f(param)
-        Analytical.setPpos(param)
+        Analytical.set_theta_f!(param)
+        Analytical.setPpos!(param)
         param.theta_f = theta_f
         param.B = j
         x,y,z = Analytical.alphaByFrequencies(param,div,sfs,100,0.9)

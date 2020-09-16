@@ -1,42 +1,65 @@
 # Open empirical data
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
-path= "/home/jmurga/mktest/data/";suffix="txt";
-files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
 sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
 # sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/sfs.tsv")))
 sfs = sfs[:,2:end]
 
-sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs))
+sCumu = convert.(Int64,cumulativeSfs(sfs))
 
 sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2] 
 
-divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
+divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
+# divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
 d = [convert(Int64,sum(divergence[1:2]))]
 
-rSfs     = Analytical.reduceSfs(sfs,100)'
+rSfs     = reduceSfs(sfs,100)'
 alpha    = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
-rSfsCumu    = Analytical.reduceSfs(sCumu,100)'
+rSfsCumu    = reduceSfs(sCumu,100)'
+alpha   = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
 alphaCumu   = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[:,2],digits=5)'
+alphaReduced = hcat(alpha',alphaCumu')
+Plots.theme(:vibrant)
+plot(dfAlpha,legend=:outerbottomright)
+
+alpha1    = @. round(1 - divergence[2]/divergence[1] * sfs[:,1]/sfs[:,2],digits=5)'
+alpha2   = @. round(1 - divergence[2]/divergence[1] * sCumu[:,1]/sCumu[:,2],digits=5)'
+dfAlpha = hcat(alpha1',alpha2')
+plot(dfAlpha,legend=:outerbottomright)
+
+##################################################3
 
 
-param = Analytical.parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=2*10^5)
-Analytical.binomOp!(param)
+param = parameters(N=1000,n=500,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=10^5)
+binomOp!(param)
 
 j = param.B
-Analytical.set_theta_f(param)
+set_theta_f!(param)
 theta_f = param.theta_f
 param.B = 0.999
-Analytical.set_theta_f(param)
-Analytical.setPpos(param)
+set_theta_f!(param)
+setPpos!(param)
 param.theta_f = theta_f
-param.B = j
+param.B = 0.999
 
-x3 ,y3 = Analytical.analyticalAlpha(param=param)
+x1,y1,z1 = alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),100,0.999)
+x2,y2,z2 = alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),100,0.999);z2
 
-x1,y1,z1 = alphaByFrequencies(param,d,s,b,c)
-x2,y2,z2 = alphaByFrequencies(param,d,sum(sCumu,dims=2),b,c)
+out1 = []
+out2 = []
+for i in 1:100
+	x1,y1,z1 = alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),100,0.999)
+	x2,y2,z2 = alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),100,0.999)
+	push!(out2,z2[4:end])
+	push!(out1,z1[4:end])
+end
+
+dfSampled = hcat(alphaReduced[:,1],reduce(hcat,out1)[:,1:10])
+plot(dfSampled,legend=:outerbottomright)
+dfSampled = hcat(alphaReduced[:,2],reduce(hcat,out2)[:,1:10])
+plot(dfSampled,legend=:outerbottomright)
+
 
 Plots.theme(:vibrant)
 p = hcat(x,y,reverse(alphaCumu'),convert(Array,z2[:,4:end])')

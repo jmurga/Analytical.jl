@@ -106,4 +106,4 @@ function eMKT(sfs, div, m,cutoff)
 
 
     return alpha
-
+end
