@@ -1,6 +1,3 @@
-using ArbFloat
-import SparseArrays: SparseMatrixCSC
-
 ################################
 ######    Polymorphism    ######
 ################################
