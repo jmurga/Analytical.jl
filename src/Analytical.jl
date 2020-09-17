@@ -7,7 +7,7 @@ module Analytical
 	include("inferTools.jl")
 	include("readFasta.jl")
 
-	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays
+	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, StatsBase, LsqFit, PoissonRandom, SparseArrays
 
 	import CSV: read
 	import CSV: write
@@ -16,6 +16,5 @@ module Analytical
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 	import FastaIO: readfasta
-	import SparseArrays: SparseMatrixCSC
 
 end
