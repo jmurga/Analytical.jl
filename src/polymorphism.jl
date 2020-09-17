@@ -1,3 +1,5 @@
+import SparseArrays: SparseMatrixCSC
+
 ################################
 ######    Polymorphism    ######
 ################################

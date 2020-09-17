@@ -1,8 +1,8 @@
 # Open empirical data
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
 
-sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
-# sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/sfs.tsv")))
+sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.3_0.999/sfs.tsv")))
+# sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.4/sfs.tsv")))
 sfs = sfs[:,2:end]
 
 sCumu = convert.(Int64,cumulativeSfs(sfs))
@@ -10,8 +10,8 @@ sCumu = convert.(Int64,cumulativeSfs(sfs))
 sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2] 
 
-divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
-# divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
+divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.4/div.tsv")))
+# divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.4/div.tsv")))
 d = [convert(Int64,sum(divergence[1:2]))]
 
 rSfs     = reduceSfs(sfs,100)'
@@ -20,18 +20,19 @@ rSfsCumu    = reduceSfs(sCumu,100)'
 alpha   = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
 alphaCumu   = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[:,2],digits=5)'
 alphaReduced = hcat(alpha',alphaCumu')
-Plots.theme(:vibrant)
-plot(dfAlpha,legend=:outerbottomright)
+# Plots.theme(:vibrant)
+# plot(alphaReduced,legend=:outerbottomright)
 
-alpha1    = @. round(1 - divergence[2]/divergence[1] * sfs[:,1]/sfs[:,2],digits=5)'
-alpha2   = @. round(1 - divergence[2]/divergence[1] * sCumu[:,1]/sCumu[:,2],digits=5)'
-dfAlpha = hcat(alpha1',alpha2')
-plot(dfAlpha,legend=:outerbottomright)
+# alpha1    = @. round(1 - divergence[2]/divergence[1] * sfs[:,1]/sfs[:,2],digits=5)'
+# alpha2   = @. round(1 - divergence[2]/divergence[1] * sCumu[:,1]/sCumu[:,2],digits=5)'
+# dfAlpha = hcat(alpha1',alpha2')
+# plot(dfAlpha,legend=:outerbottomright)
 
 ##################################################3
 
 
-param = parameters(N=1000,n=500,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=10^5)
+param = parameters(N=1000,n=500,B=0.4,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=10^5)
+param.nn = param.nn+1
 binomOp!(param)
 
 j = param.B
@@ -55,10 +56,17 @@ for i in 1:100
 	push!(out1,z1[4:end])
 end
 
-dfSampled = hcat(alphaReduced[:,1],reduce(hcat,out1)[:,1:10])
-plot(dfSampled,legend=:outerbottomright)
-dfSampled = hcat(alphaReduced[:,2],reduce(hcat,out2)[:,1:10])
-plot(dfSampled,legend=:outerbottomright)
+Plots.theme(:ggplot2);
+dfSampled = hcat(alphaReduced[:,1],reduce(hcat,out1)[:,1]);asymp = [asympFit(reduce(hcat,out1)[:,1])[2]]
+dfSampledIter = hcat(alphaReduced[:,1],reduce(hcat,out1)[:,1:100])
+p=plot(dfSampled,label=["Input α(x)" "sampled α(x)"],title="noDemog_0.4_0.3_0.999",legend=:outerbottomright)
+hline!(asymp,label="Asymptotic")
+Plots.savefig(p,"/home/jmurga/mkt/202004/results/sampledAlpha_noDemog_0.4_0.3_0.999.svg")
+p2=plot(dfSampledIter,title="noDemog_0.4_0.3_0.999",legend=:false)
+Plots.savefig(p2,"/home/jmurga/mkt/202004/results/sampledAlphaIter_noDemog_0.4_0.3_0.999.svg")
+
+# dfSampled = hcat(alphaReduced[:,2],reduce(hcat,out2)[:,1:10])
+# plot(dfSampled,legend=:outerbottomright)
 
 
 Plots.theme(:vibrant)
