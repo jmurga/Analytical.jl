@@ -1,7 +1,7 @@
 using Analytical, ProgressMeter
 # Set up model
-adap = Analytical.parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500,Lf=2*10^5,B=0.999,alTot=0.4,alLow=0.4)
-Analytical.binomOp(adap)
+adap = parameters(N=500,n=661,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
+binomOp!(adap)
 # analyticalApproach(adap)[1:1000,:]
 
 

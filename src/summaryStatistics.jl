@@ -149,12 +149,12 @@ function analyticalAlpha(;param::parameters)
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = DiscSFSNeutDown(param)
+	neut = DiscSFSNeutDown(param,param.bn[param.B])
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH)
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL)
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL)
-	splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
 	neut, selH, selL, selN = splitColumns(tmp)
@@ -228,12 +228,12 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	ds       = fN
 	dn       = fNeg + fPosL + fPosH
 
-	## Polymorphism
-	neut = DiscSFSNeutDown(param)
+	## Polymorphism	## Polymorphism
+	neut = DiscSFSNeutDown(param,param.bn[param.B])
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH);
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL);
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL);
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
 	# tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 	# splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
 

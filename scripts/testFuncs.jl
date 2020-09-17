@@ -76,11 +76,11 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
                 param.al = afac; param.be = bfac; 
                 param.alLow = alLow; param.alTot = alTot; param.B = j
 
-                set_theta_f(param)
+                set_theta_f!(param)
                 theta_f = param.theta_f
                 param.B = 0.999
-                set_theta_f(param)
-                setPpos(param)
+                set_theta_f!(param)
+                setPpos!(param)
                 param.theta_f = theta_f
                 param.B = j
                 # x,y = analyticalAlpha(param=param)

@@ -20,8 +20,7 @@ Expected rate of neutral allele frequency reduce by background selection. The sp
 # Return:
  - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
-
-function DiscSFSNeutDown(param::parameters)
+function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
 
 	NN2 = convert(Int64,ceil(param.NN*param.B))
 	# Allocating variables
@@ -32,10 +31,11 @@ function DiscSFSNeutDown(param::parameters)
 	solvedNeutralSfs = neutralSfs.(x)
 	replace!(solvedNeutralSfs, Inf => 0.0)
 	
-	subsetDict = get(param.bn,param.B,1)
-	out::Array{Float64} = param.B*(param.theta_mid_neutral)*0.255*(subsetDict*solvedNeutralSfs)
-	out = @view out[2:end-1,:]
-	return 	out
+	# subsetDict = get(param.bn,param.B,1)
+	# subsetDict = binom
+	out = param.B*(param.theta_mid_neutral)*0.255*(binom*solvedNeutralSfs)
+	# out = @view out[2:end-1,:]
+	return 	out[2:end-1,:]
 end
 
 ############Positive############
@@ -52,48 +52,53 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
+function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
 		out = @view out[2:end-1,:]
 	else
 
+		exponentialType = Union{Float64,ArbFloat{48}}
+		
 		red_plus = phiReduction(param,gammaValue)
 
 		# Solving sfs
 		NN2 = convert(Int64,ceil(param.NN*param.B))
-		xa  = collect(0:NN2)
-		xa  = xa/(NN2)
+		xa1  = collect(0:NN2)
+		xa2  = xa1/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
 		gammaCorrected = gammaValue*param.B
+
 		if isinf(exp(2*gammaCorrected))
 			# Checked mpmath, BigFloat, DecFP.Dec128, Quadmath.Float128
-			gammaExp1 = exp(ArbFloat(gammaCorrected*2))
-			gammaExp2 = exp(ArbFloat(gammaCorrected*-2))
+			gammaExp1 = exp(ArbFloat(gammaCorrected*2,bits=24))
+			gammaExp2 = exp(ArbFloat(gammaCorrected*-2,bits=24))
 		else
 			gammaExp1 = exp(gammaCorrected*2)
 			gammaExp2 = exp(gammaCorrected*-2)
 		end
 
+
 		# Original
 		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
-		function positiveSfs(i::Float64,g1=gammaExp1,g2=gammaExp2,ppos=ppos)
+		function positiveSfs(i::Float64,g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat{48}}}
 			if i > 0 && i < 1.0
-				local out = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
-				return Float64(out)
+				local tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
+				return Float64(tmp)
 			else
-				return 0.0
+				return Float64(0.0)
 			end
 		end
 
 		# Allocating outputs
-		solvedPositiveSfs = (1.0/(NN2)) * (positiveSfs.(xa))
+		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2,gammaExp1,gammaExp2,ppos))
 		replace!(solvedPositiveSfs, NaN => 0.0)
 
-		subsetDict = get(param.bn,param.B,1)
-		out               = (param.theta_mid_neutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
+		# subsetDict = get(param.bn,param.B,1)
+		# out               = (param.theta_mid_neutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
+		out = (param.theta_mid_neutral)*red_plus*0.745*(binom*solvedPositiveSfs)
 		out = @view out[2:end-1,:]
 
 	end
@@ -146,12 +151,13 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected negative selected alleles frequencies.
 """
-function DiscSFSSelNegDown(param::parameters,ppos::Float64)
-	subsetDict = get(param.bn,param.B,1)
+function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
+	# subsetDict = get(param.bn,param.B,1)
 	solvedNegative = DiscSFSSelNeg(param,ppos)
-	out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*solvedNegative)
-	out = @view out[2:end-1]
-	return out
+	# out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*solvedNegative)
+	out = param.B*(param.theta_mid_neutral)*0.745*(binom*solvedNegative)
+	# out = @view out[2:end-1]
+	return out[2:end-1]
 end
 
 function DiscSFSSelNeg(param::parameters,ppos::Float64)
