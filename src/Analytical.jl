@@ -16,5 +16,6 @@ module Analytical
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 	import FastaIO: readfasta
+	import SparseArrays: SparseMatrixCSC
 
 end
