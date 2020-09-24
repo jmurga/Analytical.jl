@@ -23,13 +23,13 @@ ENV LD_LIBRARY_PATH /opt/miniconda/lib:$LD_LIBRARY_PATH
 
 RUN conda update -n base -c defaults conda
 RUN conda init bash
-RUN conda install -c conda-forge jupyterlab numpy scipy mpmath pandas -y
+RUN conda install -c conda-forge jupyterlab numpy scipy mpmath pandas r-essentials -y
 
 RUN wget --quiet https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.1-linux-x86_64.tar.gz -P /root
 RUN  tar -zxvf /root/julia-1.5.1-linux-x86_64.tar.gz -C /root
 RUN echo "export PATH="/root/julia-1.5.1/bin:$PATH"" >> /root/.bashrc
 
-RUN /root/julia-1.5.1/bin/julia -e 'using Pkg;Pkg.add(["IJulia","Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays","OrderedCollections","GZip","DataFrames","Parsers","CSV","PackageCompiler"])'
+RUN /root/julia-1.5.1/bin/julia -e 'using Pkg;Pkg.add(["IJulia","Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays","OrderedCollections","GZip","DataFrames","Parsers","CSV","PackageCompiler","RCall"])'
 
 # ADD scripts/BenchmarkJulia.ipynb /analysis/BenchmarkJulia.ipynb
 # ADD scripts/poissonSampling.ipynb /analysis/poissonSampling.ipynb

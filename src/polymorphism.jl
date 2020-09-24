@@ -30,12 +30,13 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 	x = collect(0:NN2)
 	solvedNeutralSfs = neutralSfs.(x)
 	replace!(solvedNeutralSfs, Inf => 0.0)
-	
+
 	# subsetDict = get(param.bn,param.B,1)
 	# subsetDict = binom
 	out = param.B*(param.theta_mid_neutral)*0.255*(binom*solvedNeutralSfs)
-	# out = @view out[2:end-1,:]
+	# out = @view out[1:end-2,:]
 	return 	out[2:end-1,:]
+
 end
 
 ############Positive############
@@ -60,7 +61,7 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 	else
 
 		exponentialType = Union{Float64,ArbFloat{48}}
-		
+
 		red_plus = phiReduction(param,gammaValue)
 
 		# Solving sfs
@@ -91,6 +92,20 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 				return Float64(0.0)
 			end
 		end
+		#
+		#
+		# function pSfs(x::Array{Float64,2},g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat{48}}}
+		# 	out = Array{Float64,1}[]
+		# 	@inbounds @simd for i in x
+		# 		if i > 0 && i < 1.0
+		# 			tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
+		# 		else
+		# 			tmp = 0.0
+		# 		end
+		#
+		# 	end
+		# 	return out
+		# end
 
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2,gammaExp1,gammaExp2,ppos))
@@ -99,7 +114,8 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		# subsetDict = get(param.bn,param.B,1)
 		# out               = (param.theta_mid_neutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
 		out = (param.theta_mid_neutral)*red_plus*0.745*(binom*solvedPositiveSfs)
-		out = @view out[2:end-1,:]
+		# out = @view out[2:end-1,:]
+		out = @view out[1:end-2,:]
 
 	end
 
@@ -157,7 +173,8 @@ function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCS
 	# out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*solvedNegative)
 	out = param.B*(param.theta_mid_neutral)*0.745*(binom*solvedNegative)
 	# out = @view out[2:end-1]
-	return out[2:end-1]
+	out = @view out[1:end-2]
+	return out
 end
 
 function DiscSFSSelNeg(param::parameters,ppos::Float64)

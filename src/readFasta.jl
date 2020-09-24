@@ -17,7 +17,8 @@ function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{S
 		# 	deleteIndex.append(i)
 		# else
 	end
-
+	
+	matrix = matrix[:,(matrix[end,:].!= 'N') .& (matrix[end,:].!= '-')]
 	# matrix = np.delete(matrix,deleteIndex,0)
 	return matrix
 end

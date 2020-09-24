@@ -4,7 +4,7 @@
 """
 	poissonFixation(observedValues,λds, λdn)
 
-Divergence sampling from º distribution. The expected neutral and selected fixations are subset through their relative expected rates ([`Analytical.fixNeut`](@ref), [`Analytical.fixNegB`](@ref), [`Analytical.fixPosSim`](@ref)). Empirical values are used are used to simulate the locus *L* along a branch of time *T* from which the expected *Ds* and *Dn* raw count estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily given the success rate ``\\lambda`` in the distribution.
+Divergence sampling from Poisson distribution. The expected neutral and selected fixations are subset through their relative expected rates ([`Analytical.fixNeut`](@ref), [`Analytical.fixNegB`](@ref), [`Analytical.fixPosSim`](@ref)). Empirical values are used are used to simulate the locus *L* along a branch of time *T* from which the expected *Ds* and *Dn* raw count estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily given the success rate ``\\lambda`` in the distribution.
 
 ```math
 \\mathbb{E}[D_N] = X \\in Poisson\\left(\\lambda = D \\times \\left[\\frac{\\mathbb{E}[D_+] + \\mathbb{E}[D_-]}{\\mathbb{E}[D_+] + \\mathbb{E}[D_-] + \\mathbb{E}[D_0]}\\right]\\right)
@@ -31,7 +31,7 @@ function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64)
 	# sampledDn = rand.(poissonD,1)
 
 	sampledDs  = PoissonRandom.pois_rand.(ds .* observedValues)
-	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues) 
+	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues)
 
 	out = sampledDn, sampledDs
 	return out
@@ -42,7 +42,7 @@ end
 
 Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical sfs are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole sfs given each frequency success rate ``\\lambda`` in the distribution.
 
-The success rate managing the Poisson distribution by the observed count each frequency.  We considered both sampling variance and process variance is affecting the number of variable alleles we sample from SFS. This variance arises from the random mutation-fixation process along the branch. To incorporate this variance we do one sample per frequency-bin and use the total sampled variation and the SFS for the summary statistics. 
+The success rate managing the Poisson distribution by the observed count each frequency.  We considered both sampling variance and process variance is affecting the number of variable alleles we sample from SFS. This variance arises from the random mutation-fixation process along the branch. To incorporate this variance we do one sample per frequency-bin and use the total sampled variation and the SFS for the summary statistics.
 
 ```math
 \\mathbb{E}[P_N] = \\sum_{x=0}^{x=1} X \\in Poisson\\left(\\lambda = SFS_{(x)} \\times \\left[\\frac{\\mathbb{E}[P_{+(x)}] + \\mathbb{E}[P_{-(x)}]}{\\mathbb{E}[P_{+(x)}] + \\mathbb{E}[P_{-(x)}] + \\mathbb{E}[P_{0(x)}]}\\right]\\right)
@@ -81,7 +81,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 
 	sampledPs = psPois(observedValues)
 	sampledPn = pnPois(observedValues)
-	
+
 	return (sampledPn, sampledPs)
 end
 
@@ -101,16 +101,15 @@ function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float6
 		cumulativeExpPn = view(reduceSfs(expPn,bins)',1:bins,:)
 		cumulativeExpPs = view(reduceSfs(expPs,bins)',1:bins,:)
 	end
-	
+
 
 	## Alpha from expected values. Used as summary statistics
 	ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
 	ssAlpha = round.(ssAlpha,digits=5)
-	
+
 	αS = @. round(1 - ((expDs/expDn)' * (expPn/expPs)),digits=5)
 
 	return αS,expDn,expDs,expPn,expPs,ssAlpha
-
 end
 
 """
@@ -188,7 +187,7 @@ function analyticalAlpha(;param::parameters)
 	##########
 	# Output #
 	##########
-	
+
 	return (α,α_nopos)
 	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
@@ -234,18 +233,18 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
-	# tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
-	# splitColumns(matrix) = (view(matrix, :, i) for i in 1:size(matrix, 2))
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
-	# neut, selH, selL, selN = splitColumns(tmp)
+	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
 
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
-	
+
 	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
-	
+
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -273,11 +272,11 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# Output #
 	##########
 	# Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
-	
+
 	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
-	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)	
-	alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)	
-	alphas = repeat(alphas,outer=[size(divergence,1),1])	
+	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)
+	alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)
+	alphas = repeat(alphas,outer=[size(divergence,1),1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
 	expectedValues = hcat(alphas,permutedims(alxSummStat))
@@ -291,14 +290,13 @@ function summaryStatistics(fileName::String,summStats)
 	for i in 1:size(summStats,1)
 		write(fileName * "_" * names[i] * ".tsv", summStats[i:i,:], delim='\t', append=true)
 	end
-
 end
 
 function asympFit(alphaValues::Array{Float64,1})
 
 	# Model
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
-	
+
 	# Fit values
 	fitted1    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
 	fitted2    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)

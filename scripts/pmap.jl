@@ -1,6 +1,6 @@
 
 using Distributed
-addprocs(4)
+addprocs()
 @everywhere using Analytical, DataFrames, CSV
 # Set up model
 adap = Analytical.parameters(N=1000,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
@@ -15,7 +15,6 @@ Analytical.binomOp!(adap);
 # pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 # sfs = sfs[:,1]
 # div = [div[1]]
-
 
 sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
 sfs = sfs[:,2:end]
@@ -50,8 +49,8 @@ function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Arra
 
     wp = CachingPool(workers())
     b = pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,nDiv,nSfs);
-	# return(b)
-	return(reduce(vcat,b))
+	return(b)
+	#=return(reduce(vcat,b))=#
 end
 
 @everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array)
@@ -80,8 +79,8 @@ end
     return(r)
 end
 
-@time df = summStats(adap,4,d,sfsPos);
-@time df = summStats(adap,5889,d,sfsPos);
+@time df = summStats(adap,3,d,sfsPos);
+@time df = summStats(adap,589,d,sfsPos);
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);
 

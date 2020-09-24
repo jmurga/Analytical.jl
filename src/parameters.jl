@@ -28,7 +28,6 @@ import Parameters: @with_kw
 
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
 	# bn::Dict = Dict{Float64,Array{Float64,2}}()
-
 end
 
 """
@@ -165,8 +164,6 @@ function setPpos!(param::parameters)
 	param.pposL,param.pposH = pposL, pposH
 
  end
-
-
 
 """
 	binomOp(param)
