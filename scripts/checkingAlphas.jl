@@ -39,14 +39,14 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		d = [convert(Int64,sum(divergence[1:2]))]
 
 		# Estimating input alpha_x
-		rSfs         = Analytical.reduceSfs(sfs,999)'
-		rSfsCumu     = Analytical.cumulativeSfs(Analytical.reduceSfs(sfs,999)')
+		rSfs         = Analytical.reduceSfs(sfs,100)'
+		rSfsCumu     = Analytical.cumulativeSfs(Analytical.reduceSfs(sfs,100)')
 		alpha        = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
 		alphaCumu        = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[:,2],digits=5)'
 		alphaReduced = hcat(alpha',alphaCumu')
 
 		# Estimating sampled alpha_x
-		param = Analytical.parameters(N=500,n=500,B=0.3,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
+		param = Analytical.parameters(N=500,n=500,B=0.8,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
 		# param.nn = param.nn+1
 		Analytical.binomOp!(param)
 
@@ -59,12 +59,13 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		param.theta_f = theta_f
 		param.B = j
 
-		x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),999,0.999)
-		x2,y2,z2 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),999,0.999)
+		x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),100,0.999)
+		x2,y2,z2 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),100,0.999)
 		asymp1 = Analytical.asympFit(alpha')[2]
 
 		# Df to plot
-		dfSampled = hcat(alphaReduced,z1[:,4:end]',z2[:,4:end]')
+		# dfSampled = hcat(alphaReduced,z1[:,4:end]',z2[:,4:end]')
+		dfSampled = hcat(alphaReduced[:,2],z2[:,4:end]')
 		p1        = plot(dfSampled,label = ["Input α(x)" "Input α(x) cumulative" "sampled α(x)" "sampled α(x) cumulative"],title = "noDemog: " * "α=" * string(α) * ";αW=" * string(αW) * ";B="* string(bgs),linewidth=1.5,legend=:outerright,ylim=(-1,0.5))
 		p1        =hline!([asymp1],label="Asymptotic α",linecolor =:black,linestyle =:dot)
 
@@ -72,7 +73,7 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		# out2 = []
 		for i in 1:50
 			# x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),100,0.999)
-			x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),999,0.999)
+			x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),100,0.999)
 			# push!(out2,z2[4:end])
 			push!(out1,z1[4:end])
 		end

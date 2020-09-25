@@ -8,7 +8,7 @@ using Test
     Analytical.binomOp!(adap)
     Analytical.set_theta_f!(adap)
     Analytical.setPpos!(adap)
-    
+
     @test adap.pposH == 0.0
     @test adap.theta_f == 5.417709306355064e-7
 
