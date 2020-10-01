@@ -132,7 +132,7 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;param::parameters)
+function analyticalAlpha(;param::parameters,bins::Int64)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -154,7 +154,7 @@ function analyticalAlpha(;param::parameters)
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	tmp = reduceSfs(cumulativeSfs(hcat(neut,selH,selL,selN)),bins)'
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
@@ -238,7 +238,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
-
+	7
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
@@ -284,11 +284,11 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	return (α,α_nopos,expectedValues)
 end
 
-function summaryStatistics(fileName::String,summStats)
+function summaryStatistics(fileName::String,summStat)
 
 	names = collect('a':'z')
-	for i in 1:size(summStats,1)
-		write(fileName * "_" * names[i] * ".tsv", summStats[i:i,:], delim='\t', append=true)
+	for i in 1:size(summStat,1)
+		write(fileName * "_" * names[i] * ".tsv", DataFrame(summStat[i:i,:]), delim='\t', append=true)
 	end
 end
 

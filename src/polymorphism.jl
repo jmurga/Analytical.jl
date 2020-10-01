@@ -33,11 +33,11 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 
 	# subsetDict = get(param.bn,param.B,1)
 	# subsetDict = binom
-	out = param.B*(param.theta_mid_neutral)*0.255*(binom*solvedNeutralSfs)
-	out = @view out[2:end-1,:]
-	
-	return 	out
+	out::Array{Float64,1} = param.B*(param.theta_mid_neutral)*0.255*(binom*solvedNeutralSfs)
+	# out = @view out[2:end-1]
+	out = out[2:end-1]
 
+	return 	out
 end
 
 ############Positive############
@@ -58,7 +58,7 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
-		out = @view out[2:end-1,:]
+		out = out[2:end-1]
 	else
 
 		exponentialType = Union{Float64,ArbFloat{48}}
@@ -115,7 +115,7 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		# subsetDict = get(param.bn,param.B,1)
 		# out               = (param.theta_mid_neutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
 		out = (param.theta_mid_neutral)*red_plus*0.745*(binom*solvedPositiveSfs)
-		out = @view out[2:end-1,:]
+		out = out[2:end-1]
 
 	end
 
@@ -172,9 +172,10 @@ function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCS
 	solvedNegative = DiscSFSSelNeg(param,ppos)
 	# out::Array = param.B*(param.theta_mid_neutral)*0.745*(subsetDict*solvedNegative)
 	out = param.B*(param.theta_mid_neutral)*0.745*(binom*solvedNegative)
-	out = @view out[2:end-1]
+	# out = @view out[2:end-1]
 
-	return out
+	return out[2:end-1]
+
 end
 
 function DiscSFSSelNeg(param::parameters,ppos::Float64)
@@ -230,7 +231,7 @@ function reduceSfs(sfsTemp::Array,bins::Int64)
 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
 
 	tmp = hcat(sfsTemp,xmap1)
-	out = Array{Int64}(undef,bins,size(sfsTemp,2))
+	out = Array{Float64}(undef,bins,size(sfsTemp,2))
 	vIter =  convert(Array,unique(xmap1)')
 	@simd for i = eachindex(vIter)
 		@inbounds out[i,:] = sum(tmp[tmp[:,end] .== i,1:end-1],dims=1)

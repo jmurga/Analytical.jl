@@ -10,7 +10,7 @@ sfs = sfs[:,2:end]
 sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs))
 
 sfsPos   = sCumu[:,1] + sCumu[:,2]
-sfsNopos = sCumu[:,4] + sCumu[:,2] 
+sfsNopos = sCumu[:,4] + sCumu[:,2]
 
 divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
 d = [convert(Int64,sum(divergence[1:2]))]
@@ -24,14 +24,14 @@ alphaCumu   = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[
 param = Analytical.parameters(N=1000,n=661,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.3,Lf=2*10^5)
 Analytical.binomOp!(param)
 
-j = param.B
-Analytical.set_theta_f(param)
-theta_f = param.theta_f
-param.B = 0.999
-Analytical.set_theta_f(param)
-Analytical.setPpos(param)
-param.theta_f = theta_f
-param.B = j
+@time j = param.B;
+@time Analytical.set_theta_f!(param);
+@time theta_f = param.theta_f;
+@time param.B = 0.999;
+@time Analytical.set_theta_f!(param);
+@time Analytical.setPpos!(param);
+@time param.theta_f = theta_f;
+@time param.B = j;
 
 x3 ,y3 = Analytical.analyticalAlpha(param=param)
 
@@ -42,14 +42,14 @@ Plots.theme(:vibrant)
 p = hcat(x,y,reverse(alphaCumu'),convert(Array,z2[:,4:end])')
 lb=["Analytical α" "Analytical α_nopos" "Simulated α" "Sampled α"]
 fn = plot(p,legend = :outertopright,label=lb,layout=4)
-fn1 = plot(α,label="Analytical α",legend = :outertopright) 
+fn1 = plot(α,label="Analytical α",legend = :outertopright)
 fn2 = plot(alxSummStat,label="Sampled α",legend = :outertopright,linecolor="#d43625")
 l = @layout [a; b; c]
 plot(fn,fn1,fn2,layout=l)
 
 function summStats(param::parameters,iter::Int64,div::Array,sfs::Array,output::String,b::Int64,c::Float64)
     # @threads
-    
+
         @showprogress for i in 1:iter
         # for i in 1:iter
 
@@ -57,14 +57,14 @@ function summStats(param::parameters,iter::Int64,div::Array,sfs::Array,output::S
                 fac       = rand(-2:0.05:2)
                 afac      = 0.184*(2^fac)
                 bfac      = 0.000402*(2^fac)
-                
+
                 # alTot     = rand(collect(0.01:0.01:0.4))
                 alTot     = rand(collect(0.05:0.05:0.4))
                 # alLow     = round(rand(collect((alTot/10):(alTot/10):alTot)),digits=5)
                 lfac      = rand(collect(0.1:0.1:0.9))
                 alLow     = round(alTot * lfac,digits=5)
         # println((thread=Threads.threadid(), iteration=i))
-        
+
                 bgsIter(param,afac,bfac,alTot,alLow,div,sfs,output,b,c)
         end
 end
@@ -73,7 +73,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
         for j in param.bRange
                 # j = 0.999
-                param.al = afac; param.be = bfac; 
+                param.al = afac; param.be = bfac;
                 param.alLow = alLow; param.alTot = alTot; param.B = j
 
                 set_theta_f!(param)
@@ -96,13 +96,13 @@ end
 pol,sfs,div = parseSfs(param=param,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=50)
 sfs = convert.(Int64,cumulativeSfs(sfs))
 
-	
+
 Plots.theme(:vibrant)
 p = hcat(α,α_nopos,a,b,alxSummStat)
 lb=["Analytical α" "Analytical α_nopos" "Simulated α" "Simulated α_nopos" "Sampled α"]
 l = @layout [a; b; c]
 fn = plot(p,legend = :outertopright,label=lb)
-fn1 = plot(α,label="Analytical α",legend = :outertopright) 
+fn1 = plot(α,label="Analytical α",legend = :outertopright)
 fn2 = plot(alxSummStat,label="Sampled α",legend = :outertopright,linecolor="#d43625")
 plot(fn,fn1,fn2,layout=l)
 
@@ -153,23 +153,23 @@ function analyticalAlpha(;param::parameters)
 
 	ds_nopos       = fN_nopos
     dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
-    
+
 	## Polymorphism
     sel_nopos = selN
-    
+
     αW = param.alLow/param.alTot
 	α_nopos  = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 	αW_nopos = α_nopos * αW
 	αS_nopos  =  α_nopos - αW_nopos
-    
+
 	##########
 	# Output #
 	##########
-	
+
 	return (α,α_nopos)
 	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
-    
+
 
 function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Array{Int64,2},bins::Int64,cutoff::Float64)
 
@@ -201,7 +201,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	## Outputs
 	α = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=false,bins=bins)
 	α = view(α,1:trunc(Int64,param.nn*cutoff),:)
-	
+
 	αS, expectedDn, expectedDs, expectedPn, expectedPs, summStat = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn),expV=true,bins=bins)
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(cumulativePs,cumulativePn);expV=true;bins=bins
 	##################################################################
@@ -223,7 +223,7 @@ function alphaByFrequencies(param::parameters,divergence::Array{Int64,1},sfs::Ar
 	## Outputs
 	α_nopos = sampledAlpha(d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(cumulativePs,cumulativePn_nopos),expV=false,bins=bins)
 	# α_nopos = view(α_nopos,1:trunc(Int64,param.nn * cutoff),:)
-	
+
 	##########
 	# Output #
 	##########
@@ -256,27 +256,27 @@ end
 
 
 function resampleByIndex(;param::parameters,bArr::BitArray{1},alpha::Array{Float64,1},afs::Array{Int64,2},pn::Array{Float64,1},ps::Array{Float64,1},Pn::Array{Int64,2},Ps::Array{Int64,2},Dn::Array{Int64,1},Ds::Array{Int64,1},stats::Array{Float64,2},bins::Int64,cutoff::Float64)
-	
+
 	while sum(bArr) < size(alpha,1)
 		id = findall(x ->x == false, bArr)
-	
+
 		if size(id,1) < 2
 			id = id[1]
 		end
-	
+
 		tmpPn, tmpPs    = poissonPolymorphism(observedValues=afs[:,id],λps=ps,λpn=pn)
 
 		Pn[:,id] = tmpPn; Ps[:,id] = tmpPs;
 		reduceExpPn = view(reduceSfs(tmpPn,bins)',1:bins,:);
 		reduceExpPs = view(reduceSfs(tmpPs,bins)',1:bins,:);
-	
+
 		stats[:,id] = @. 1 - ((Ds[id]/Dn[id])' * (reduceExpPn./reduceExpPs));
 		stats = round.(stats,digits=5);
 
 		tmpAlpha = @. 1 - ((Ds[id]/Dn[id])' * (tmpPn/tmpPs))
 		alpha[id,:] =  @view tmpAlpha[trunc(Int64,param.nn*cutoff),:]
-		bArr[id,:] = alpha[id,:] .> 0 
-		
+		bArr[id,:] = alpha[id,:] .> 0
+
 	end
 
 	return alpha,stats
@@ -306,7 +306,7 @@ function scipyFit(alphaValues::Array{Float64,1})
 		res['alpha'] = exp_model(x1[-1], res['a'], res['b'], res['c'])
 		return(res['alpha'])
 	"""
-		
+
 	# plot(x,alphaTrim)
 	# plot!(x,asympModel(x,fitted.param),legend=:bottomleft)
 
@@ -354,7 +354,7 @@ function alphaByFrequenciesSampled(param::parameters,divergence::Array,sfs::Arra
 	## Alpha from expected values. Used as summary statistics
 	summStat = @. 1 - ((expDs/expDn)' * (reduceExpPn./reduceExpPs));
 	summStat = round.(summStat,digits=5)
-	
+
 	tmp = @. 1 - ((expDs/expDn)' * (expPn/expPs));
 	α = tmp[trunc(Int64,param.nn*cutoff),:]
 
@@ -382,15 +382,15 @@ function alphaByFrequenciesSampled(param::parameters,divergence::Array,sfs::Arra
 	expPn_nopos, expPs_nopos    = poissonPolymorphism(observedValues=sfs,λps=cumulativePs,λpn=cumulativePn_nopos)
 	tmp_nopos = @. 1 - ((expDs/expDn)' * (expPn_nopos/expPs_nopos))
 	α_nopos = tmp_nopos[trunc(Int64,param.nn*cutoff),:]
-	
+
 	alBoolArr = α_nopos .> α
 	while sum(alBoolArr) < size(α_nopos,1)
 		id = findall(x ->x == false, alBoolArr)
-	
+
 		if size(id,1) < 2
 			id = id[1]
 		end
-	
+
 		tmpPn, tmpPs = poissonPolymorphism(observedValues=sfs[:,id],λps=cumulativePs,λpn=cumulativePn_nopos)
 		expPn_nopos[:,id] = tmpPn; expPs_nopos[:,id] = tmpPs;
 
