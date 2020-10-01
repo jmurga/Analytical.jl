@@ -284,7 +284,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	return (α,α_nopos,expectedValues)
 end
 
-function summaryStatistics(fileName::String,summStat)
+function writeSummaryStatistics(fileName::String,summStat)
 
 	names = collect('a':'z')
 	for i in 1:size(summStat,1)

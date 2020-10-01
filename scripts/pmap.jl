@@ -5,8 +5,6 @@ addprocs()
 # Set up model
 adap = Analytical.parameters(N=500,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
 Analytical.binomOp!(adap);
-# analyticalApproach(adap)[1:1000,:]
-
 
 ## Open empirical data
 # path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
@@ -17,11 +15,9 @@ Analytical.binomOp!(adap);
 # div = [div[1]]
 
 sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
-sfs = sfs[:,2:end]
+sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs[:,2:end]))
 
-sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs))
-
-sfsPos   = sfs[:,1] + sfs[:,2]
+sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2]
 
 divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
@@ -32,33 +28,30 @@ alpha = @. 1 - (divergence[2]/divergence[1] * sfs[:,1]/sfs[:,2])
 
 inputAbc = DataFrame(alpha)
 
-CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/sfsnoDemog.tsv", inputAbc, delim='\t',header=false);
+# CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/sfsnoDemog.tsv", inputAbc, delim='\t',header=false);
 
-# function summStats(param::Analytical.parameters,iter::Int64,div::Array,sfs::Array)
-function summStats(param::Analytical.parameters,iter::Int64,bins::Int64)
+function summStats(param::Analytical.parameters,iterations::Int64,div::Array,sfs::Array)
 
-    fac       = rand(-2:0.05:2,iter)
+    fac       = rand(-2:0.05:2,iterations)
     afac      = @. 0.184*(2^fac)
     bfac      = @. 0.000402*(2^fac)
 
-    alTot     = rand(collect(0.01:0.01:0.6),iter)
-    lfac      = rand(collect(0.1:0.1:0.9),iter)
+    alTot     = rand(collect(0.01:0.01:0.6),iterations)
+    lfac      = rand(collect(0.1:0.1:0.9),iterations)
     alLow     = @. round(alTot * lfac,digits=5)
-    nParam = [param for i in 1:iter]
-    nBins = [bins for i in 1:iter]
-    # nDiv = [div for i in 1:iter]
-    # nSfs = [sfs for i in 1:iter]
+    nParam = [param for i in 1:iterations]
+    nDiv = [div for i in 1:iterations]
+    nSfs = [sfs for i in 1:iterations]
 
     wp = CachingPool(workers())
-    b = pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,nBins);
+    b = pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,nDiv,nSfs);
 	return(b)
 	#=return(reduce(vcat,b))=#
 end
 
-# @everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array)
-@everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,bins::Int64)
+@everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array)
 
-    r = Array{Float64}(undef, 17, bins + 3	)
+    r = Array{Float64}(undef, 17, 100 + 3	)
     # r = zeros(1,103)
     param.al = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
@@ -73,15 +66,9 @@ end
         Analytical.setPpos!(param)
         param.theta_f = theta_f
         param.B = j
-        # x,y,z = Analytical.alphaByFrequencies(param,div,sfs,100,0.9)
-        x,y = Analytical.analyticalAlpha(param=param,bins=bins)
+        x,y,z = Analytical.alphaByFrequencies(param,div,sfs,100,0.9)
 
-		αW         = param.alLow/param.alTot
-		αW_nopos   = y[end] * αW
-		αS_nopos   = y[end] * (1 - αW)
-
-		x = pushfirst!(x,αW_nopos,αS_nopos,y[end])
-        r[iter,:] = x
+        r[iter,:] = z
         iter = iter + 1;
         # println(z)
     end
@@ -89,7 +76,7 @@ end
     return(r)
 end
 
-@time df = summStats(adap,3,100);
+@time df = summStats(adap,3,d,sfsPos);
 @time df = summStats(adap,589,100);
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);

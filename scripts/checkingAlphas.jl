@@ -1,6 +1,6 @@
 # Open empirical data
 using Analytical, CSV, DataFrames, Plots
-using CSV, DataFrames, Plots
+# using CSV, DataFrames, Plots
 # param = parameters(N=1000,n=50,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=0.4,alLow=0.2);param.nn=101 ;binomOp(param)
 
 struct onlyone <: AbstractMatrix{Bool}
@@ -54,7 +54,7 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		alphaReduced = hcat(alpha',alphaCumu')
 
 		# Estimating sampled alpha_x
-		param = Analytical.parameters(N=500,n=500,B=newBgs,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
+		param = Analytical.parameters(N=5000,n=500,B=newBgs,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
 		# param.nn = param.nn+1
 		Analytical.binomOp!(param)
 
@@ -67,8 +67,15 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		param.theta_f = theta_f
 		param.B = j
 
-		x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),500,0.999)
+		# x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),500,0.999)
 		x2,y2,z2 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),999,0.999)
+		dfSampled = hcat(alphaReduced[:,2],z2[:,4:end]')
+		p2 = plot(dfSampled,legend=:outerright,label=["Input α(x) cumulative" "sampled α(x) cumulative"],ylim=(-0.3,0.4))
+
+		l = @layout [a; b]
+		plot(p,p2,layout=l)
+		savefig("/home/jmurga/pSizeSampling.svg")
+
 		asymp1 = Analytical.asympFit(alpha')[2]
 
 		# Df to plot
