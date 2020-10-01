@@ -132,7 +132,7 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;param::parameters,bins::Int64)
+function analyticalAlpha(;param::parameters)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -154,7 +154,7 @@ function analyticalAlpha(;param::parameters,bins::Int64)
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	tmp = reduceSfs(cumulativeSfs(hcat(neut,selH,selL,selN)),bins)'
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN

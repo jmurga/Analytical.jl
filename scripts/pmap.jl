@@ -58,7 +58,7 @@ end
 # @everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,div::Array,sfs::Array)
 @everywhere function bgsIter(param::Analytical.parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,bins::Int64)
 
-    r = Array{Float64}(undef, 17, 103)
+    r = Array{Float64}(undef, 17, bins + 3	)
     # r = zeros(1,103)
     param.al = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
@@ -74,8 +74,14 @@ end
         param.theta_f = theta_f
         param.B = j
         # x,y,z = Analytical.alphaByFrequencies(param,div,sfs,100,0.9)
-        x,y,z = Analytical.analyticalAlpha(param=param,bins=bins)
-        r[iter,:] = z
+        x,y = Analytical.analyticalAlpha(param=param,bins=bins)
+
+		αW         = param.alLow/param.alTot
+		αW_nopos   = y[end] * αW
+		αS_nopos   = y[end] * (1 - αW)
+
+		x = pushfirst!(x,αW_nopos,αS_nopos,y[end])
+        r[iter,:] = x
         iter = iter + 1;
         # println(z)
     end
@@ -83,8 +89,8 @@ end
     return(r)
 end
 
-@time df = summStats(adap,3,d,sfsPos);
-@time df = summStats(adap,589,d,sfsPos);
+@time df = summStats(adap,3,100);
+@time df = summStats(adap,589,100);
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);
 
