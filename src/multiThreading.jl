@@ -12,7 +12,7 @@ Function to solve randomly *N* scenarios
  - `Array`: summary statistics
 """
 
-function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64,nthreads::Int64)
+function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64)
 
     fac       = rand(-2:0.05:2,iterations)
     afac      = @. 0.184*(2^fac)
@@ -25,7 +25,7 @@ function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{
     ndivergence = [divergence for i in 1:iterations]
     nSfs = [sfs for i in 1:iterations]
 
-    wp = Distributed.CachingPool(Distributed.workers(nthreads))
+    wp = Distributed.CachingPool(Distributed.workers())
     tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs);
 
 	df = reduce(vcat,tmp)

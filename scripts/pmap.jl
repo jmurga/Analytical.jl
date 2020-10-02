@@ -3,24 +3,23 @@ addprocs()
 @everywhere using Analytical, DataFrames, CSV
 # Set up model
 adap = Analytical.parameters(N=500,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
-Analytical.binomOp!(adap);
+Analytical.	binomOp!(adap);
 
-sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
+sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.1_0.999/sfs.tsv")))
 rSfs = convert.(Int64,Analytical.reduceSfs(Analytical.cumulativeSfs(sfs[:,2:end]),100))'
 sCumu = Analytical.cumulativeSfs(sfs[:,2:end])
 
 sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2]
 
-divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
-d = [convert(Int64,sum(divergence[1:2]))]
+divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.1_0.999/div.tsv")))
+d = [convert(Float64,sum(divergence[1:2]))]
 
 alpha = @. 1 - (divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2])
 
 inputAbc = DataFrame(alpha')
 
-
-@time df = Analytical.summaryStats(adap,3,d,sfsPos);
+@time df = Analytical.summaryStats(adap,d,sfsPos,100,3);
 @time df = Analytical.summaryStats(adap,583,d,sfsPos);
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);
