@@ -1,18 +1,9 @@
-
 using Distributed
 addprocs()
 @everywhere using Analytical, DataFrames, CSV
 # Set up model
 adap = Analytical.parameters(N=500,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
 Analytical.binomOp!(adap);
-
-## Open empirical data
-# path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
-# files = path .* filter(x -> occursin(suffix,x), readdir(path))[1]
-
-# pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
-# sfs = sfs[:,1]
-# div = [div[1]]
 
 sfs = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/sfs.tsv")))
 rSfs = convert.(Int64,Analytical.reduceSfs(Analytical.cumulativeSfs(sfs[:,2:end]),100))'
@@ -22,7 +13,6 @@ sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2]
 
 divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
-# divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
 d = [convert(Int64,sum(divergence[1:2]))]
 
 alpha = @. 1 - (divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2])
@@ -30,13 +20,20 @@ alpha = @. 1 - (divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2])
 inputAbc = DataFrame(alpha')
 
 
-@time df = summStats(adap,3,d,sfsPos);
-@time df = summStats(adap,589,100);
+@time df = Analytical.summaryStats(adap,3,d,sfsPos);
+@time df = Analytical.summaryStats(adap,583,d,sfsPos);
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);
 
 
 
+## Open empirical data
+# path= "/home/jmurga/mkt/202004/rawData/";suffix="txt";
+# files = path .* filter(x -> occursin(suffix,x), readdir(path))[1]
+
+# pol,sfs,div = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+# sfs = sfs[:,1]
+# div = [div[1]]
 
 # CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/sfsnoDemog.tsv", inputAbc, delim='\t',header=false);
 #

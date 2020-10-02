@@ -12,7 +12,7 @@ Function to solve randomly *N* scenarios
  - `Array`: summary statistics
 """
 
-function summaryStats(param::parameters,iterations::Int64,divergence::Array,sfs::Array,nthreads::Int64)
+function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64,nthreads::Int64)
 
     fac       = rand(-2:0.05:2,iterations)
     afac      = @. 0.184*(2^fac)
@@ -45,30 +45,31 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64)
 
-    r = Array{Float64}(undef, 17, 100 + 3	)
+    r = Array{Float64}(undef, 17, bins + 3)
     # r = zeros(1,103)
     param.al = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
+    
+    # Solve probabilites without B effect to get to achieve α value
+    param.B = 0.999
+    Analytical.set_theta_f!(param)
+    Analytical.setPpos!(param)
+
     iter = 1
-
 	for j in param.bRange
+        
         param.B = j
-
+        # Solve mutation given a new B value.
         Analytical.set_theta_f!(param)
-        theta_f = param.theta_f
-        param.B = 0.999
-        Analytical.set_theta_f!(param)
-        Analytical.setPpos!(param)
-        param.theta_f = theta_f
-        param.B = j
+        # Solven given same probabilites probabilites ≠ bgs mutation rate.
         x,y,z = Analytical.alphaByFrequencies(param,divergence,sfs,100,0.9)
-
+    
         r[iter,:] = z
         iter = iter + 1;
         # println(z)
     end
-    # return(reduce(vcat,r))
-    return(r)
+    
+    return r
 end
