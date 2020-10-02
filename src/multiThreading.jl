@@ -11,7 +11,6 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-
 function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64)
 
     fac       = rand(-2:0.05:2,iterations)
@@ -26,7 +25,7 @@ function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{
     nSfs = [sfs for i in 1:iterations]
 
     wp = Distributed.CachingPool(Distributed.workers())
-    tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs);
+    tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,bins);
 
 	df = reduce(vcat,tmp)
 	return df
@@ -58,7 +57,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
     Analytical.setPpos!(param)
 
     iter = 1
-	for j in param.bRange
+    for j in param.bRange
         
         param.B = j
         # Solve mutation given a new B value.
