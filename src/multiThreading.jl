@@ -17,15 +17,16 @@ function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{
     afac      = @. 0.184*(2^fac)
     bfac      = @. 0.000402*(2^fac)
 
-    alTot     = rand(collect(0.01:0.01:0.6),iterations)
-    lfac      = rand(collect(0.1:0.1:0.9),iterations)
-    alLow     = @. round(alTot * lfac,digits=5)
-    nParam = [param for i in 1:iterations]
+    alTot       = rand(collect(0.01:0.01:0.6),iterations)
+    lfac        = rand(collect(0.1:0.1:0.9),iterations)
+    alLow       = @. round(alTot * lfac,digits=5)
+    nParam      = [param for i in 1:iterations]
     ndivergence = [divergence for i in 1:iterations]
-    nSfs = [sfs for i in 1:iterations]
+    nSfs        = [sfs for i in 1:iterations]
+    nBins        = [bins for i in 1:iterations]
 
     wp = Distributed.CachingPool(Distributed.workers())
-    tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,bins);
+    tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
 
 	df = reduce(vcat,tmp)
 	return df
@@ -50,7 +51,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
     # r = zeros(1,103)
     param.al = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
-    
+
     # Solve probabilites without B effect to get to achieve α value
     param.B = 0.999
     Analytical.set_theta_f!(param)
@@ -58,17 +59,17 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
     iter = 1
     for j in param.bRange
-        
+
         param.B = j
         # Solve mutation given a new B value.
         Analytical.set_theta_f!(param)
         # Solven given same probabilites probabilites ≠ bgs mutation rate.
         x,y,z = Analytical.alphaByFrequencies(param,divergence,sfs,100,0.9)
-    
+
         r[iter,:] = z
         iter = iter + 1;
         # println(z)
     end
-    
+
     return r
 end

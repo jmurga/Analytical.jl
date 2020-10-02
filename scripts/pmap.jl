@@ -1,5 +1,5 @@
 using Distributed
-addprocs()
+addprocs(3)
 @everywhere using Analytical, DataFrames, CSV
 # Set up model
 adap = Analytical.parameters(N=500,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
