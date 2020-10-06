@@ -8,7 +8,6 @@ We need to set the model accounting for the sampling value. The *SFS* is expecte
 
 ```julia
 using Analytical
-
 adap = Analytical.parameters(N=1000,n=661)
 ```
 
@@ -18,19 +17,32 @@ Once the model account for the number of samples we can open the files. The func
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="testData.tsv",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/testData",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 ```
 
-The module include a function to solve *N* times different genetic scenarios. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`). To parallelize the process a thread pool is created inside [`summaryStats`](@ref) using the *Distributed* package. To parallel the process you only need to define the available process and add our model to each thread.
+The module include a function to solve *N* times different genetic scenarios. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`).
+```
+# Execute one to compile the function
+Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=1);
+# Make your estimations
+df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
+```
+
+To parallelize the process we created a thread pool inside [`summaryStats`](@ref) using the *Distributed* package. To parallel the process you only need to define the available process and add our model to each thread.
 
 ```julia
 using Distributed
-nthreads=8
+nthreads=4
 addprocs(nthreads)
 # Load the module in all the threads
 @everywhere using Analytical, DataFrames, CSV
+path= "/home/jmurga/mktest/data/";suffix="txt";
+files = path .* filter(x -> occursin(suffix,x), readdir(path))
+
+pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/testData",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+
 # Execute one to compile the function
-Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
+Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=1);
 # Make your estimations
 df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
 CSV.write("/home/jmurga/prior", DataFrame(df), delim='\t',header=false);

@@ -49,7 +49,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 		# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 		newData      = DataFrame(permutedims(α))
 
-		write(output * ".tsv", newData,delim='\t',writeheader=false)
+		CSV.write(output * ".tsv", newData,delim='\t',header=false)
 
 		return ([P],sfs,[D])
 	else
@@ -86,7 +86,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 			newData      = DataFrame(permutedims(α))
 
-			CSV.write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
+			CSV.write(output * string(i) * ".tsv", newData,delim='\t',header=false)
 		end
 		return (P,sfs,D)
 	end
