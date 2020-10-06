@@ -11,7 +11,7 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array{Int64,T},sfs::T,bins::Int64,iterations::Int64) where T <:Int64
+function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,iterations::Int64)
 
 	iterations  = trunc(Int,iterations/17) + 1
 	# N random prior combinations

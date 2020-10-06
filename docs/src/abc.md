@@ -21,7 +21,7 @@ pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/tes
 ```
 
 The module include a function to solve *N* times different genetic scenarios. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`).
-```
+```julia
 # Execute one to compile the function
 Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=1);
 # Make your estimations
@@ -32,10 +32,10 @@ To parallelize the process we created a thread pool inside [`summaryStats`](@ref
 
 ```julia
 using Distributed
-nthreads=4
-addprocs(nthreads)
+nthreads=4; addprocs(nthreads)
 # Load the module in all the threads
 @everywhere using Analytical, DataFrames, CSV
+adap = Analytical.parameters(N=1000,n=661)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
