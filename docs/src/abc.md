@@ -9,6 +9,7 @@ We need to set the model accounting for the sampling value. The *SFS* is expecte
 ```julia
 using Analytical
 adap = Analytical.parameters(N=1000,n=661)
+Analytical.binomOp!(adap)
 ```
 
 Once the model account for the number of samples we can open the files. The function `Analytical.parseSfs` will return polymorphic and divergent counts and SFS accounting for the whole spectrum: `collect(1:adap.nn)/adap.nn`. In addition an output file will be created contained the observed values to input in *ABCreg*.

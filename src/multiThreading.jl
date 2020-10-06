@@ -49,29 +49,29 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64)
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64)
 
 	# Matrix and values to solve
-    r           = Array{Float64}(undef, 17, bins + 3)
+	dm 			= size(divergence,1)
+    r           = Array{Float64}(undef, 17 * dm , bins + 3)
     param.al    = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
 
     # Solve probabilites without B effect to achieve α value
     param.B = 0.999
-    Analytical.set_theta_f!(param)
-    Analytical.setPpos!(param)
+    set_theta_f!(param)
+    setPpos!(param)
 
-    iter = 1
-    for j in param.bRange
-
-        param.B = j
+	iter = 1
+    for j in eachindex(param.bRange)
+        param.B = param.bRange[j]
         # Solve mutation given a new B value.
-        Analytical.set_theta_f!(param)
+        set_theta_f!(param)
         # Solven given same probabilites probabilites ≠ bgs mutation rate.
-        x,y,z = Analytical.alphaByFrequencies(param,divergence,sfs,100,0.9)
-
-        r[iter,:] = z
-        iter = iter + 1;
+        x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,100,0.9)
+		# push!(r,z)
+        r[iter:(iter + (dm - 1)),:] = z
+		iter = iter + dm
     end
 
     return r
