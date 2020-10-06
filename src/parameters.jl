@@ -107,7 +107,7 @@ end
 
 # Set mutation rate given the expected reduction in nucleotide diversity (B value ) in a locus.
 """
-	set_theta_f(param)
+	set_theta_f!(param)
 
 Find the optimum mutation given the expected reduction in nucleotide diversity (B value) in a locus.
 

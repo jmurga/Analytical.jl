@@ -11,24 +11,28 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(param::parameters,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64)
+function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64,iterations::Int64)
 
-    fac       = rand(-2:0.05:2,iterations)
-    afac      = @. 0.184*(2^fac)
-    bfac      = @. 0.000402*(2^fac)
-
-    alTot       = rand(collect(0.01:0.01:0.6),iterations)
+	iterations  = trunc(Int,iterations/17) + 1
+	# N random prior combinations
+    fac         = rand(-2:0.05:2,iterations)
+    afac        = @. shape*(2^fac)
+    bfac        = @. scale*(2^fac)
+    alTot       = rand(collect(0.01:0.01:alpha),iterations)
     lfac        = rand(collect(0.1:0.1:0.9),iterations)
     alLow       = @. round(alTot * lfac,digits=5)
     nParam      = [param for i in 1:iterations]
     ndivergence = [divergence for i in 1:iterations]
     nSfs        = [sfs for i in 1:iterations]
-    nBins        = [bins for i in 1:iterations]
+    nBins       = [bins for i in 1:iterations]
 
-    wp = Distributed.CachingPool(Distributed.workers())
+	# Estimations to thread pool
+    wp  = Distributed.CachingPool(Distributed.workers())
     tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
 
+	# Output
 	df = reduce(vcat,tmp)
+
 	return df
 end
 
@@ -47,12 +51,12 @@ Function to input and solve one scenario given *N* background selection values (
 """
 function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array{Float64,1},sfs::Array{Float64,1},bins::Int64)
 
-    r = Array{Float64}(undef, 17, bins + 3)
-    # r = zeros(1,103)
-    param.al = afac; param.be = bfac;
+	# Matrix and values to solve
+    r           = Array{Float64}(undef, 17, bins + 3)
+    param.al    = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
 
-    # Solve probabilites without B effect to get to achieve α value
+    # Solve probabilites without B effect to achieve α value
     param.B = 0.999
     Analytical.set_theta_f!(param)
     Analytical.setPpos!(param)
@@ -68,7 +72,6 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
         r[iter,:] = z
         iter = iter + 1;
-        # println(z)
     end
 
     return r

@@ -26,7 +26,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 	if (data isa String)
 		freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
-		df   = read(data,header=false,delim=' ')
+		df   = read(data,header=false,delim='\t')
 		df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
 		tmp  = split.(df[:,sfsColumns], ",")
 		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
@@ -63,7 +63,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 		for i in 1:length(data)
 			freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
-			df   = read(data[i],header=false,delim=' ')
+			df   = CSV.read(data[i],header=false,delim=' ')
 			df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
 			tmp  = split.(df[:,sfsColumns], ",")
 			pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
@@ -86,8 +86,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 			# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
 			newData      = DataFrame(permutedims(α))
 
-			write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
-
+			CSV.write(output * string(i) * ".tsv", newData,delim='\t',writeheader=false)
 		end
 		return (P,sfs,D)
 	end

@@ -135,6 +135,22 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
 function analyticalAlpha(;param::parameters)
 
 	##############################################################
+						# Solve the model  #
+	##############################################################
+	set_theta_f!(param)
+	theta_f = param.theta_f
+	# Solve the probabilities of fixations without background selection
+	## First set non-bgs
+	param.B = 0.999
+	## Solve the mutation rate
+	set_theta_f!(param)
+	## Solve the probabilities
+	setPpos!(param)
+	# Return to the original values
+	param.theta_f = theta_f
+	param.B= B
+
+	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
 	##############################################################
 

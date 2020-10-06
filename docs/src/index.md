@@ -1,14 +1,14 @@
 # ABC-MK
 
-ABC-MK is an analytical approximation to $\alpha_{(x)}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves anylitical approximations for different genetic scenarios in order to estimate the strenght and rate of adaptation. 
+ABC-MK is an analytical approximation to $\alpha_{(x)}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios in order to estimate the strength and rate of adaptation.
 
-When empircal values of polymorphims and divergence are given, they will be used to discern their expected correspoding values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*). 
+When empirical values of polymorphism and divergence are given, they will be used to discern their expected values modeled under any Distribution of Fitness Effect (*DFE*) and background selection values (*B*).
 
-Our approach estimates directly $\alpha_{(x)}$ and several statistics ($P_N$, $P_S$, $D_N$, $D_S$, $SFS$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* can be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
+Our approach estimates directly $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* can be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
 
 ## Installation
 
-To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell. Since we use *scipy* to solve equations, the package depends on PyCall.
+To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell.
 
 ```bash
 julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
@@ -20,51 +20,52 @@ Or from Pkg REPL (by pressing `]` at Julia interpreter):
 add https://github.com/jmurga/Analytical.jl
 ```
 
-**Scipy installation**  
-
-You can install *scipy* on your default Python or install it through Julia Conda:
-
-```julia
-julia -e 'using Pkg;Pkg.add("PyCall");using PyCall;pyimport_conda("scipy.optimize", "scipy")'
-```
-
-If you cannot install properly *scipy* through Julia Conda try the following:
-
-- Set an empty Python enviroment and re-build PyCall: `ENV["PYTHON"]="";  Pkg.build("PyCall")`
-- Re-launch Julia and install the scipy.optimize module: `using PyCall;pyimport_conda("scipy.optimize", "scipy)`
-
 ### Docker
 We provide a Docker image based on Debian including Julia and Jupyter notebook. You can access to Debian system or just to Jupyter pulling the image from dockerhub. Remember to link the folder `/analysis` with any folder at your home to save the results:
 
 ```bash
 # Pull the image
 docker pull jmurga/mktest
-# Run docker bash interactive session linking to some local volume to export data. 
+# Run docker bash interactive session linking to some local volume to export data.
 docker run -i -t -v ${HOME}/folderPath:/analysis/folder  jmurga/mktest
 # Run only jupyter notebook from docker image. Change the port if 8888 is already used
 docker run -i -t -v ${HOME}/folderPath:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
+In addition you can directly perform the analysis without using the interactive command-line running just running:
+```bash
+julia script.jl --arg1 --arg2 --arg3
+```
+
+or using Docker (remember to link some folder to output your results!)
+```bash
+docker run -i -t -v ${HOME}/folderPath:/analysis/folder jmurga/mktest --arg1 --arg2 --arg3
+```
 ## Dependencies
-All the dependecies are installed within the package. You don't need to install manually. If you experiment any problem contact us or try to reinstall *Pycall* and *scipy*.
+All the dependencies are installed within the package. You don't need to install manually.
 
 #### Mandatory dependencies to solve the analytical equations
 - [`Roots`](https://github.com/JuliaMath/Roots.jl) - root finding.
+- [`NLsolve`](https://github.com/JuliaStats/Distributions.jl) - non-linear systems of equations solver.
 - [`Distributions`](https://github.com/JuliaStats/Distributions.jl) - probability distributions.
-- [`PyCall`](https://github.com/JuliaPy/PyCall.jl) - directly call and fully interoperate with Python.
 - [`SpecialFunctions`](https://github.com/JuliaMath/SpecialFunctions.jl) - special mathematical functions in Julia.
+- [`ArbNumerics`](https://github.com/JeffreySarnoff/ArbNumerics.jl) - multiprecision numerical computing.
+- [`PoissonRandom`](https://github.com/SciML/PoissonRandom.jl) - Poisson random number generator.
 - [`Parameters`](https://github.com/mauro3/Parameters.jl) - custom keyword constructor.
 
 
-#### The following dependencies are required to use all the funcionalities (parse SFS, plots, etc.)
+#### The following dependencies are required to use all the funcionalities (parse SFS, plots, parse multi-Fasta, etc.)
 - [`CSV`](https://github.com/JuliaNLSolvers/Optim.jl)
 - [`Parsers`](https://github.com/JuliaStats/Distributions.jl)
 - [`StatsBase`](https://github.com/JuliaStats/Distances.jl)
 - [`DataFrames`](https://github.com/JuliaStats/Distances.jl)
 - [`GZip`](https://github.com/JuliaIO/GZip.jl)
+- [`OrderedCollections`](https://github.com/JuliaCollections/OrderedCollections.jl)
+- [`Plots`](https://github.com/JuliaPlots/Plots.jl)
+- [`FastIO`](https://github.com/carlobaldassi/FastaIO.jl)
 
 #### *ABC*
-We link [*ABCreg*](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* estimations. If you are going to use *ABCreg* to do inference please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
+We link [*ABCreg*](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* estimations, although another *ABC* software could be used in order to perform the inference ([abc (R package)]( https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
 
 ```bash
 git clone https://github.com/molpopgen/ABCreg.git

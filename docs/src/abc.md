@@ -7,7 +7,9 @@ In this example we provide a solution to replicate results at [Uricchio et al. 2
 We need to set the model accounting for the sampling value. The *SFS* is expected to be in raw frequencies. If the model is not properly set up, the *SFS* will not be correctly parsed. In our case, we are going to set up a model with default parameters only to parse the *SFS* and convolute the observed frequencies with a binomial distribution.
 
 ```julia
-Analytical.changeParameters(N=1000,n=661,convoluteBinomial=true)
+using Analytical
+
+adap = Analytical.parameters(N=1000,n=661)
 ```
 
 Once the model account for the number of samples we can open the files. The function `Analytical.parseSfs` will return polymorphic and divergent counts and SFS accounting for the whole spectrum: `collect(1:adap.nn)/adap.nn`. In addition an output file will be created contained the observed values to input in *ABCreg*.
@@ -16,62 +18,28 @@ Once the model account for the number of samples we can open the files. The func
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-empiricalValues = Analytical.parseSfs(data=files,output="testData.tsv",sfsColumns=[3,5],divColumns=[6,7])
+pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="testData.tsv",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 ```
 
-We make a function to perform $10^6$ simulated values. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`). 
-
-In Julia you can easily parallelize a loop using ```$ export JULIA_NUM_THREADS=8```. Each iteration will be executed in a thread. In order to check the threads configured, just use in the julia console ```julia> Threads.nthreads()``` before the execution. We compute this example in a Intel i7-7700HQ (8) @ 3.800GHz laptop with 16GB of RAM using 8 threads. Please check [parallelization manual](https://docs.julialang.org/en/v1/manual/parallel-computing/) in order to send the process in a multicore system (or just put two process manually the [*alphaSumStats.jl*](https://github.com/jmurga/Analytical.jl/blob/master/scripts/alphaSumStats.jl) , a script provided to launch from command line).
+The module include a function to solve *N* times different genetic scenarios. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`). To parallelize the process a thread pool is created inside [`summaryStats`](@ref) using the *Distributed* package. To parallel the process you only need to define the available process and add our model to each thread.
 
 ```julia
-function summStats(iter,data)
-#@threads
-	@showprogress for i in 1:iter
-		gam_neg   = -rand(80:400)
-		gL        = rand(10:20)
-		gH        = rand(200:500)
-		alLow     = rand(collect(0.0:0.1:0.2))
-		alTot     = rand(collect(0.0:0.05:0.2))
+using Distributed
+nthreads=8
+addprocs(nthreads)
+# Load the module in all the threads
+@everywhere using Analytical, DataFrames, CSV
+# Execute one to compile the function
+Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
+# Make your estimations
+df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
+CSV.write("/home/jmurga/prior", DataFrame(df), delim='\t',header=false);
 
-		for j in adap.bRange
-			Analytical.changeParameters(
-				gam_neg             = gam_neg,
-				gL                  = gL,
-				gH                  = gH,
-				alLow               = alLow,
-				alTot               = alTot,
-				theta_f             = 1e-3,
-				theta_mid_neutral   = 1e-3,
-				al                  = 0.184,
-				be                  = 0.000402,
-				B                   = j,
-				bRange              = adap.bRange,
-				pposL               = 0.001,
-				pposH               = 0.0,
-				N                   = 1000,
-				n                   = 661,
-				Lf                  = 10^6,
-				rho                 = 0.001,
-				TE                  = 5.0,
-				convoluteBinomial   = false
-			)
+```
 
-			Analytical.set_theta_f()
-			theta_f        = adap.theta_f
-			adap.B         = 0.999
-			Analytical.set_theta_f()
-			Analytical.setPpos()
-			adap.theta_f   = theta_f
-			adap.B         = j
-
-			x,y,z          = Analytical.alphaByFrequencies(gammaL=adap.gL,gammaH=adap.gH,pposL=adap.pposL,pposH=adap.pposH,observedData=data)
-			Analytical.summaryStatistics("/home/jmurga/prior.csv", z)
-		end
-	end
-end
-
-# Launch 10^6 solutions
-@time summStats(58824,empiricalValues)
+Alternatively, if you are going to use the command line script, please make the threads available when executing julia
+```bash
+julia --procs 8 script.jl --arg1 --arg2 --arg3
 ```
 
 ## *ABC* inference

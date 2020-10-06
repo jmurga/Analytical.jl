@@ -1,5 +1,5 @@
 using Distributed
-addprocs(3)
+addprocs()
 @everywhere using Analytical, DataFrames, CSV
 # Set up model
 adap = Analytical.parameters(N=500,n=500,gam_neg=-457, gL=10,gH=500,Lf=10^5,B=0.999,alTot=0.4,alLow=0.2)
@@ -24,6 +24,28 @@ inputAbc = DataFrame(alpha')
 
 CSV.write("/home/jmurga/mkt/202004/rawData/summStat/noDemog/noDemog_0.4_0.2_0.999/noDemog_0.4_0.2_0.999.tsv", df, delim='\t',header=false);
 
+# fac       = rand(-2:0.05:2,iterations)
+# afac      = @. 0.184*(2^fac)
+# bfac      = @. 0.000402*(2^fac)
+#
+# alTot       = rand(collect(0.01:0.01:0.6),iterations)
+# lfac        = rand(collect(0.1:0.1:0.9),iterations)
+# alLow       = @. round(alTot * lfac,digits=5)
+# nParam      = [param for i in 1:iterations]
+# ndivergence = [divergence for i in 1:iterations]
+# nSfs        = [sfs for i in 1:iterations]
+# nBins        = [bins for i in 1:iterations]
+#
+# for i in zip(afac,bfac,alTot,alLow)
+#
+#     param.al = i[1]; param.be = i[2];
+#     param.alLow = i[3]; param.alTot = i[3]
+#
+#     # Solve probabilites without B effect to get to achieve α value
+#     param.B = 0.999
+#     Analytical.set_theta_f!(param)
+#     @time Analytical.setPpos!(param)
+# end
 
 
 ## Open empirical data
