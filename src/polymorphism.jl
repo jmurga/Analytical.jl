@@ -224,6 +224,11 @@ function cumulativeSfs(sfsTemp::Array)
 	return out
 end
 
+"""
+	reduceSfs(sfsTemp,bins)
+
+Function to reduce the SFS into N bins.
+"""
 function reduceSfs(sfsTemp::Array,bins::Int64)
 
 	freq  = collect(0:size(sfsTemp,1)-1)/size(sfsTemp,1)

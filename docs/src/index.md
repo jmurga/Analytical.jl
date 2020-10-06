@@ -64,8 +64,8 @@ All the dependencies are installed within the package. You don't need to install
 - [`Plots`](https://github.com/JuliaPlots/Plots.jl)
 - [`FastIO`](https://github.com/carlobaldassi/FastaIO.jl)
 
-#### *ABC*
-We link [*ABCreg*](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* estimations, although another *ABC* software could be used in order to perform the inference ([abc (R package)]( https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
+## ABC
+We link [*ABCreg*](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* estimations, although another *ABC* software could be used in order to perform the inference ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the priors distributions you can use any other ABC software.
 
 ```bash
 git clone https://github.com/molpopgen/ABCreg.git

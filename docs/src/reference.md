@@ -29,9 +29,13 @@ Analytical.cumulativeSfs
 
 ## Summary statistics
 ```@docs
+Analytical.analyticalAlpha
 Analytical.poissonFixation
 Analytical.poissonPolymorphism
+Analytical.sampledAlpha
 Analytical.alphaByFrequencies
+Analytical.bgsIter
+Analytical.summaryStats
 ```
 
 ## Inference tools
@@ -39,4 +43,9 @@ Analytical.alphaByFrequencies
 Analytical.parseSfs
 Analytical.ABCreg
 Analytical.meanQ
+```
+
+## Raw data tools
+```@docs
+Analytical.uSfsFromFasta
 ```

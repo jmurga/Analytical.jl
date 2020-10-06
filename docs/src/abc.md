@@ -37,6 +37,8 @@ nthreads=4; addprocs(nthreads)
 # Load the module in all the threads
 @everywhere using Analytical, DataFrames, CSV
 adap = Analytical.parameters(N=1000,n=661)
+Analytical.binomOp!(adap)
+
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
@@ -47,7 +49,6 @@ Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,itera
 # Make your estimations
 df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
 CSV.write("/home/jmurga/prior", DataFrame(df), delim='\t',header=false);
-
 ```
 
 Alternatively, if you are going to use the command line script, please make the threads available when executing julia
@@ -59,7 +60,7 @@ julia --procs 8 script.jl --arg1 --arg2 --arg3
 Generic ABC methods proceed by three main steps: (1) first sampling parameter values from prior distributions, (2) next simulating a model and calculating informative summary statistics, and lastly (3) comparing the simulated summary statistics to observed data. The parameter values that produce summary statistics that best match the observed data form an approximate posterior distribution. We link Julia with *ABCreg*. It will output one file per line in data. The files contain the posterior distributions. We return the posterior distributions, mean and quantiles.
 
 ```julia
-posteriors, results  = Analytical.ABCreg(data="/home/jmurga/data.tsv",prior="/home/jmurga/prior.tsv", nparams=27, nsummaries=24, outputPath="/home/jmurga/", outputPrefix="outPaper", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
+posteriors, results  = Analytical.ABCreg(data="/home/jmurga/data.tsv",prior="/home/jmurga/prior.tsv", nparams=3, nsummaries=100, outputPath="/home/jmurga/", outputPrefix="outPaper", tolerance=0.001, regressionMode="T",regPath="/home/jmurga/ABCreg/src/reg")
 ```
 
 You can easily plot the posterior distributions using Julia or just input the files at your favorite plot software.

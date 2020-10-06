@@ -13,9 +13,9 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
 \\mathbb{E}[D_S] = X \\in Poisson\\left(\\lambda = D \\times \\left[\\frac{\\mathbb{E}[D_0]}{\\mathbb{E}[D_+] + \\mathbb{E}[D_-] + \\mathbb{E}[D_0]}\\right]\\right)
 ```
 # Arguments
- - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
- - ` λds`: expected neutral fixations rate.
- - ` λdn`: expected selected fixations rate.
+ - `observedValues::Array`: Array containing the total observed divergence.
+ - ` λds::Float64`: expected neutral fixations rate.
+ - ` λdn::Float64`: expected selected fixations rate.
 # Returns
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
@@ -54,10 +54,10 @@ The success rate managing the Poisson distribution by the observed count each fr
 
 # Arguments
  - `observedValues::Array{Int64,1}`: Array containing the total observed divergence.
- - ` λps `: expected neutral site frequency spectrum rate.
- - ` λpn `: expected selected site frequency spectrum rate.
+ - ` λps::Array{Float64,1} `: expected neutral site frequency spectrum rate.
+ - ` λpn::Array{Float64,1} `: expected selected site frequency spectrum rate.
 # Returns
- - `Array{Int64,1}` containing the expected total count of neutral and selected polymorphism.
+ - `Array{Int64,2}` containing the expected total count of neutral and selected polymorphism.
 
 """
 function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λpn::Array{Float64,1})
@@ -85,6 +85,29 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 	return (sampledPn, sampledPs)
 end
 
+"""
+	sampledAlpha(observedValues,λds, λdn)
+
+Ouput the expected values from the Poisson sampling process. Please check [`Analytical.poissonFixation`](@ref) and [`Analytical.poissonPolymorphism`](@ref) to understand the samplingn process. α(x) is estimated through the expected values of Dn, Ds, Pn and Ps.
+
+# Arguments
+ - `param::parameters`: Array containing the total observed divergence.
+ - `d::Array`: observed divergence.
+ - `afs::Array`: observed polymorphism.
+ - ` λdiv::Array{Float64,2}`: expected fixations rate.
+ - ` λdiv::Array{Float64,2}`: expected site frequency spectrum rates.
+# Returns
+αS,expDn,expDs,expPn,expPs,ssAlpha
+ - `Array{Int64,2}` containing α(x) values.
+ - `Array{Int64,1}` expected non-synonymous divergence.
+ - `Array{Int64,1}` expected synonymous divergence.
+ - `Array{Int64,1}` expected non-synonymous polymorphism.
+ - `Array{Int64,1}` expected synonymous polymorphism.
+ - `Array{Int64,1}` expected synonymous polymorphism.
+ - `Array{Int64,1}` expected synonymous polymorphism.
+ - `Array{Int64,2}` containing α(x) binned values.
+
+"""
 function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
 
 	pn = λpol[:,2]
@@ -306,24 +329,4 @@ function writeSummaryStatistics(fileName::String,summStat)
 	for i in 1:size(summStat,1)
 		write(fileName * "_" * names[i] * ".tsv", DataFrame(summStat[i:i,:]), delim='\t', append=true)
 	end
-end
-
-function asympFit(alphaValues::Array{Float64,1})
-
-	# Model
-	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
-
-	# Fit values
-	fitted1    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
-	fitted2    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
-	asymp      = asympModel(size(alphaValues,1),fitted2.param)
-
-	ciLow, ciHigh   = try
-		LsqFit.confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]
-	catch err
-		(0.0,0.0)
-	end
-
-	return [asymp ciLow ciHigh]
-	# return asymp
 end

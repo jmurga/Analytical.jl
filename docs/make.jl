@@ -1,4 +1,4 @@
-using Documenter, Analytical
+using Documenter, AnalyticaluSfsFromFasta
 
 
 makedocs(
@@ -11,6 +11,7 @@ makedocs(
         "Package Overview" => [
             "Analytical estimations" => "analytical.md",
             "ABC inference" => "abc.md"
+            "Raw data" => "data.md"
         ],
         "Reference" => "reference.md"
     ]

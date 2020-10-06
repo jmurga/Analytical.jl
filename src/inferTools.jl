@@ -1,7 +1,7 @@
 """
 	parseSfs(;data,output,sfsColumns,divColumns)
 
-Function to parse polymorphism and divergence by subset of genes. The input data is based on supplementary material described at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6).
+Function to parse polymorphism and divergence by subset of genes. The input data is based on supplementary material described at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). Please be sure the file is tabulated.
 
 | GeneId | Pn | DAF seppareted by commas | Ps | DAF separated by commas | Dn | Ds |
 |--------|----|--------------------------|----|-------------------------|----|----|

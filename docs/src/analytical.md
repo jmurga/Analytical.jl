@@ -41,7 +41,7 @@ Here we solve $\alpha$ generally using the expected rates. We are not considerin
 x,y = Analytical.analyticalAlpha(gammaL=adap.gL,gammaH=adap.H,pposL=adap.pposL,pposH=adap.pposH)
 ```
 
-Internally the function first set the mutation rate and the probability of fixations given the genetic scenario. Then it estimate the SFS and fixations rates. Please check [`AnalyticalAlpha`](@ref) to understand the process.
+Internally the function first set the mutation rate and the probability of fixations given the genetic scenario. Then it estimate the SFS and fixations rates. Please check [`analyticalAlpha`](@ref) to understand the process.
 
 #### Plotting the results.
 $x$ contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. $y$ contains the true value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles.

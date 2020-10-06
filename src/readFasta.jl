@@ -1,15 +1,14 @@
-
 function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{String,String},1})
 
-	matrix = Array{Char}(undef,samples ,length)
+	matrix = Array{Char}(undef,samples + 2,length)
 
 	deleteIndex = Array{Int8}[]
 
-	for i in 2:samples
+	for i in 1:samples
 		# Extract each sample sequence
 		# tmp = multiFasta[samples[i]][:].seq
 		tmp = sequences[i][2]
-		matrix[i,:] = collect(tmp)
+		matrix[i+1,:] = collect(tmp)
 		# if(len(tmp) != seqLen)
 		# 	print('errorAlign')
 		# 	break
@@ -17,8 +16,6 @@ function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{S
 		# 	deleteIndex.append(i)
 		# else
 	end
-	
-	matrix = matrix[:,(matrix[end,:].!= 'N') .& (matrix[end,:].!= '-')]
 	# matrix = np.delete(matrix,deleteIndex,0)
 	return matrix
 end
@@ -63,15 +60,16 @@ function degeneracy(data::String,codonDict::String)
 end
 
 function iterFastaMatrix(sequenceMatrix::Array{Char,2})
-	
+
 	# output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
 	output = Array{Any,2}[]
-	
+
 	for n in eachcol(sequenceMatrix)
 
 		degen   = n[1]
 		aa      = n[end]
 		pol     = n[2:end-1]
+
 		# Undefined Ancestra Allele. Try to clean out of the loop
 		if (aa == 'N' || aa == '-')
 			continue
@@ -101,7 +99,7 @@ function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 						continue
 					else
 						da = collect(keys(ac))
-						da = da[da .!=aa ]
+						da = da[da .!= aa ]
 
 						if (size(da,1) < 2)
 							af = ac[da[1]]/an
@@ -121,7 +119,7 @@ end
 
 function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 
-	freq = OrderedDict(round.(collect(1:samples-1)/samples,digits=5) .=> 0)
+	freq = OrderedDict(round.(collect(1:samples)/samples,digits=5) .=> 0)
 
 	sfs = rawSfsOutput[rawSfsOutput[:,2].!=1,[1,3]]
 	pn = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .!= "4fold",1])))
@@ -137,22 +135,24 @@ function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 	return(daf,div)
 end
 
-function uSfsFromFasta(file::String,reference::String,samples::Int64,bins::Int64,codonTable::String)
+function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples::Int64,bins::Int64,codonTable::String)
 
-	multiFasta = readfasta(file)
+	multiFasta = readfasta(file);
 	ref        = readfasta(reference)
+	out        = readfasta(outgroup)
 
-	samples = size(multiFasta,1)
+	s = samples
 	seqLen  = length(ref[1][2])
 
 	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
 
 	degenCode = collect(degeneracy(ref[1][2],codonTable));
-
 	multiFastaMatrix[1,:] = degenCode
+	multiFastaMatrix[end,:] = collect(out[1][2])
 
-	m = multiFastaMatrix[:,(multiFastaMatrix[1,:] .== '4') .| (multiFastaMatrix[1,:] .=='0')]
-	
+	m = multiFastaMatrix[:,(multiFastaMatrix[end,:].!= 'N') .& (multiFastaMatrix[end,:].!= '-')]
+	m = m[:,(m[1,:] .== '4') .| (m[1,:] .=='0')]
+
 	joinedSfsDiv = iterFastaMatrix(m)
 
 	sfs, div = formatSfs(joinedSfsDiv,samples,bins)

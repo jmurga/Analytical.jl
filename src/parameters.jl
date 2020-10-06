@@ -136,7 +136,7 @@ function solvEqns(param,config)
 end
 
 """
-	setPpos(param)
+	setPpos!(param)
 
 Find the probabilty of positive selected alleles given the model. It solves a equation system taking into account fixations probabilities of weakly and strong beneficial alleles.
 
