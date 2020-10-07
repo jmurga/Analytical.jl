@@ -26,7 +26,7 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 	if (data isa String)
 		freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
 
-		df   = read(data,header=false,delim='\t')
+		df   = CSV.read(data,header=false,delim='\t')
 		df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
 		tmp  = split.(df[:,sfsColumns], ",")
 		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
@@ -34,9 +34,9 @@ function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output:
 
 		# Empirical data to analytical estimations
 		tmpSfs   = merge(+,pn,ps)
-		sfs = reduce(vcat,values(merge(+,freq,tmpSfs)))
-		P     = sum(sfs)
-		D     = convert(Matrix,df[:,divColumns]) |> sum
+		sfs      = reduce(vcat,values(merge(+,freq,tmpSfs)))
+		P        = sum(sfs)
+		D        = convert(Matrix,df[:,divColumns]) |> sum
 
 		# Dn, Ds, Pn, Ps, sfs
 		Dn           = sum(df[:,divColumns[1]])

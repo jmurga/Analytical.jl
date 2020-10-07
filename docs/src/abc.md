@@ -32,9 +32,11 @@ df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,
 To parallelize the process we created a thread pool inside [`summaryStats`](@ref) using the *Distributed* package. To parallel the process you only need to define the available process and add our model to each thread.
 
 ```julia
+# Load Distributed package and add threads
 using Distributed
-nthreads=4; addprocs(nthreads)
-# Load the module in all the threads
+nthreads=8; addprocs(nthreads)
+
+# Load the pacakgein all the threads
 @everywhere using Analytical, DataFrames, CSV
 adap = Analytical.parameters(N=1000,n=661)
 Analytical.binomOp!(adap)
@@ -42,12 +44,12 @@ Analytical.binomOp!(adap)
 path= "/home/jmurga/mktest/data/";suffix="txt";
 files = path .* filter(x -> occursin(suffix,x), readdir(path))
 
-pol, sfs, d = Analytical.parseSfs(param=adap,data=files,output="/home/jmurga/testData",sfsColumns=[3,5],divColumns=[6,7],bins=100)
+pol, sfs, d = Analytical.parseSfs(param=adap,data=files[1],output="/home/jmurga/data",sfsColumns=[3,5],divColumns=[6,7],bins=100)
 
 # Execute one to compile the function
-Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=1);
+Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=Analytical.cumulativeSfs(sfs),bins=100,iterations=1);
 # Make your estimations
-df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=sfs,bins=100,iterations=10^5);
+df = Analytical.summaryStats(param=adap,alpha=0.4,divergence=d,sfs=Analytical.cumulativeSfs(sfs),bins=100,iterations=10^5);
 CSV.write("/home/jmurga/prior", DataFrame(df), delim='\t',header=false);
 ```
 
