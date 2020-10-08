@@ -160,6 +160,8 @@ function analyticalAlpha(;param::parameters)
 	##############################################################
 						# Solve the model  #
 	##############################################################
+	B = param.B 
+
 	set_theta_f!(param)
 	theta_f = param.theta_f
 	# Solve the probabilities of fixations without background selection
@@ -171,7 +173,7 @@ function analyticalAlpha(;param::parameters)
 	setPpos!(param)
 	# Return to the original values
 	param.theta_f = theta_f
-	param.B= B
+	param.B = B
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
