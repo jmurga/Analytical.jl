@@ -68,7 +68,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
         # Solve mutation given a new B value.
         set_theta_f!(param)
         # Solven given same probabilites probabilites ≠ bgs mutation rate.
-        x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,100,0.9)
+        x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999)
 		# push!(r,z)
         r[iter:(iter + (dm - 1)),:] = z
 		iter = iter + dm

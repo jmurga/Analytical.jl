@@ -114,15 +114,13 @@ Julia to execute *ABCreg*. You should take into account that any other ABC could
 function ABCreg(;data::String, prior::String, nparams::Int64, nsummaries::Int64, outputPath::String, outputPrefix::String,tolerance::Float64, regressionMode::String,regPath="/home/jmurga/ABCreg/src/reg")
 
 	reg = `$regPath -p $prior -d $data -P $nparams -S $nsummaries -b $outputPath$outputPrefix -$regressionMode -t $tolerance`
-
-	openFiles(f) = convert(Matrix,read(open(f),header=false))
-
 	run(reg)
 
+	openFiles(f) = convert(Matrix,read(open(f),header=false))
 	files = outputPath .* filter(x -> occursin(outputPrefix,x), readdir(outputPath))
 
-	posteriors = files .|> openFiles
-	estimates  = posteriors .|> meanQ
+	posteriors = openFiles.(files)
+	estimates  = meanQ.(posteriors)
 
 	return posteriors,estimates
 end
