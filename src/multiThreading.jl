@@ -18,8 +18,8 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
     fac         = rand(-2:0.05:2,iterations)
     afac        = @. shape*(2^fac)
     bfac        = @. scale*(2^fac)
-    alTot       = rand(collect(0.01:0.01:alpha),iterations)
-    lfac        = rand(collect(0.1:0.1:0.9),iterations)
+    alTot       = rand(collect(0.1:0.05:alpha),iterations)
+    lfac        = rand(collect(0.75:0.25:0.75),iterations)
     alLow       = @. round(alTot * lfac,digits=5)
     nParam      = [param for i in 1:iterations]
     ndivergence = [divergence for i in 1:iterations]
@@ -53,7 +53,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-    r           = Array{Float64}(undef, 17 * dm , bins + 3)
+    r           = Array{Float64}(undef, 17 * dm , bins + 4)
     param.al    = afac; param.be = bfac;
     param.alLow = alLow; param.alTot = alTot;
 
