@@ -15,9 +15,9 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 
 	iterations  = trunc(Int,iterations/17) + 1
 	# N random prior combinations
-    fac         = rand(-2:0.05:2,iterations)
-    afac        = @. shape*(2^fac)
-    bfac        = @. scale*(2^fac)
+    fac         = rand(-2:0.05:2,iterations,2)
+    afac        = @. shape*(2^fac[:,1])
+    bfac        = @. scale*(2^fac[:,2])
     alTot       = rand(collect(0.1:0.05:alpha),iterations)
     lfac        = rand(collect(0.75:0.25:0.75),iterations)
     alLow       = @. round(alTot * lfac,digits=5)
