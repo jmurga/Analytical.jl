@@ -54,7 +54,7 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		alphaReduced = hcat(alpha',alphaCumu')
 
 		# Estimating sampled alpha_x
-		param = Analytical.parameters(N=5000,n=500,B=newBgs,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
+		param = Analytical.parameters(N=5000,n=500,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
 		# param.nn = param.nn+1
 		Analytical.binomOp!(param)
 

@@ -160,7 +160,7 @@ function analyticalAlpha(;param::parameters)
 	##############################################################
 						# Solve the model  #
 	##############################################################
-	B = param.B 
+	B = param.B
 
 	set_theta_f!(param)
 	theta_f = param.theta_f
@@ -284,7 +284,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
+	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel)
+	,bins=bins)
 
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
@@ -320,7 +321,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	alphas = repeat(alphas,outer=[size(divergence,1),1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
-	expectedValues = hcat(alphas,permutedims(alxSummStat))
+	expectedValues = hcat(alphas,param.B,permutedims(alxSummStat))
 
 	return (α,α_nopos,expectedValues)
 end
