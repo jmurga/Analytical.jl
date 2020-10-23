@@ -11,7 +11,7 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,iterations::Int64)
+function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1},iterations::Int64)
 
 	iterations  = trunc(Int,iterations/17) + 1
 	# N random prior combinations
@@ -31,8 +31,8 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
     tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
 
 	# Output
-	df = reduce(vcat,tmp)
-
+	df  = reduce(vcat,tmp)
+    idx = vcat(1:3,3 .+ dac)
 	return df
 end
 
