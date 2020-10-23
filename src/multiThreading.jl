@@ -15,24 +15,25 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 
 	iterations  = trunc(Int,iterations/17) + 1
 	# N random prior combinations
-    fac         = rand(-2:0.05:2,iterations,2)
-    afac        = @. shape*(2^fac[:,1])
-    bfac        = @. scale*(2^fac[:,2])
-    alTot       = rand(collect(0.1:0.05:alpha),iterations)
-    lfac        = rand(collect(0.1:0.1:0.9),iterations)
-    alLow       = @. round(alTot * lfac,digits=5)
-    nParam      = [param for i in 1:iterations]
-    ndivergence = [divergence for i in 1:iterations]
-    nSfs        = [sfs for i in 1:iterations]
-    nBins       = [bins for i in 1:iterations]
+	fac         = rand(-2:0.05:2,iterations,2)
+	afac        = @. shape*(2^fac[:,1])
+	bfac        = @. scale*(2^fac[:,2])
+	alTot       = rand(collect(0.1:0.05:alpha),iterations)
+	lfac        = rand(collect(0.1:0.1:0.9),iterations)
+	alLow       = @. round(alTot * lfac,digits=5)
+	nParam      = [param for i in 1:iterations]
+	ndivergence = [divergence for i in 1:iterations]
+	nSfs        = [sfs for i in 1:iterations]
+	nBins       = [bins for i in 1:iterations]
 
 	# Estimations to thread pool
-    wp  = Distributed.CachingPool(Distributed.workers())
-    tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
+	wp  = Distributed.CachingPool(Distributed.workers())
+	tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
 
 	# Output
 	df  = reduce(vcat,tmp)
-    idx = vcat(1:3,3 .+ dac)
+	idx = vcat(1:3,3 .+ dac)
+	df  = df[:,idx]
 	return df
 end
 
@@ -53,26 +54,26 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-    r           = Array{Float64}(undef, 17 * dm , bins + 3)
-    param.al    = afac; param.be = bfac;
-    param.alLow = alLow; param.alTot = alTot;
+	r           = Array{Float64}(undef, 17 * dm , bins + 3)
+	param.al    = afac; param.be = bfac;
+	param.alLow = alLow; param.alTot = alTot;
 
-    # Solve probabilites without B effect to achieve α value
-    param.B = 0.999
-    set_theta_f!(param)
-    setPpos!(param)
+	# Solve probabilites without B effect to achieve α value
+	param.B = 0.999
+	set_theta_f!(param)
+	setPpos!(param)
 
 	iter = 1
-    for j in eachindex(param.bRange)
-        param.B = param.bRange[j]
-        # Solve mutation given a new B value.
-        set_theta_f!(param)
-        # Solven given same probabilites probabilites ≠ bgs mutation rate.
-        x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999)
+	for j in eachindex(param.bRange)
+		param.B = param.bRange[j]
+		# Solve mutation given a new B value.
+		set_theta_f!(param)
+		# Solven given same probabilites probabilites ≠ bgs mutation rate.
+		x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999)
 		# push!(r,z)
-        r[iter:(iter + (dm - 1)),:] = z
+		r[iter:(iter + (dm - 1)),:] = z
 		iter = iter + dm
-    end
+	end
 
-    return r
+	return r
 end
