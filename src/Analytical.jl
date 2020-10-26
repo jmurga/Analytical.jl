@@ -16,5 +16,6 @@ module Analytical
 	include("multiThreading.jl")
 	include("inferTools.jl")
 	include("readFasta.jl")
+	include("methods.jl")
 
 end
