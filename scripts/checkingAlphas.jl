@@ -15,7 +15,7 @@ Base.getindex(o::onlyone,i) = i == 1 ? o.v : !o.v
 Base.getindex(o::onlyone,i,j) = j == 1 ? o.v : !o.v
 
 function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/rawData/simulations/")
-	model="tennesen"
+	model="noDemog"
 	path="/home/jmurga/mkt/202004/rawData/simulations/"
 	dir = path * model
 
@@ -47,14 +47,14 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		d = [convert(Int64,sum(divergence[1:2]))]
 
 		# Estimating input alpha_x
-		rSfs         = Analytical.reduceSfs(sfs,500)'
-		rSfsCumu     = Analytical.cumulativeSfs(Analytical.reduceSfs(sfs,500)')
+		rSfs         = Analytical.reduceSfs(sfs,199)'
+		rSfsCumu     = Analytical.cumulativeSfs(Analytical.reduceSfs(sfs,199)')
 		alpha        = @. round(1 - divergence[2]/divergence[1] * rSfs[:,1]/rSfs[:,2],digits=5)'
 		alphaCumu        = @. round(1 - divergence[2]/divergence[1] * rSfsCumu[:,1]/rSfsCumu[:,2],digits=5)'
 		alphaReduced = hcat(alpha',alphaCumu')
 
 		# Estimating sampled alpha_x
-		param = Analytical.parameters(N=10000,n=250,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
+		param = Analytical.parameters(N=500,n=500,B=0.999,gam_neg=-457,gL=10,gH=500,al=0.184,be=0.000402,alTot=α,alLow=αW,Lf=2*10^5)
 		# param.nn = param.nn+1
 		Analytical.binomOp!(param)
 
@@ -68,7 +68,7 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		param.B = j
 
 		# x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),500,0.999)
-		x2,y2,z2 = Analytical.alphaByFrequencies(param,d,sum(rSfsCumu[:,1:2],dims=2),500,0.999)
+		x2,y2,z2 = Analytical.alphaByFrequencies(param,d,sum(rSfsCumu[:,1:2],dims=2),199,0.999)
 		dfSampled = hcat(alphaReduced[:,2],z2[:,4:end]')
 		p2 = plot(dfSampled,legend=:outerright,label=["Input α(x) cumulative" "sampled α(x) cumulative"],ylim=(-0.3,0.4))
 
@@ -88,8 +88,8 @@ function readSimulations(model::String,path::String="/home/jmurga/mkt/202004/raw
 		out1 = []
 		out2 = []
 		for i in 1:50
-			x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),999,0.999)
-			x1,y1,z2 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),999,0.999)
+			x1,y1,z1 = Analytical.alphaByFrequencies(param,d,sum(sfs[:,1:2],dims=2),100,0.999)
+			x1,y1,z2 = Analytical.alphaByFrequencies(param,d,sum(sCumu[:,1:2],dims=2),100,0.999)
 			push!(out2,z2[4:end])
 			push!(out1,z1[4:end])
 		end

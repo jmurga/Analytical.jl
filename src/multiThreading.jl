@@ -53,8 +53,8 @@ Function to input and solve one scenario given *N* background selection values (
 function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64)
 
 	# Matrix and values to solve
-	dm 			= size(divergence,1)
-	r           = Array{Float64}(undef, 17 * dm , bins + 3)
+	dm 			= 10
+	r           = Array{Float64}(undef, 170 * dm , bins + 3)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
 

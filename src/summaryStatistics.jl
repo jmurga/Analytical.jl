@@ -24,7 +24,7 @@ function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64)
 
 	ds = λds / (λds + λdn)
 	dn = λdn / (λds + λdn)
-
+	observedValues = repeat(observedValues,1,10)
 	# poissonS  = (ds .* observedValues) .|> Poisson
 	# poissonD  = (dn .* observedValues) .|> Poisson
 	# sampledDs = rand.(poissonS,1)
@@ -64,6 +64,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
+	observedValues = repeat(observedValues,1,10)
 	sampledPs = similar(observedValues)
 	sampledPn = similar(observedValues)
 
@@ -74,15 +75,16 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 	λ2 .= @. λpn / (λps + λpn)
 	# λ2 = sum(λpn) / (sum(λps) + sum(λpn))
 
-	psPois(x,z=λ1) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
-	pnPois(x,z=λ2) = reduce.(vcat,rand.((z .* x ).|> Poisson,1))
-	# psPois(x,z=λ1) = PoissonRandom.pois_rand.((z .* x ))
-	# pnPois(x,z=λ2) = PoissonRandom.pois_rand.((z .* x ))
+	# psPois(x,z=λ1) = rand.((z .* x ).|> Poisson,1)
+	# pnPois(x,z=λ2) = rand.((z .* x ).|> Poisson,1)
+	psPois(x,z=λ1) = PoissonRandom.pois_rand.((z .* x ))
+	pnPois(x,z=λ2) = PoissonRandom.pois_rand.((z .* x ))
 
 	sampledPs = psPois(observedValues)
 	sampledPn = pnPois(observedValues)
 
 	return (sampledPn, sampledPs)
+	
 end
 
 """
@@ -118,21 +120,21 @@ function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float6
 	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
 
 	if bins == (param.nn - 1)
-		cumulativeExpPn = view(expPn,1:bins,:)
-		cumulativeExpPs = view(expPs,1:bins,:)
+		reducedExpPn = view(expPn,1:bins,:)
+		reducedExpPs = view(expPs,1:bins,:)
 	else
-		cumulativeExpPn = view(reduceSfs(expPn,bins)',1:bins,:)
-		cumulativeExpPs = view(reduceSfs(expPs,bins)',1:bins,:)
+		reducedExpPn = view(reduceSfs(expPn,bins)',1:bins,:)
+		reducedExpPs = view(reduceSfs(expPs,bins)',1:bins,:)
 	end
 
 
 	## Alpha from expected values. Used as summary statistics
-	ssAlpha = @. 1 - ((expDs/expDn)' * (cumulativeExpPn./cumulativeExpPs))
-	ssAlpha = round.(ssAlpha,digits=5)
+	#ssAlpha = @. 1 - ((expDs/expDn) * (reducedExpPn./cumulativeExpPs))
+	#ssAlpha = round.(ssAlpha,digits=5)
 
-	αS = @. round(1 - ((expDs/expDn)' * (expPn/expPs)),digits=5)
+	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
 
-	return αS,expDn,expDs,expPn,expPs,ssAlpha
+	return αS,expDn,expDs,expPn,expPs
 end
 
 """
@@ -279,13 +281,12 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
-	7
+	
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	αS, expectedDn, expectedDs, expectedPn, expectedPs, alxSummStat = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel)
-	,bins=bins)
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedP= sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
 
 	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
@@ -318,7 +319,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
 	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)
 	alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)
-	alphas = repeat(alphas,outer=[size(divergence,1),1])
+	alphas = repeat(alphas,outer=[10,1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
 	expectedValues = hcat(alphas,permutedims(alxSummStat))
