@@ -13,7 +13,7 @@ Function to solve randomly *N* scenarios
 """
 function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1},iterations::Int64)
 
-	iterations  = trunc(Int,iterations/17) + 1
+	iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
 	fac         = rand(-2:0.05:2,iterations,2)
 	afac        = @. shape*(2^fac[:,1])
@@ -53,7 +53,7 @@ Function to input and solve one scenario given *N* background selection values (
 function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64)
 
 	# Matrix and values to solve
-	dm 			= 10
+	dm 			= size(divergence,1) * 10
 	r           = Array{Float64}(undef, 17 * dm , bins + 3)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
