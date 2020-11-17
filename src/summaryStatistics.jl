@@ -271,8 +271,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	dn       = fNeg + fPosL + fPosH
 
 	## Polymorphism	## Polymorphism
-	# neut = DiscSFSNeutDown(param,param.bn[param.B])
-	neut = param.neut[param.B]
+	neut = DiscSFSNeutDown(param,param.bn[param.B])
+	# neut = param.neut[param.B]
 
 	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
@@ -310,7 +310,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	αW         = param.alLow/param.alTot
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
 	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	amk,ci,model    = asympFit(α_nopos)
+	amk,ci,model = asympFit(α_nopos)
 	αW_nopos   = amk * αW
 	αS_nopos   = amk * (1 - αW)
 	# αW_nopos   = α_nopos * αW
