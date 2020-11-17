@@ -25,10 +25,11 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	ndivergence = [divergence for i in 1:iterations]
 	nSfs        = [sfs for i in 1:iterations]
 	nBins       = [bins for i in 1:iterations]
+	nDac        = [dac for i in 1:iterations]
 
 	# Estimations to thread pool
 	wp  = Distributed.CachingPool(Distributed.workers())
-	tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins);
+	tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins,nDac);
 
 	# Output
 	df  = reduce(vcat,tmp)
@@ -50,7 +51,7 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64)
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64,dac::Array{Float64,1})
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1) * 10
@@ -69,7 +70,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 		# Solve mutation given a new B value.
 		set_theta_f!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
-		x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999)
+		x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999,dac)
 		# push!(r,z)
 		r[iter:(iter + (dm - 1)),:] = z
 		iter = iter + dm
