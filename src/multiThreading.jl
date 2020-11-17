@@ -51,7 +51,7 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64,dac::Array{Float64,1})
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1})
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1) * 10
