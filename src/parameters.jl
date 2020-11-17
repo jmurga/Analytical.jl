@@ -73,6 +73,7 @@ Mutable structure containing the variables required to solve the analytical appr
 	nn::Int64 = 2*n
 
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
+	neut::Dict = Dict{Float64,Array{Float64,1}}()
 	# bn::Dict = Dict{Float64,Array{Float64,2}}()
 end
 
@@ -174,22 +175,27 @@ Site Frequency Spectrum convolution depeding on background selection values. Pas
 """
 function binomOp!(param::parameters)
 
-    bn = Dict(param.bRange[i] => zeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
+	bn = Dict(param.bRange[i] => zeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
 
-    for bVal in param.bRange
+	for bVal in param.bRange
 
-        NN2          = convert(Int64,ceil(param.NN*bVal))
-        samples      = collect(0:param.nn)
-        samplesFreqs = collect(0:NN2)
-        samplesFreqs = permutedims(samplesFreqs/NN2)
+		NN2          = convert(Int64,ceil(param.NN*bVal))
+		samples      = collect(0:param.nn)
+		pSize        = collect(0:NN2)
+		samplesFreqs = permutedims(pSize/NN2)
+		neutralSfs   = @. 1/pSize
+		replace!(neutralSfs, Inf => 0.0)
 
-        f(x) = Distributions.Binomial(param.nn,x)
-        z    = f.(samplesFreqs)
 
-        out  = Distributions.pdf.(z,samples)
+		f(x) = Distributions.Binomial(param.nn,x)
+		z    = f.(samplesFreqs)
+
+		out  = Distributions.pdf.(z,samples)
 		outS  = round.(out,digits=10)
-        param.bn[bVal] = SparseArrays.dropzeros(SparseArrays.sparse(outS))
-        # param.bn[bVal] = outS
+		outS = SparseArrays.dropzeros(SparseArrays.sparse(outS))
+		param.bn[bVal] = outS
+		# param.bn[bVal] = outS
+		param.neut[bVal] = param.B*(param.theta_mid_neutral)*0.255*(outS*neutralSfs)[2:end-1]
 
 	end
 end

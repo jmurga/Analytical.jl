@@ -24,6 +24,6 @@ function asympFit(alphaValues::Array{Float64,1})
 		(0.0,0.0)
 	end
 
-	return [asymp ciLow ciHigh]
+	return asymp,[ciLow,ciHigh],fitted2.param
 	# return asymp
 end
