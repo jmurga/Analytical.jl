@@ -33,8 +33,8 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 
 	# Output
 	df  = reduce(vcat,tmp)
-	idx = vcat(1:3,3 .+ dac)
-	df  = df[:,idx]
+	# idx = vcat(1:3,3 .+ dac)
+	# df  = df[:,idx]
 	return df
 end
 
