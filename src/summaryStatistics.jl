@@ -328,7 +328,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	alphas = repeat(alphas,outer=[10,1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
-	expectedValues = hcat(alphas,permutedims(alxSummStat[dac]))
+	expectedValues = hcat(alphas,permutedims(alxSummStat[dac,:]))
 
 	return (α,α_nopos,expectedValues)
 end
