@@ -278,7 +278,6 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
-	tmp = hcat(neut,selH,selL,selN)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
 	neut, selH, selL, selN = splitColumns(tmp)
