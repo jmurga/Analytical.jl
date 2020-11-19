@@ -57,7 +57,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 2)
+	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 3)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
 
