@@ -13,9 +13,10 @@ Function to solve randomly *N* scenarios
 """
 function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1},iterations::Int64)
 
-	iterations  = trunc(Int,iterations/19) + 1
+	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
-	fac         = rand(-2:0.05:2,iterations,2)
+	# fac         = rand(-2:0.05:2,iterations,2)
+	fac         = rand(-2:0.1:2,iterations,2)
 	afac        = @. shape*(2^fac[:,1])
 	bfac        = @. scale*(2^fac[:,2])
 	alTot       = rand(collect(0.1:0.05:alpha),iterations)
