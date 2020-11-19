@@ -24,7 +24,7 @@ function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64)
 
 	ds = λds / (λds + λdn)
 	dn = λdn / (λds + λdn)
-	observedValues = repeat(observedValues,1,10)
+	# observedValues = repeat(observedValues,1,10)
 	# poissonS  = (ds .* observedValues) .|> Poisson
 	# poissonD  = (dn .* observedValues) .|> Poisson
 	# sampledDs = rand.(poissonS,1)
@@ -64,7 +64,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
-	observedValues = repeat(observedValues,1,10)
+	# observedValues = repeat(observedValues,1,10)
 	sampledPs = similar(observedValues)
 	sampledPn = similar(observedValues)
 
