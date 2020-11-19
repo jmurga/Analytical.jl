@@ -308,13 +308,13 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 
 	## Outputs
 	αW         = param.alLow/param.alTot
-	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
-	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	amk,ci,model = asympFit(α_nopos)
-	αW_nopos   = amk * αW
-	αS_nopos   = amk * (1 - αW)
-	# αW_nopos   = α_nopos * αW
-	# αS_nopos   = α_nopos * (1 - αW)
+	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
+	# amk,ci,model = asympFit(α_nopos)
+	# αW_nopos   = amk * αW
+	# αS_nopos   = amk * (1 - αW)
+	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	αW_nopos   = α_nopos * αW
+	αS_nopos   = α_nopos * (1 - αW)
 
 	##########
 	# Output #
@@ -323,8 +323,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 
 	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
 	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)
-	# alphas = round.(hcat(αW_nopos[end], αS_nopos[end], α_nopos[end]),digits=5)
-	alphas = round.(hcat(αW_nopos, αS_nopos, amk),digits=5)
+	alphas = round.(hcat(αS_nopos[dac[end]], α_nopos[dac[end]]),digits=5)
+	# alphas = round.(hcat(αW_nopos, αS_nopos, amk),digits=5)
 	# alphas = repeat(alphas,outer=[10,1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
