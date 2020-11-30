@@ -45,3 +45,4 @@ ENV PATH /root/julia-1.5.1/bin:$PATH
 ENV PATH /root/ABCreg/src:$PATH
 
 WORKDIR /analysis
+
