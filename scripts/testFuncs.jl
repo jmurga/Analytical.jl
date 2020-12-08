@@ -12,7 +12,7 @@ sCumu = convert.(Int64,Analytical.cumulativeSfs(sfs))
 sfsPos   = sCumu[:,1] + sCumu[:,2]
 sfsNopos = sCumu[:,4] + sCumu[:,2]
 
-divergence = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/tennesen/tennesen_0.4_0.1_0.999/div.tsv")))
+div = convert(Array,DataFrame!(CSV.File("/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.2_0.999/div.tsv")))
 d = [convert(Int64,sum(divergence[1:2]))]
 
 rSfs     = Analytical.reduceSfs(sfs,100)'

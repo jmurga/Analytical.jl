@@ -195,7 +195,7 @@ function binomOp!(param::parameters)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(outS))
 		param.bn[bVal] = outS
 		# param.bn[bVal] = outS
-		param.neut[bVal] = param.B*(param.theta_mid_neutral)*0.255*(outS*neutralSfs)[2:end-1]
+		param.neut[bVal] = round.(param.B*(param.theta_mid_neutral)*0.255*(outS*neutralSfs)[2:end-1],digits=10)
 
 	end
 end
