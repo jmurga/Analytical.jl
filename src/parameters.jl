@@ -11,7 +11,7 @@ import Parameters: @with_kw
 		alLow::Float64,
 		alTot::Float64,
 		theta_f::Float64,
-		theta_mid_neutral::Float64,
+		thetaMidNeutral::Float64,
 		al::Float64,
 		be::Float64,
 		B::Float64,
@@ -34,7 +34,7 @@ Mutable structure containing the variables required to solve the analytical appr
  - `alLow::Float64`:
  - `alTot::Float64`:
  - `theta_f::Float64`:
- - `theta_mid_neutral::Float64`:
+ - `thetaMidNeutral::Float64`:
  - `al::Float64`:
  - `be::Float64`:
  - `B::Float64`:
@@ -55,7 +55,7 @@ Mutable structure containing the variables required to solve the analytical appr
 	alLow::Float64             = 0.2
 	alTot::Float64             = 0.4
 	theta_f::Float64           = 1e-3
-	theta_mid_neutral::Float64 = 1e-3
+	thetaMidNeutral::Float64 = 1e-3
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
 	B::Float64                 = 0.999 
@@ -108,14 +108,14 @@ end
 
 # Set mutation rate given the expected reduction in nucleotide diversity (B value ) in a locus.
 """
-	set_theta_f!(param)
+	setThetaF!(param)
 
 Find the optimum mutation given the expected reduction in nucleotide diversity (B value) in a locus.
 
 # Returns
  - `adap.theta_f::Float64`: changes adap.theta_f value.
 """
-function set_theta_f!(param::parameters)
+function setThetaF!(param::parameters)
 
 	i(θ,p=param) = Br(p,θ)-p.B
 	theta_f      = Roots.find_zero(i,0.0)
@@ -180,7 +180,7 @@ function binomOp!(param::parameters)
 	for bVal in param.bRange
 
 		NN2          = convert(Int64,ceil(param.NN*bVal))
-		samples      = collect(0:param.nn)
+		samples      = collect(1:(param.nn-1))
 		pSize        = collect(0:NN2)
 		samplesFreqs = permutedims(pSize/NN2)
 		neutralSfs   = @. 1/pSize
@@ -195,7 +195,7 @@ function binomOp!(param::parameters)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(outS))
 		param.bn[bVal] = outS
 		# param.bn[bVal] = outS
-		param.neut[bVal] = round.(param.B*(param.theta_mid_neutral)*0.255*(outS*neutralSfs)[2:end-1],digits=10)
+		param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.255*(outS*neutralSfs),digits=10)
 
 	end
 end

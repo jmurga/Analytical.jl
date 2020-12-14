@@ -11,7 +11,7 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1},iterations::Int64)
+function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
@@ -26,12 +26,11 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	nParam      = [param for i in 1:iterations]
 	ndivergence = [divergence for i in 1:iterations]
 	nSfs        = [sfs for i in 1:iterations]
-	nBins       = [bins for i in 1:iterations]
 	nDac        = [dac for i in 1:iterations]
 
 	# Estimations to thread pool
 	wp  = Distributed.CachingPool(Distributed.workers())
-	tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nBins,nDac);
+	tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nDac);
 
 	# Output
 	df  = reduce(vcat,tmp)
@@ -53,26 +52,26 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,bins::Int64,dac::Array{Int64,1})
+function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array,dac::Array{Int64,1})
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 3)
+	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 9)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
 
 	# Solve probabilites without B effect to achieve α value
 	param.B = 0.999
-	set_theta_f!(param)
+	setThetaF!(param)
 	setPpos!(param)
 
 	iter = 1
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
-		set_theta_f!(param)
+		setThetaF!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
-		x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,bins,0.999,dac)
+		x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
 		# push!(r,z)
 		r[iter:(iter + (dm - 1)),:] = z
 		iter = iter + dm

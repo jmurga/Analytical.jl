@@ -110,7 +110,7 @@ Ouput the expected values from the Poisson sampling process. Please check [`Anal
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},bins::Int64=20)
+function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2})
 
 	pn = λpol[:,2]
 	ps = λpol[:,1]
@@ -119,19 +119,7 @@ function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float6
 	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
 	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn)
 
-	if bins == (param.nn - 1)
-		reducedExpPn = view(expPn,1:bins,:)
-		reducedExpPs = view(expPs,1:bins,:)
-	else
-		reducedExpPn = view(reduceSfs(expPn,bins)',1:bins,:)
-		reducedExpPs = view(reduceSfs(expPs,bins)',1:bins,:)
-	end
-
-
 	## Alpha from expected values. Used as summary statistics
-	#ssAlpha = @. 1 - ((expDs/expDn) * (reducedExpPn./cumulativeExpPs))
-	#ssAlpha = round.(ssAlpha,digits=5)
-
 	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
 
 	return αS,expDn,expDs,expPn,expPs
@@ -164,13 +152,13 @@ function analyticalAlpha(;param::parameters)
 	##############################################################
 	B = param.B
 
-	set_theta_f!(param)
+	setThetaF!(param)
 	theta_f = param.theta_f
 	# Solve the probabilities of fixations without background selection
 	## First set non-bgs
 	param.B = 0.999
 	## Solve the mutation rate
-	set_theta_f!(param)
+	setThetaF!(param)
 	## Solve the probabilities
 	setPpos!(param)
 	# Return to the original values
@@ -213,10 +201,10 @@ function analyticalAlpha(;param::parameters)
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos     = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fNeg_nopos   = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosL_nopos  = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosH_nopos  = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fN_nopos     = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
 
 	ds_nopos = fN_nopos
 	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
@@ -256,7 +244,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins::Int64,cutoff::Float64,dac::Array{Int64,1})
+function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::Array{Int64,1})
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -272,12 +260,12 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	dn       = fNeg + fPosL + fPosH
 
 	## Polymorphism	## Polymorphism
-	neut = DiscSFSNeutDown(param,param.bn[param.B])
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
 	# neut = param.neut[param.B]
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
@@ -288,17 +276,16 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(param=param,d=divergence,afs=sfs,λdiv=hcat(ds,dn),λpol=hcat(neut,sel),bins=bins)
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(param=param,d=divergence,afs=sfs[dac],λdiv=hcat(ds,dn),λpol=hcat(neut[dac],sel[dac]))
 
-	# d=divergence;afs=sfs;λdiv=hcat(ds,dn);λpol=hcat(neut,sel);bins=bins
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos       = fN*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fNeg_nopos     = fNeg*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosL_nopos    = fPosL*(param.theta_mid_neutral/2.)*param.TE*param.NN
-	fPosH_nopos    = fPosH*(param.theta_mid_neutral/2.)*param.TE*param.NN
+	fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos     = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos    = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos    = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
 
 	ds_nopos       = fN_nopos
 	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
@@ -326,12 +313,12 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,bins:
 	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
 	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)
 	# alphas = round.(hcat(αW_nopos[dac[end]],αS_nopos[dac[end]], α_nopos[dac[end]], param.alLow, param.alTot),digits=5)
-	alphas = round.(hcat(αW_nopos[dac[end]],αS_nopos[dac[end]], α_nopos[dac[end]]),digits=5)
+	alphas = round.(hcat(αW_nopos[(param.nn-1)],αS_nopos[(param.nn-1)], α_nopos[(param.nn-1)],param.alLow,(param.alTot-param.alLow),param.alTot, αW, (1-αW), param.B),digits=5)
 	# alphas = round.(hcat(αW_nopos, αS_nopos, amk),digits=5)
 	# alphas = repeat(alphas,outer=[10,1])
 
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
-	expectedValues = hcat(alphas,permutedims(alxSummStat[dac,:]))
+	expectedValues = hcat(alphas,permutedims(alxSummStat))
 
 	return (α,α_nopos,expectedValues)
 end
