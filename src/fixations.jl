@@ -108,9 +108,9 @@ Expected positive fixations rate reduced due to the impact of background selecti
 function fixPosSim(param::parameters,gamma::Int64,ppos::Float64)
 
 
-	red_plus = phiReduction(param,gamma)
+	redPlus = phiReduction(param,gamma)
 
 	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
-	out::Float64 = 0.745*ppos*red_plus*pFix(param,gamma)
+	out::Float64 = 0.745*ppos*redPlus*pFix(param,gamma)
 	return out
 end

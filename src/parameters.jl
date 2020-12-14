@@ -5,12 +5,12 @@ import Parameters: @with_kw
 
 """
 	parameters(
-		gam_neg::Int64,
+		gamNeg::Int64,
 		gL::Int64,
 		gH::Int64,
 		alLow::Float64,
 		alTot::Float64,
-		theta_f::Float64,
+		thetaF::Float64,
 		thetaMidNeutral::Float64,
 		al::Float64,
 		be::Float64,
@@ -28,12 +28,12 @@ import Parameters: @with_kw
 Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. For this reason, *adap* is the only exported variable. Adap should be change before the perform the analytical approach, in other case, ```\$\\alpha_{(x)}\$``` will be solve with the default values.
 
 # Parameters
- - `gam_neg::Int64`:
+ - `gamNeg::Int64`:
  - `gL::Int64`:
  - `gH::Int64`:
  - `alLow::Float64`:
  - `alTot::Float64`:
- - `theta_f::Float64`:
+ - `thetaF::Float64`:
  - `thetaMidNeutral::Float64`:
  - `al::Float64`:
  - `be::Float64`:
@@ -49,12 +49,12 @@ Mutable structure containing the variables required to solve the analytical appr
 
 """
 @with_kw mutable struct parameters
-	gam_neg::Int64             = -457
+	gamNeg::Int64             = -457
 	gL::Int64                  = 10
 	gH::Int64                  = 500
 	alLow::Float64             = 0.2
 	alTot::Float64             = 0.4
-	theta_f::Float64           = 1e-3
+	thetaF::Float64           = 1e-3
 	thetaMidNeutral::Float64 = 1e-3
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
@@ -98,7 +98,7 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 function Br(param::parameters,theta::Float64)
 
 	ρ::Float64     = param.rho
-	t::Float64     = -1.0*param.gam_neg/(param.NN+0.0)
+	t::Float64     = -1.0*param.gamNeg/(param.NN+0.0)
 	μ::Float64     = theta/(2.0*param.NN)
 	r::Float64     = ρ/(2.0*param.NN)
 
@@ -113,13 +113,13 @@ end
 Find the optimum mutation given the expected reduction in nucleotide diversity (B value) in a locus.
 
 # Returns
- - `adap.theta_f::Float64`: changes adap.theta_f value.
+ - `adap.thetaF::Float64`: changes adap.thetaF value.
 """
 function setThetaF!(param::parameters)
 
 	i(θ,p=param) = Br(p,θ)-p.B
-	theta_f      = Roots.find_zero(i,0.0)
-	param.theta_f = theta_f
+	thetaF      = Roots.find_zero(i,0.0)
+	param.thetaF = thetaF
 end
 
 function alphaExpSimLow(param::parameters,pposL::Float64,pposH::Float64)
@@ -232,9 +232,9 @@ Multiplying across all deleterious linkes sites, we find:
 
 """
 function phiReduction(param::parameters,gammaValue::Int64)
-	S::Float64 = abs(param.gam_neg/(1.0*param.NN))
+	S::Float64 = abs(param.gamNeg/(1.0*param.NN))
 	r::Float64 = param.rho/(2.0*param.NN)
-	μ::Float64 = param.theta_f/(2.0*param.NN)
+	μ::Float64 = param.thetaF/(2.0*param.NN)
 	s::Float64 = gammaValue/(param.NN*1.0)
 
 	Ψ0::Float64 = SpecialFunctions.polygamma(1,(s+S)/r)

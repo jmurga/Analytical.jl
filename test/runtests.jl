@@ -6,7 +6,7 @@ using Test
 
     adap = Analytical.parameters(N=500,n=661,alLow=0.2)
     Analytical.binomOp!(adap)
-    Analytical.set_theta_f!(adap)
+    Analytical.setThetaF!(adap)
     Analytical.setPpos!(adap)
 
     @test adap.pposH == 0.00026413601466600506

@@ -153,7 +153,7 @@ function analyticalAlpha(;param::parameters)
 	B = param.B
 
 	setThetaF!(param)
-	theta_f = param.theta_f
+	thetaF = param.thetaF
 	# Solve the probabilities of fixations without background selection
 	## First set non-bgs
 	param.B = 0.999
@@ -162,7 +162,7 @@ function analyticalAlpha(;param::parameters)
 	## Solve the probabilities
 	setPpos!(param)
 	# Return to the original values
-	param.theta_f = theta_f
+	param.thetaF = thetaF
 	param.B = B
 
 	##############################################################

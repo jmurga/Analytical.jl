@@ -63,7 +63,7 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 
 		exponentialType = Union{Float64,ArbFloat{48}}
 
-		red_plus = phiReduction(param,gammaValue)
+		redPlus = phiReduction(param,gammaValue)
 
 		# Solving sfs
 		NN2 = convert(Int64,ceil(param.NN*param.B))
@@ -113,8 +113,8 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		replace!(solvedPositiveSfs, NaN => 0.0)
 
 		# subsetDict = get(param.bn,param.B,1)
-		# out               = (param.thetaMidNeutral)*red_plus*0.745*(subsetDict*solvedPositiveSfs)
-		out::Array{Float64,1} = (param.thetaMidNeutral)*red_plus*0.745*(binom*solvedPositiveSfs)
+		# out               = (param.thetaMidNeutral)*redPlus*0.745*(subsetDict*solvedPositiveSfs)
+		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.745*(binom*solvedPositiveSfs)
 		# out = out[2:end-1]
 
 	end
@@ -128,7 +128,7 @@ end
 # 		out = zeros(Float64,adap.nn + 1)
 # 	else
 
-# 		red_plus = phiReduction(gammaValue)
+# 		redPlus = phiReduction(gammaValue)
 
 # 		# Solving sfs
 # 		NN2 = convert(Int64,ceil(adap.NN*adap.B))
@@ -149,7 +149,7 @@ end
 
 # 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
 # 		replace!(solvedPositiveSfs, NaN => 0.0)
-# 		out               = (adap.thetaMidNeutral)*red_plus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
+# 		out               = (adap.thetaMidNeutral)*redPlus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
 # 	end
 
 # 	return view(out,2:lastindex(out)-1,:)
