@@ -10,6 +10,6 @@ using Test
     Analytical.setPpos!(adap)
 
     @test adap.pposH == 0.00026413601466600506
-    @test adap.theta_f == 1.6433217979109018e-6
+    @test adap.thetaF == 1.6433217979109018e-6
 
 end
