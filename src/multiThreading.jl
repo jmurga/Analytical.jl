@@ -38,7 +38,7 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	end
 
 	# Output
-	df = reshape(out,iterations*size(param.bRange,2), (7+size(dac,1)))
+	df = reshape(out,iterations*size(param.bRange,2), (5+size(dac,1)))
 	# df  = reduce(vcat,tmp)
 	# idx = vcat(1:3,3 .+ dac)
 	# df  = df[:,idx]
@@ -62,7 +62,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 7)
+	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 5)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
 
