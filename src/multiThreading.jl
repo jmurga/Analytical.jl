@@ -31,14 +31,14 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	# Estimations to thread pool
 	# wp  = Distributed.CachingPool(Distributed.workers())
 	# tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nDac);
-	out = SharedArray{Float64,3}((iterations,19,(9+size(dac,1))))
+	out = SharedArray{Float64,3}((iterations,19,(3+size(dac,1))))
 	@sync @distributed for i in eachindex(afac)
 		tmp = bgsIter(nParam[i],afac[i],bfac[i],alTot[i],alLow[i],ndivergence[i],nSfs[i],nDac[i])
 		out[i,:,:] = tmp
 	end
 
 	# Output
-	df = reshape(out,iterations*size(param.bRange,2), (5+size(dac,1)))
+	df = reshape(out,iterations*size(param.bRange,2), (3+size(dac,1)))
 	# df  = reduce(vcat,tmp)
 	# idx = vcat(1:3,3 .+ dac)
 	# df  = df[:,idx]
@@ -62,7 +62,7 @@ function bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,al
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
-	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 5)
+	r           = Array{Float64}(undef, 19 * dm , size(dac,1) + 3)
 	param.al    = afac; param.be = bfac;
 	param.alLow = alLow; param.alTot = alTot;
 

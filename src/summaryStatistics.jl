@@ -308,15 +308,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	##########
 	# Output #
 	##########
-	# Dn,Ds,Pn,Ps = expectedDn,expectedDs,sum(view(expectedPn,1,:),dims=2),sum(view(expectedPs,1,:),dims=2)
-
-	# alphas = round.(hcat(param.alTot - param.alLow, param.alLow, param.alTot),digits=5)
-	# alphas = round.(hcat(αW_nopos[trunc(Int64,param.nn*cutoff),:], αS_nopos[trunc(Int64,param.nn*cutoff),:], α_nopos[trunc(Int64,param.nn*cutoff),:]),digits=5)
-	# alphas = round.(hcat(αW_nopos[dac[end]],αS_nopos[dac[end]], α_nopos[dac[end]], param.alLow, param.alTot),digits=5)
-	alphas = round.(hcat(αW_nopos[(param.nn-1)],αS_nopos[(param.nn-1)], α_nopos[(param.nn-1)],expectedDn, expectedDs),digits=5)
-	# alphas = round.(hcat(αW_nopos, αS_nopos, amk),digits=5)
-	# alphas = repeat(alphas,outer=[10,1])
-
+	alphas = round.(hcat(αW_nopos[(param.nn-1)],αS_nopos[(param.nn-1)], α_nopos[(param.nn-1)]),digits=5)
 	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
 	expectedValues = hcat(alphas,permutedims(alxSummStat))
 
