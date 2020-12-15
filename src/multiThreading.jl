@@ -33,7 +33,7 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	# tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nDac);
 	out = SharedArray{Float64,3}((iterations,19,(9+size(dac,1))))
 	@sync @distributed for i in eachindex(afac)
-		tmp = Analytical.bgsIter(nParam[i],afac[i],bfac[i],alTot[i],alLow[i],ndivergence[i],nSfs[i],nDac[i])
+		tmp = bgsIter(nParam[i],afac[i],bfac[i],alTot[i],alLow[i],ndivergence[i],nSfs[i],nDac[i])
 		out[i,:,:] = tmp
 	end
 
