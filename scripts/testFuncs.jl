@@ -435,8 +435,8 @@ function posArblib(param::parameters,gammaValue::Int64,ppos::Float64,binom::Spar
 			# gammaExp1 = exp(ArbFloat(gammaCorrected*2,bits=24))
 			# gammaExp2 = exp(ArbFloat(gammaCorrected*-2,bits=24))
 			
-			gammaExp1 = exp(Arblib.Arb(gammaCorrected*2,prec=10))
-			gammaExp2 = exp(Arblib.Arb(gammaCorrected*-2,prec=10))
+			gammaExp1 = exp(Arblib.Arb(gammaCorrected*2))
+			gammaExp2 = exp(Arblib.Arb(gammaCorrected*-2))
 
 		else
 			gammaExp1 = exp(gammaCorrected*2)
@@ -453,30 +453,6 @@ function posArblib(param::parameters,gammaValue::Int64,ppos::Float64,binom::Spar
 			tmp = @. Float64(ppos*0.5*(num/den))
 			return tmp
 		end
-
-		# function positiveSfs(i::Float64,g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat}}
-		# 	if i > 0 && i < 1.0
-		# 		local tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
-		# 		return Float64(tmp)
-		# 	else
-		# 		return Float64(0.0)
-		# 	end
-		# end
-		#
-		#
-		# function pSfs(x::Array{Float64,2},g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat{48}}}
-		# 	out = Array{Float64,1}[]
-		# 	@inbounds @simd for i in x
-		# 		if i > 0 && i < 1.0
-		# 			tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
-		# 		else
-		# 			tmp = 0.0
-		# 		end
-		#
-		# 	end
-		# 	return out
-		# end
-
 
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (pS.(xa2,gammaExp1,gammaExp2,ppos))
