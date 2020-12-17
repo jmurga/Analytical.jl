@@ -233,15 +233,18 @@ Function to reduce the SFS into N bins.
 function reduceSfs(sfsTemp::Array,bins::Int64)
 
 	freq  = collect(0:(size(sfsTemp,1)-1))/size(sfsTemp,1)
-	h1    = fit(Histogram,freq,0:(1/bins):1)
+	h1    = fit(Histogram,freq,0:(1/(bins-1)):1)
 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
 
 	tmp = hcat(sfsTemp,xmap1)
-	out = Array{Float64}(undef,bins-1	,size(sfsTemp,2))
+	out = Array{Float64}(undef,bins-1 ,size(sfsTemp,2))
 	vIter =  convert(Array,unique(xmap1)')
 	@simd for i = eachindex(vIter)
-		@inbounds out[i,:] = sum(tmp[tmp[:,end] .== i,1:end-1],dims=1)
+		println(i)
+		@inbounds out[i,2:end] = sum(tmp[tmp[:,end] .== i,2:end-1],dims=1)
 	end
 
-	return (out')
+	out[:,1] = collect(1:(bins-1)) ./ bins
+
+	return (out)
 end
