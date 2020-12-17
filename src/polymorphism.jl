@@ -240,7 +240,6 @@ function reduceSfs(sfsTemp::Array,bins::Int64)
 	out = Array{Float64}(undef,bins-1 ,size(sfsTemp,2))
 	vIter =  convert(Array,unique(xmap1)')
 	@simd for i = eachindex(vIter)
-		println(i)
 		@inbounds out[i,2:end] = sum(tmp[tmp[:,end] .== i,2:end-1],dims=1)
 	end
 
