@@ -19,77 +19,33 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
 """
-function parseSfs(;param::parameters,data::Union{String,Array{String,1}},output::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Int64)
+function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1})
 
-	g(x) = parse.(Float64,x[2:end-1])
+    g(x) = parse.(Float64,x[2:end-1])
+    
+    s = (sample*2)
+    freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
-	if (data isa String)
-		freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
+    df   = CSV.read(data,header=false,delim='\t')
+    df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
+    tmp  = split.(df[:,sfsColumns], ",")
+    pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
+    ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
-		df   = CSV.read(data,header=false,delim='\t')
-		df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
-		tmp  = split.(df[:,sfsColumns], ",")
-		pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
-		ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
+    # Dn, Ds, Pn, Ps, sfs
+    Dn           = sum(df[:,divColumns[1]])
+    Ds           = sum(df[:,divColumns[2]])
+    Pn           = sum(values(pn))
+    Ps           = sum(values(ps))
+    sfsPn        = Analytical.cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
+    sfsPs        = (Analytical.cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
+    α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)[dac]
 
-		# Empirical data to analytical estimations
-		tmpSfs   = merge(+,pn,ps)
-		sfs      = reduce(vcat,values(merge(+,freq,tmpSfs)))
-		P        = sum(sfs)
-		D        = convert(Matrix,df[:,divColumns]) |> sum
+    D = [Dn+Ds]
+    cSfs = sfsPn+sfsPs
 
-		# Dn, Ds, Pn, Ps, sfs
-		Dn           = sum(df[:,divColumns[1]])
-		Ds           = sum(df[:,divColumns[2]])
-		Pn           = sum(values(pn))
-		Ps           = sum(values(ps))
-		sfsPn        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,pn)))),bins)'
-		sfsPs        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))),bins)'
-		α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
-		# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
-		newData      = DataFrame(permutedims(α))
-
-		CSV.write(output * ".tsv", newData,delim='\t',header=false)
-
-		return ([P],sfs,[D])
-	else
-
-		P         = Array{Int64}(undef,length(data))
-		D         = Array{Int64}(undef,length(data))
-		sfs       = Array{Int64}(undef,param.nn-1,length(data),)
-		summSfs   = Array{Float64}(undef,length(data),param.nn-1)
-		# newData   = DataFrame(undef,length(data),4+bins)
-
-		for i in 1:length(data)
-			freq = OrderedDict(round.(collect(1:param.nn-1)/param.nn,digits=4) .=> 0)
-
-			df   = CSV.read(data[i],header=false,delim=' ')
-			df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
-			tmp  = split.(df[:,sfsColumns], ",")
-			pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
-			ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
-
-			# Empirical data to analytical estimations
-			tmpSfs   = merge(+,pn,ps)
-			sfs[:,i] = reduce(vcat,values(merge(+,freq,tmpSfs)))
-			P[i]     = sum(sfs[:,i])
-			D[i]     = convert(Matrix,df[:,divColumns]) |> sum
-
-			# Dn, Ds, Pn, Ps, sfs
-			Dn           = sum(df[:,divColumns[1]])
-			Ds           = sum(df[:,divColumns[2]])
-			Pn           = sum(values(pn))
-			Ps           = sum(values(ps))
-			sfsPn        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,pn)))),bins)'
-			sfsPs        = reduceSfs(cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))),bins)'
-			α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)
-			# newData      = hcat(DataFrame([Dn Ds Pn Ps]),DataFrame(permutedims(α)),makeunique=true)
-			newData      = DataFrame(permutedims(α))
-
-			CSV.write(output * string(i) * ".tsv", newData,delim='\t',header=false)
-		end
-		return (P,sfs,D)
-	end
+    sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
+    return (α,cSfs,D,sfs)
 end
 
 """
