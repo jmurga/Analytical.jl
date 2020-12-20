@@ -308,9 +308,9 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	##########
 	# Output #
 	##########
-	alphas = round.(hcat(αW_nopos[(param.nn-1)],αS_nopos[(param.nn-1)], α_nopos[(param.nn-1)]),digits=5)
-	# alphas = round.(hcat(αW_nopos[dac[end]],αS_nopos[dac[end]], α_nopos[dac[end]]),digits=5)
-	# expectedValues = hcat(DataFrame(alphas),DataFrame(hcat(Dn,Ds,Pn,Ps)),DataFrame(permutedims(alxSummStat)),makeunique=true)
+	# alphas = round.(hcat(αW_nopos[(param.nn-1)],αS_nopos[(param.nn-1)], α_nopos[(param.nn-1)]),digits=5)
+	alphas = round.(hcat(param.alLow,param.alTot,α_nopos[(param.nn-1)]),digits=5)
+
 	expectedValues = hcat(alphas,permutedims(alxSummStat))
 
 	return (α,α_nopos,expectedValues)

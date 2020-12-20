@@ -11,16 +11,17 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64)
+function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
 	# fac         = rand(-2:0.05:2,iterations,2)
-	
-	fac         = rand(-2:0.5:2,iterations,2)
+    alpha = trunc(amk,digits=1)
+
+	fac         = rand(-2:0.05:2,iterations,2)
 	afac        = @. shape*(2^fac[:,1]) 
 	bfac        = @. scale*(2^fac[:,2])
-	alTot       = rand(collect(0.1:0.05:alpha),iterations)
+	alTot       = rand(collect(alpha:0.05:(alpha*2)),iterations)
 	lfac        = rand(collect(0.1:0.1:0.9),iterations)
 	alLow       = @. round(alTot * lfac,digits=5)
 	nParam      = [param for i in 1:iterations]
@@ -44,7 +45,6 @@ function summaryStats(;param::parameters,alpha::Float64,shape::Float64=0.184,sca
 	# df  = df[:,idx]
 	return df
 end
-
 """
 	bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
 
