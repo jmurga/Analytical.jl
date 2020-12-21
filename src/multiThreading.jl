@@ -22,7 +22,7 @@ function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale
 	afac        = @. shape*(2^fac[:,1]) 
 	bfac        = @. scale*(2^fac[:,2])
 
-	alTot = rand(collect(amk:0.05:0.95,iterations))
+	alTot = rand(collect(amk:0.05:0.95),iterations)
 	lfac        = rand(collect(0.1:0.1:0.9),iterations)
 	alLow       = @. round(alTot * lfac,digits=5)
 	nParam      = [param for i in 1:iterations]
