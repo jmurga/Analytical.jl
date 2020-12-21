@@ -16,18 +16,13 @@ function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
 	# fac         = rand(-2:0.05:2,iterations,2)
-    alpha = trunc(amk,digits=1)
+    alpha = round(amk,digits=1)
 
 	fac         = rand(-2:0.05:2,iterations,2)
 	afac        = @. shape*(2^fac[:,1]) 
 	bfac        = @. scale*(2^fac[:,2])
 
-	if amk > 0.7
-		alTot = rand(collect(amk:0.05:0.95,iterations))
-	else
-		alTot = rand(collect(amk:0.05:(amk + 0.3)),iterations)
-	end
-
+	alTot = rand(collect(amk:0.05:0.95,iterations))
 	lfac        = rand(collect(0.1:0.1:0.9),iterations)
 	alLow       = @. round(alTot * lfac,digits=5)
 	nParam      = [param for i in 1:iterations]
