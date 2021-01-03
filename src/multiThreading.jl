@@ -11,39 +11,50 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64)
+function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,fixed::Bool=false)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
-	# fac         = rand(-2:0.05:2,iterations,2)
-    alpha = round(amk,digits=1)
+	# fac         = rand(-2:0.1:2,iterations,2)
+	alpha = round(amk,digits=1)
 
-	fac         = rand(-2:0.05:2,iterations,2)
-	afac        = @. shape*(2^fac[:,1]) 
-	bfac        = @. scale*(2^fac[:,2])
+	if fixed == true
+		afac = fill(shape,iterations)
+		bfac = fill(scale,iterations)
+		lfac = rand(collect(0.1:0.1:0.9),iterations)
+	else
+		# fac  = rand(filter!(x -> x ∉ 0,collect(-2:0.05:2)),iterations,2)
+		fac  = rand(filter!(x -> x ∉ 0,collect(-2:0.1:2)),iterations,2)
+		afac = @. shape*(2^fac[:,1]) 
+		bfac = @. scale*(2^fac[:,2])
+		#=lfac = rand([0.1,0.25,0.5,0.75,0.9],iterations)=#
+		lfac = rand(collect(0.1:0.05:0.9),iterations)
+	end
 
-	alTot = rand(collect(amk:0.05:0.95),iterations)
-	lfac        = rand(collect(0.1:0.1:0.9),iterations)
-	alLow       = @. round(alTot * lfac,digits=5)
+	if amk >= 0.6
+		alTot = rand(collect(alpha:0.05:0.95),iterations)
+	else
+		alTot = rand(collect(alpha:0.01:(alpha+0.4)),iterations)
+	end
+
+	#alTot = rand(collect(0.1:0.01:0.9),iterations)
+
+	alLow       = @. alTot * lfac
 	nParam      = [param for i in 1:iterations]
 	ndivergence = [divergence for i in 1:iterations]
 	nSfs        = [sfs for i in 1:iterations]
 	nDac        = [dac for i in 1:iterations]
 
 	# Estimations to thread pool
-	# wp  = Distributed.CachingPool(Distributed.workers())
-	# tmp = Distributed.pmap(bgsIter,wp,nParam,afac,bfac,alTot,alLow,ndivergence,nSfs,nDac);
+
 	out = SharedArray{Float64,3}((iterations,size(param.bRange,2),(3+size(dac,1))))
 	@sync @distributed for i in eachindex(afac)
-		tmp = bgsIter(nParam[i],afac[i],bfac[i],alTot[i],alLow[i],ndivergence[i],nSfs[i],nDac[i])
+		tmp = Analytical.bgsIter(nParam[i],afac[i],bfac[i],alTot[i],alLow[i],ndivergence[i],nSfs[i],nDac[i])
 		out[i,:,:] = tmp
 	end
 
 	# Output
 	df = reshape(out,iterations*size(param.bRange,2), (3+size(dac,1)))
-	# df  = reduce(vcat,tmp)
-	# idx = vcat(1:3,3 .+ dac)
-	# df  = df[:,idx]
 	return df
 end
 """

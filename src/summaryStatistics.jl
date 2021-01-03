@@ -297,8 +297,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	## Outputs
 	αW         = param.alLow/param.alTot
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	αW_nopos   = α_nopos * αW
-	αS_nopos   = α_nopos * (1 - αW)
+	# αW_nopos   = α_nopos * αW
+	# αS_nopos   = α_nopos * (1 - αW)
 
 	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
 	# amk,ci,model = asympFit(α_nopos)

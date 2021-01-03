@@ -19,16 +19,20 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
 """
-function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1})
+function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1},B::Union{Nothing,Float64}=nothing)
 
     g(x) = parse.(Float64,x[2:end-1])
     
     s = (sample*2)
     freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
-    df   = CSV.read(data,header=false,delim='\t')
+    df   = CSV.read(data,header=false,delim='\t',DataFrame)
     df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)
     tmp  = split.(df[:,sfsColumns], ",")
+
+    if(!isnothing(B))
+		df = df[df[:,end] .== B,:]
+	end
     pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
     ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
@@ -37,15 +41,15 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
     Ds           = sum(df[:,divColumns[2]])
     Pn           = sum(values(pn))
     Ps           = sum(values(ps))
-    sfsPn        = Analytical.cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
-    sfsPs        = (Analytical.cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
+    sfsPn        = cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
+    sfsPs        = (cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
     α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)[dac]
 
     D = [Dn+Ds]
     cSfs = sfsPn+sfsPs
 
     sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
-    return (α,cSfs,D,sfs)
+    return (α,cSfs,D,sfs,[Dn,Ds])
 end
 
 """
