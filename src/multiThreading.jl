@@ -13,6 +13,7 @@ Function to solve randomly *N* scenarios
 """
 function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,fixed::Bool=false)
 
+
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
 	# fac         = rand(-2:0.1:2,iterations,2)
@@ -21,23 +22,17 @@ function summaryStats(;param::parameters,amk::Float64,shape::Float64=0.184,scale
 	if fixed == true
 		afac = fill(shape,iterations)
 		bfac = fill(scale,iterations)
-		lfac = rand(collect(0.1:0.1:0.9),iterations)
+		lfac = rand([0.25,0.5,0.75],iterations)
+		#=lfac = rand(collect(0.1:0.1:0.9),iterations)=#
 	else
-		# fac  = rand(filter!(x -> x ∉ 0,collect(-2:0.05:2)),iterations,2)
-		fac  = rand(filter!(x -> x ∉ 0,collect(-2:0.1:2)),iterations,2)
+		fac  = rand(-2:0.5:2,iterations,2)
 		afac = @. shape*(2^fac[:,1]) 
 		bfac = @. scale*(2^fac[:,2])
-		#=lfac = rand([0.1,0.25,0.5,0.75,0.9],iterations)=#
-		lfac = rand(collect(0.1:0.05:0.9),iterations)
+		lfac = rand([0.25,0.5,0.75],iterations)
+		#=lfac = rand(0.1:0.05:0.9,iterations)=#
 	end
 
-	if amk >= 0.6
-		alTot = rand(collect(alpha:0.05:0.95),iterations)
-	else
-		alTot = rand(collect(alpha:0.01:(alpha+0.4)),iterations)
-	end
-
-	#alTot = rand(collect(0.1:0.01:0.9),iterations)
+	alTot = rand(0.1:0.01:0.9,iterations)
 
 	alLow       = @. alTot * lfac
 	nParam      = [param for i in 1:iterations]
