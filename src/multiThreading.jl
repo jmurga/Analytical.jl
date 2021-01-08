@@ -27,8 +27,8 @@ function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Arr
 		fac  = rand(-2:0.5:2,iterations,2)
 		afac = @. shape*(2^fac[:,1]) 
 		bfac = @. scale*(2^fac[:,2])
-		lfac = rand([0.25,0.5,0.75],iterations)
-		#=lfac = rand(0.1:0.05:0.9,iterations)=#
+		#=lfac = rand([0.25,0.5,0.75],iterations)=#
+		lfac = rand(0.1:0.1:0.9,iterations)
 	end
 
 	nTot = rand(0.1:0.01:0.9,iterations)
@@ -79,7 +79,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 	setPpos!(param)
 
 	
-	r = zeros(dm,size(param.bRange,2) * dm , size(dac,1) + 3)
+	r = zeros(size(param.bRange,2) * dm, dm , size(dac,1) + 3)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
