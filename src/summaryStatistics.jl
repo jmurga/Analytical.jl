@@ -297,8 +297,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	## Outputs
 	αW         = param.alLow/param.alTot
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	αW_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selL)/neut)
-	αS_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selH)/neut)
+	#=αW_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selL)/neut)
+	αS_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selH)/neut)=#
 	
 	# αW_nopos   = α_nopos * αW
 	# αS_nopos   = α_nopos * (1 - αW)
@@ -311,8 +311,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	##########
 	# Output #
 	##########
-	#=alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)=#
-	alphas = round.(hcat(α_nopos[(param.nn-1)] - αW_nopos[(param.nn-1)], α_nopos[(param.nn-1)] - (α_nopos[(param.nn-1)] - αW_nopos[(param.nn-1)]),α_nopos[(param.nn-1)]), digits=5)
+	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+	#=alphas = round.(hcat(α_nopos[(param.nn-1)] - αW_nopos[(param.nn-1)], α_nopos[(param.nn-1)] - (α_nopos[(param.nn-1)] - αW_nopos[(param.nn-1)]),α_nopos[(param.nn-1)]), digits=5)=#
 
 	expectedValues = hcat(alphas,permutedims(alxSummStat))
 
