@@ -19,11 +19,11 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
  - File writed in `output`
 """
-function parseSfs(;sp::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1},B::Union{Nothing,Float64}=nothing,bins::Union{Nothing,Int64}=nothing)
+function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1},B::Union{Nothing,Float64}=nothing,bins::Union{Nothing,Int64}=nothing)
 
     g(x) = parse.(Float64,x[2:end-1])
     
-    s = (sp*2)
+    s = (sample*2)
     freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
     df   = CSV.read(data,header=false,delim='\t',DataFrame)

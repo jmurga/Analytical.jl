@@ -21,16 +21,13 @@ function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Arr
 	if fixed == true
 		afac = fill(shape,iterations)
 		bfac = fill(scale,iterations)
-		lfac = rand([0.25,0.5,0.75],iterations)
-		#=lfac = rand(collect(0.1:0.1:0.9),iterations)=#
 	else
 		fac  = rand(-2:0.5:2,iterations,2)
 		afac = @. shape*(2^fac[:,1]) 
 		bfac = @. scale*(2^fac[:,2])
-		#=lfac = rand([0.25,0.5,0.75],iterations)=#
-		lfac = rand(0.1:0.1:0.9,iterations)
 	end
 
+	lfac = rand(0.0:0.1:0.9,iterations)
 	nTot = rand(0.1:0.01:0.9,iterations)
 
 	nLow       = @. nTot * lfac
@@ -78,7 +75,6 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 	setThetaF!(param)
 	setPpos!(param)
 
-	
 	r = zeros(size(param.bRange,2) * dm, dm , size(dac,1) + 3)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
