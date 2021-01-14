@@ -27,8 +27,8 @@ function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Arr
 		bfac = @. scale*(2^fac[:,2])
 	end
 
-	lfac = rand(0.0:0.1:0.9,iterations)
-	nTot = rand(0.1:0.01:0.9,iterations)
+	lfac = rand(0.1:0.05:0.9,iterations)
+	nTot = rand(0.0:0.01:0.9,iterations)
 
 	nLow       = @. nTot * lfac
 	nParam      = [param for i in 1:iterations]
