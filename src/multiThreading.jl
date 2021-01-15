@@ -99,8 +99,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 	return r
 end
 
-
-function 3DArrayToCsv(input::Array{Float64,3},output::string)
+function ndArrayToCsv(;input,output)
 
 	if length(size(input)) < 3
 		df = input[1,:,:]'
