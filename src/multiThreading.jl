@@ -55,7 +55,6 @@ function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Arr
 
 	# Output
 	#=df = reshape(out,iterations*size(param.bRange,2), (3+size(dac,1)))=#
-	print("here")
 
 	return df
 end
@@ -101,7 +100,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 end
 
 
-function 3DArrayToCsv(input::Array(Float64,3),output::string)
+function 3DArrayToCsv(input::Array{Float64,3},output::string)
 
 	if length(size(input)) < 3
 		df = input[1,:,:]'
