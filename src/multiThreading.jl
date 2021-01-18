@@ -21,12 +21,12 @@ function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 		afac = fill(shape,iterations)
 		bfac = fill(scale,iterations)
 	else
-		fac  = rand(-2:0.5:2,iterations,2)
+		fac  = rand(-2:0.05:2,iterations,2)
 		afac = @. shape*(2^fac[:,1]) 
 		bfac = @. scale*(2^fac[:,2])
 	end
 
-	lfac = rand(0.1:0.05:0.9,iterations)
+	lfac = rand(0.0:0.05:0.9,iterations)
 	nTot = rand(0.1:0.01:0.9,iterations)
 
 	nLow       = @. nTot * lfac
@@ -58,11 +58,11 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	# fac         = rand(-2:0.1:2,iterations,2)
 	#=alpha = round(amk,digits=1)=#
 
-	fac  = rand(-2:0.5:2,iterations,2)
+	fac  = rand(-2:0.05:2,iterations,2)
 	afac = @. shape*(2^fac[:,1]) 
 	bfac = @. scale*(2^fac[:,2])
 
-	lfac = rand(0.1:0.05:0.9,iterations)
+	lfac = rand(0.0:0.05:0.9,iterations)
 	nTot = rand(0.1:0.01:0.9,iterations)
 
 	nLow       = @. nTot * lfac
@@ -88,8 +88,12 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
 
 	JLD2.jldopen(output, "a+") do file
-		file[string(param.NN)*"/shape:"*string(0.184)*
-		"/estimations"] = df
+		file[string(param.N)* "/" string(param.n) * "/shape:"*string(param.al)] = df
+
+		if "dac" not in file[string(param.N)* "/" string(param.n)]
+			file[string(param.N)* "/" string(param.n) * "/shape:"*string(param.al) * "/dac"] = dac
+		end
+
 	end
 
 	return df
