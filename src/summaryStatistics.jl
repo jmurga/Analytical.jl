@@ -64,7 +64,6 @@ function poissonPolymorphism(;observedValues::Array, λps::Array, λpn::Array)
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
-	#=observedValues = repeat(observedValues,1,1,replicas)=#
 	sampledPs = similar(observedValues)
 	sampledPn = similar(observedValues)
 
