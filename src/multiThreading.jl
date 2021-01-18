@@ -11,12 +11,11 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,replicas::Int64=1,fixed::Bool=false)
+function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,replicas::Int64=1,fixed::Bool=false)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
 	# fac         = rand(-2:0.1:2,iterations,2)
-	alpha = round(amk,digits=1)
 
 	if fixed == true
 		afac = fill(shape,iterations)
@@ -37,24 +36,17 @@ function summaryStats(;param::parameters,amk::Float64,gH::Array{Int64,1},gL::Arr
 	nDac        = [dac for i in 1:iterations];
 	ngh = rand(repeat(gH,iterations),iterations);
 	ngl = rand(repeat(gL,iterations),iterations);
-	nreplicas = fill(replicas,iterations)
+
 	# Estimations to thread pool
 
 	#=out = SharedArray{Float64,3}(size(param.bRange,2),(3+size(dac,1)),iterations*size(param.bRange,2))=#
-	out = SharedArray{Float64,4}(replicas,size(dac,1)+3,size(param.bRange,2),iterations);
+	out = SharedArray{Float64,3}(size(param.bRange,2),size(dac,1)+3,iterations);
 	@sync @distributed for i in eachindex(afac)
-		tmp = bgsIter(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],divergence=ndivergence[i],sfs=nSfs[i],dac=nDac[i],replicas=nreplicas[i]);
-		out[:,:,:,i] = tmp;
+		tmp = bgsIter(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],divergence=ndivergence[i],sfs=nSfs[i],dac=nDac[i]);
+		out[:,:,i] = tmp;
 	end
 
-	df = reshape(out,replicas,size(dac,1)+3,size(param.bRange,2)*iterations)
-
-	if replicas == 1
-		df = df[1,:,:]'
-	end
-
-	# Output
-	#=df = reshape(out,iterations*size(param.bRange,2), (3+size(dac,1)))=#
+	df = vcat(eachslice(out,dims=3)...);
 
 	return df
 end
@@ -116,7 +108,7 @@ Function to input and solve one scenario given *N* background selection values (
 # Returns
  - `Array`: summary statistics
 """
-function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64,divergence::Array,sfs::Array,dac::Array{Int64,1},replicas::Int64=1)
+function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64,divergence::Array,sfs::Array,dac::Array{Int64,1})
 
 	# Matrix and values to solve
 	dm 			= size(divergence,1)
@@ -128,15 +120,15 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 	setThetaF!(param)
 	setPpos!(param)
 
-	r = zeros(replicas,size(dac,1) + 3,size(param.bRange,2) * dm)
+	r = zeros(size(param.bRange,2) * dm,size(dac,1) + 3)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
 		setThetaF!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
 		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
-		x,y,z = alphaByFrequencies(param,divergence,sfs,dac,replicas)
-		r[:,:,j] = z
+		x,y,z = alphaByFrequencies(param,divergence,sfs,dac)
+		r[j,:] = z
 	end
 
 	#=r = reshape(r,dm*size(param.bRange,2),size(dac,1)+3)=#

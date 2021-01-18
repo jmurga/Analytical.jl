@@ -4,7 +4,7 @@
 """
 	poissonFixation(observedValues,λds, λdn)
 
-Divergence sampling from Poisson distribution. The expected neutral and selected fixations are subset through their relative expected rates ([`Analytical.fixNeut`](@ref), [`Analytical.fixNegB`](@ref), [`Analytical.fixPosSim`](@ref)). Empirical values are used are used to simulate the locus *L* along a branch of time *T* from which the expected *Ds* and *Dn* raw count estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily given the success rate ``\\lambda`` in the distribution.
+Divergence sampling from Poisson distribution. The expected neutral and selected fixations are subset through their relative expected rates ([`fixNeut`](@ref), [`fixNegB`](@ref), [`fixPosSim`](@ref)). Empirical values are used are used to simulate the locus *L* along a branch of time *T* from which the expected *Ds* and *Dn* raw count estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily given the success rate ``\\lambda`` in the distribution.
 
 ```math
 \\mathbb{E}[D_N] = X \\in Poisson\\left(\\lambda = D \\times \\left[\\frac{\\mathbb{E}[D_+] + \\mathbb{E}[D_-]}{\\mathbb{E}[D_+] + \\mathbb{E}[D_-] + \\mathbb{E}[D_0]}\\right]\\right)
@@ -40,7 +40,7 @@ end
 """
 	poissonPolymorphism(observedValues,λps,λpn)
 
-Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`Analytical.fixNeut`](@ref), [`Analytical.DiscSFSNeutDown`](@ref),). Empirical sfs are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole sfs given each frequency success rate ``\\lambda`` in the distribution.
+Polymorphism sampling from Poisson distributions. The total expected neutral and selected polimorphism are subset through the relative expected rates at the frequency spectrum ([`fixNeut`](@ref), [`DiscSFSNeutDown`](@ref),). Empirical sfs are used to simulate the locus *L* along a branch of time *T* from which the expected *Ps* and *Pn* raw count are estimated given the mutation rate (``\\mu``). Random number generation is used to subset samples arbitrarily from the whole sfs given each frequency success rate ``\\lambda`` in the distribution.
 
 The success rate managing the Poisson distribution by the observed count each frequency.  We considered both sampling variance and process variance is affecting the number of variable alleles we sample from SFS. This variance arises from the random mutation-fixation process along the branch. To incorporate this variance we do one sample per frequency-bin and use the total sampled variation and the SFS for the summary statistics.
 
@@ -60,7 +60,7 @@ The success rate managing the Poisson distribution by the observed count each fr
  - `Array{Int64,2}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,2}, λpn::Array{Float64,2},replicas::Int64=1)
+function poissonPolymorphism(;observedValues::Array, λps::Array, λpn::Array,replicas::Int64=1)
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
@@ -82,7 +82,7 @@ end
 """
 	sampledAlpha(observedValues,λds, λdn)
 
-Ouput the expected values from the Poisson sampling process. Please check [`Analytical.poissonFixation`](@ref) and [`Analytical.poissonPolymorphism`](@ref) to understand the samplingn process. α(x) is estimated through the expected values of Dn, Ds, Pn and Ps.
+Ouput the expected values from the Poisson sampling process. Please check [`poissonFixation`](@ref) and [`poissonPolymorphism`](@ref) to understand the samplingn process. α(x) is estimated through the expected values of Dn, Ds, Pn and Ps.
 
 # Arguments
  - `param::parameters`: Array containing the total observed divergence.
@@ -102,7 +102,7 @@ Ouput the expected values from the Poisson sampling process. Please check [`Anal
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array,replicas::Int64=1)
+function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array)
 
 	#=pn = λpol[:,2]
 	ps = λpol[:,1]=#
@@ -113,7 +113,6 @@ function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array,replicas::I
 
 	## Alpha from expected values. Used as summary statistics
 	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)'),digits=5)
-	#=αS = reshape(αS,size(αS,1),size(αS,2)*size(αS,3))'=#
 
 	return αS,expDn,expDs,expPn,expPs
 end
@@ -235,7 +234,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::Array{Int64,1},replicas::Int64=1)
+function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::Array{Int64,1})
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
