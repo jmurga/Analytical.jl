@@ -361,7 +361,7 @@ function gettingRates(param::parameters,dac::Array{Int64,1})
 	return (analyticalValues)
 end
 
-function summStat(;rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
+function summaryStatsFromRates(;rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
 
 	tmp = convert(Array,rates[:,9:end])
 
