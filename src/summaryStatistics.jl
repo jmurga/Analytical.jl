@@ -245,8 +245,8 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL)
 	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH)
 
-	ds       = fN
-	dn       = fNeg + fPosL + fPosH
+	ds       = [fN]
+	dn       = [fNeg + fPosL + fPosH]
 
 	## Polymorphism	## Polymorphism
 	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
