@@ -60,7 +60,7 @@ The success rate managing the Poisson distribution by the observed count each fr
  - `Array{Int64,2}` containing the expected total count of neutral and selected polymorphism.
 
 """
-function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λpn::Array{Float64,1},replicas::Int64=1)
+function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,2}, λpn::Array{Float64,2},replicas::Int64=1)
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
@@ -102,17 +102,17 @@ Ouput the expected values from the Poisson sampling process. Please check [`Anal
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},replicas::Int64=1)
+function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array,replicas::Int64=1)
 
 	#=pn = λpol[:,2]
 	ps = λpol[:,1]=#
 
 	## Outputs
-	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[:,1],λdn=λdiv[:,2],replicas=replicas)
-	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2],replicas=replicas)
+	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],replicas=replicas)
+	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=λpol[1],λpn=λpol[2],replicas=replicas)
 
 	## Alpha from expected values. Used as summary statistics
-	αS = @. round(1 - ((expDs/expDn)' * (expPn/expPs)),digits=5)
+	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)'),digits=5)
 	#=αS = reshape(αS,size(αS,1),size(αS,2)*size(αS,3))'=#
 
 	return αS,expDn,expDs,expPn,expPs
@@ -362,19 +362,18 @@ function gettingRates(param::parameters,dac::Array{Int64,1})
 	return (analyticalValues)
 end
 
-function summStat(rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
+function summStat(;rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
+
+	tmp = convert(Array,rates[:,9:end])
+
+	neut = convert(Array,tmp[:,1:size(dac,1)]');sel = convert(Array,tmp[:,(size(dac,1)+1):(size(dac,1)*2)]');
+	ds = tmp[:,(size(dac,1)*2)+1];dn = tmp[:,(size(dac,1)*2)+2]
+	alphas = tmp[:,(size(dac,1)*2)+3:end]
 
 
-	tmp = convert(Array,df[:,9:end])
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn],λpol=[neut,sel])
 
-	neut = tmp[:,1:8]';sel = tmp[:,9:16]';
-	ds = tmp[:,17];dn = tmp[:,18]
-	alphas = tmp[:,19:end]
-
-
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),replicas=replicas)
-
-	expectedValues = hcat(alphas,alxSummStat')
+	expectedValues = hcat(alphas,alxSummStat)
 
 	return(expectedValues)
 end

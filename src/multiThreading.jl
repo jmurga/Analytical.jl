@@ -66,11 +66,9 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	# fac         = rand(-2:0.1:2,iterations,2)
 	#=alpha = round(amk,digits=1)=#
 
-
 	fac  = rand(-2:0.5:2,iterations,2)
 	afac = @. shape*(2^fac[:,1]) 
 	bfac = @. scale*(2^fac[:,2])
-
 
 	lfac = rand(0.1:0.05:0.9,iterations)
 	nTot = rand(0.1:0.01:0.9,iterations)
