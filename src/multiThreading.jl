@@ -89,7 +89,6 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 
 	JLD2.jldopen(output, "a+") do file
 		file[string(param.N)* "/" * string(param.n) * "/shape:" * string(param.al) * "/estimations"] = df
-		
 		file[string(param.N)* "/" * string(param.n) * "/shape:" * string(param.al) * "/dac"] = dac
 	end
 
