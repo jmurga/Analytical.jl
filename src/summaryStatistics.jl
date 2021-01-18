@@ -20,11 +20,11 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64,replicas::Int64=1)
+function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,replicas::Int64=1)
 
-	ds = λds / (λds + λdn)
-	dn = λdn / (λds + λdn)
-	observedValues = repeat(observedValues,1,1,replicas)
+	ds = @. λds / (λds + λdn)
+	dn = @. λdn / (λds + λdn)
+	#=observedValues = repeat(observedValues,1,1,replicas)=#
 	# poissonS  = (ds .* observedValues) .|> Poisson
 	# poissonD  = (dn .* observedValues) .|> Poisson
 	# sampledDs = rand.(poissonS,1)
@@ -64,7 +64,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λp
 
 	λ1 = similar(λps);λ2 = similar(λpn)
 
-	observedValues = repeat(observedValues,1,1,replicas)
+	#=observedValues = repeat(observedValues,1,1,replicas)=#
 	sampledPs = similar(observedValues)
 	sampledPn = similar(observedValues)
 
@@ -102,18 +102,18 @@ Ouput the expected values from the Poisson sampling process. Please check [`Anal
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},replicas::Int64=1)
+function sampledAlpha(;d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},replicas::Int64=1)
 
-	pn = λpol[:,2]
-	ps = λpol[:,1]
+	#=pn = λpol[:,2]
+	ps = λpol[:,1]=#
 
 	## Outputs
-	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],replicas=replicas)
-	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn,replicas=replicas)
+	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[:,1],λdn=λdiv[:,2],replicas=replicas)
+	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=λpol[:,1],λpn=λpol[:,2],replicas=replicas)
 
 	## Alpha from expected values. Used as summary statistics
-	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
-	αS = reshape(αS,size(αS,1),size(αS,2)*size(αS,3))'
+	αS = @. round(1 - ((expDs/expDn)' * (expPn/expPs)),digits=5)
+	#=αS = reshape(αS,size(αS,1),size(αS,2)*size(αS,3))'=#
 
 	return αS,expDn,expDs,expPn,expPs
 end
@@ -212,9 +212,7 @@ function analyticalAlpha(;param::parameters)
 	##########
 	# Output #
 	##########
-
 	return (α,α_nopos)
-	# return (α,α_nopos,[α[end] asymp1[1] c1[1] c2[1] c3[1]],[α_nopos[end] asymp2[1] c1[2] c2[2] c3[2]])
 end
 
 """
@@ -290,32 +288,93 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	## Outputs
 	αW         = param.alLow/param.alTot
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
-	#=αW_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selL)/neut)
-	αS_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selH)/neut)=#
-	
-	# αW_nopos   = α_nopos * αW
-	# αS_nopos   = α_nopos * (1 - αW)
-
-	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
-	# amk,ci,model = asympFit(α_nopos)
-	# αW_nopos   = amk * αW
-	# αS_nopos   = amk * (1 - αW)
 
 	##########
 	# Output #
 	##########
-	#=alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
-	expectedValues = hcat(alphas,permutedims(alxSummStat))=#
+	
 	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
 	expectedValues = hcat(repeat(alphas,replicas),alxSummStat)
 
 	return (α,α_nopos,expectedValues)
 end
 
-function writeSummaryStatistics(fileName::String,summStat)
 
-	names = collect('a':'z')
-	for i in 1:size(summStat,1)
-		write(fileName * "_" * names[i] * ".tsv", DataFrame(summStat[i:i,:]), delim='\t', append=true)
-	end
+function gettingRates(param::parameters,dac::Array{Int64,1})
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN       = param.B*fixNeut(param)
+	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH)
+
+	ds       = fN
+	dn       = fNeg + fPosL + fPosH
+
+	## Polymorphism	## Polymorphism
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
+	# neut = param.neut[param.B]
+
+	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
+
+	neut, selH, selL, selN = splitColumns(tmp)
+	sel = (selH+selL)+selN
+	
+	## Outputs
+	α = @. 1 - (ds/dn) * (sel/neut)
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos     = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos    = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos    = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
+
+	ds_nopos       = fN_nopos
+	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
+	dnS_nopos      = dn_nopos - fPosL_nopos
+
+	## Polymorphism
+	sel_nopos = selN
+
+	## Outputs
+	αW         = param.alLow/param.alTot
+	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+
+	##########
+	# Output #
+	##########
+	
+	alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+	
+	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[dac],sel[dac],ds,dn,alphas,dims=1)'
+
+	return (analyticalValues)
+end
+
+function summStat(rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
+
+
+	tmp = convert(Array,df[:,9:end])
+
+	neut = tmp[:,1:8]';sel = tmp[:,9:16]';
+	ds = tmp[:,17];dn = tmp[:,18]
+	alphas = tmp[:,19:end]
+
+
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=hcat(ds,dn),λpol=hcat(neut,sel),replicas=replicas)
+
+	expectedValues = hcat(alphas,alxSummStat')
+
+	return(expectedValues)
 end

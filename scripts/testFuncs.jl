@@ -467,3 +467,220 @@ function posArblib(param::parameters,gammaValue::Int64,ppos::Float64,binom::Spar
 
 	return out
 end
+
+########################################################
+################################
+###    Summary statistics    ###
+################################
+
+function poissonFixation(;observedValues::Array, λds::Float64, λdn::Float64,replicas::Int64=1)
+
+	ds = λds / (λds + λdn)
+	dn = λdn / (λds + λdn)
+	observedValues = repeat(observedValues,1,1,replicas)
+	# poissonS  = (ds .* observedValues) .|> Poisson
+	# poissonD  = (dn .* observedValues) .|> Poisson
+	# sampledDs = rand.(poissonS,1)
+	# sampledDn = rand.(poissonD,1)
+
+	sampledDs  = PoissonRandom.pois_rand.(ds .* observedValues)
+	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues)
+
+	out = sampledDn, sampledDs
+	return out
+end
+
+function poissonPolymorphism(;observedValues::Array, λps::Array{Float64,1}, λpn::Array{Float64,1},replicas::Int64=1)
+
+	λ1 = similar(λps);λ2 = similar(λpn)
+
+	observedValues = repeat(observedValues,1,1,replicas)
+	sampledPs = similar(observedValues)
+	sampledPn = similar(observedValues)
+
+	# Neutral λ
+	λ1 = @. λps / (λps + λpn)
+	# Selected λ
+	λ2 = @. λpn / (λps + λpn)
+
+	sampledPs =  PoissonRandom.pois_rand.(observedValues .* λ1)
+	sampledPn =  PoissonRandom.pois_rand.(observedValues .* λ2)
+
+	return (sampledPn, sampledPs)	
+end
+
+function sampledAlpha(;param::parameters,d::Array,afs::Array,λdiv::Array{Float64,2},λpol::Array{Float64,2},replicas::Int64=1)
+
+	pn = λpol[:,2]
+	ps = λpol[:,1]
+
+	## Outputs
+	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],replicas=replicas)
+	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=ps,λpn=pn,replicas=replicas)
+
+	## Alpha from expected values. Used as summary statistics
+	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
+	αS = reshape(αS,size(αS,1),size(αS,2)*size(αS,3))'
+
+	return αS,expDn,expDs,expPn,expPs
+end
+
+function analyticalAlpha(;param::parameters)
+
+	##############################################################
+						# Solve the model  #
+	##############################################################
+	B = param.B
+
+	setThetaF!(param)
+	thetaF = param.thetaF
+	# Solve the probabilities of fixations without background selection
+	## First set non-bgs
+	param.B = 0.999
+	## Solve the mutation rate
+	setThetaF!(param)
+	## Solve the probabilities
+	setPpos!(param)
+	# Return to the original values
+	param.thetaF = thetaF
+	param.B = B
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN     = param.B*fixNeut(param)
+	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
+
+	ds = fN
+	dn = fNeg + fPosL + fPosH
+
+	## Polymorphism
+	neut = DiscSFSNeutDown(param,param.bn[param.B])
+
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+
+	neut, selH, selL, selN = splitColumns(tmp)
+	sel = (selH+selL)+selN
+
+	# ps = @. neut / (sel+neut)
+	# pn = @. sel / (sel+neut)
+
+	## Outputs
+	α = @. 1 - ((ds/dn) * (sel/neut))
+
+	
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos     = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
+
+	ds_nopos = fN_nopos
+	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+
+	## Polymorphism
+	sel_nopos = selN
+	ps_nopos = @. neut / (sel_nopos + neut)
+	pn_nopos = @. sel_nopos / (sel_nopos + neut)
+
+	α_nopos = 1 .- (ds_nopos/dn_nopos) .* (sel_nopos./neut)
+
+	##########
+	# Output #
+	##########
+	return (α,α_nopos)
+end
+
+function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::Array{Int64,1},replicas::Int64=1)
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN       = param.B*fixNeut(param)
+	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH)
+
+	ds       = fN
+	dn       = fNeg + fPosL + fPosH
+
+	## Polymorphism	## Polymorphism
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
+	# neut = param.neut[param.B]
+
+	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
+
+	neut, selH, selL, selN = splitColumns(tmp)
+	sel = (selH+selL)+selN
+	
+	## Outputs
+	α = @. 1 - (ds/dn) * (sel/neut)
+	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
+
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(param=param,d=divergence,afs=sfs[dac],λdiv=hcat(ds,dn),λpol=hcat(neut[dac],sel[dac]),replicas=replicas)
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos     = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos    = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos    = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
+
+	ds_nopos       = fN_nopos
+	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
+	dnS_nopos      = dn_nopos - fPosL_nopos
+
+	## Polymorphism
+	sel_nopos = selN
+
+	## Outputs
+	αW         = param.alLow/param.alTot
+	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	#=αW_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selL)/neut)
+	αS_nopos   = @. 1 - (ds_nopos/dn_nopos) * ((selN + selH)/neut)=#
+	
+	# αW_nopos   = α_nopos * αW
+	# αS_nopos   = α_nopos * (1 - αW)
+
+	# α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)[dac]
+	# amk,ci,model = asympFit(α_nopos)
+	# αW_nopos   = amk * αW
+	# αS_nopos   = amk * (1 - αW)
+
+	##########
+	# Output #
+	##########
+	#=alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+	expectedValues = hcat(alphas,permutedims(alxSummStat))=#
+	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+	expectedValues = hcat(repeat(alphas,replicas),alxSummStat)
+
+	return (α,α_nopos,expectedValues)
+end
+
+function writeSummaryStatistics(fileName::String,summStat)
+
+	names = collect('a':'z')
+	for i in 1:size(summStat,1)
+		write(fileName * "_" * names[i] * ".tsv", DataFrame(summStat[i:i,:]), delim='\t', append=true)
+	end
+end
