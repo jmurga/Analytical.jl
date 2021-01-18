@@ -11,7 +11,7 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,replicas::Int64=1,fixed::Bool=false)
+function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,divergence::Array,sfs::Array,dac::Array{Int64,1},iterations::Int64,fixed::Bool=false)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
@@ -51,7 +51,7 @@ function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	return df
 end
 
-function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,dac::Array{Int64,1},iterations::Int64,replicas::Int64=1,output::String)
+function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,dac::Array{Int64,1},iterations::Int64,output::String)
 
 	# iterations  = trunc(Int,iterations/19) + 1
 	# N random prior combinations
@@ -70,13 +70,12 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	nDac        = [dac for i in 1:iterations];
 	ngh = rand(repeat(gH,iterations),iterations);
 	ngl = rand(repeat(gL,iterations),iterations);
-	nreplicas = fill(replicas,iterations)
 	# Estimations to thread pool
 
 	out = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 13,iterations)
-	#=out = SharedArray{Float64,4}(replicas,size(dac,1)+3,size(param.bRange,2),iterations);=#
+
 	@sync @distributed for i in eachindex(afac)
-		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],dac=nDac[i],replicas=nreplicas[i]);
+		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],dac=nDac[i]);
 		out[:,:,i] = tmp;
 	end
 
@@ -137,7 +136,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 end
 
 
-function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64,dac::Array{Int64,1},replicas::Int64=1)
+function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64,dac::Array{Int64,1})
 
 	# Matrix and values to solve
 	dm 			= 1
@@ -159,8 +158,6 @@ function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL
 		x = gettingRates(param,dac)
 		r[j,:] = x
 	end
-
-	#=r = reshape(r,dm*size(param.bRange,2),size(dac,1)+3)=#
 
 	return r
 end
