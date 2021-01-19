@@ -71,6 +71,7 @@ Mutable structure containing the variables required to solve the analytical appr
 
 	NN::Int64 = 2*N
 	nn::Int64 = 2*n
+	dac::Array{Int64,1} = [2,4,5,10,20,50,200,500,700]
 
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
 	neut::Dict = Dict{Float64,Array{Float64,1}}()
@@ -175,7 +176,7 @@ Site Frequency Spectrum convolution depeding on background selection values. Pas
 """
 function binomOp!(param::parameters)
 
-	bn = Dict(param.bRange[i] => zeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
+	bn = Dict(param.bRange[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
 
 	for bVal in param.bRange
 
@@ -191,8 +192,8 @@ function binomOp!(param::parameters)
 		z    = f.(samplesFreqs)
 
 		out  = Distributions.pdf.(z,samples)
-		outS  = round.(out,digits=10)
-		outS = SparseArrays.dropzeros(SparseArrays.sparse(outS))
+		#=outS  = round.(out,digits=20)=#
+		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		param.bn[bVal] = outS
 		# param.bn[bVal] = outS
 		param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.255*(outS*neutralSfs),digits=10)

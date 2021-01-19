@@ -233,7 +233,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::Array{Int64,1})
+function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -265,7 +265,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array,dac::
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn],λpol=[neut[dac],sel[dac]])
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[param.dac],λdiv=[ds,dn],λpol=[neut[param.dac],sel[param.dac]])
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
