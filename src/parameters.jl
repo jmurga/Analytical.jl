@@ -192,7 +192,7 @@ function binomOp!(param::parameters)
 		z    = f.(samplesFreqs)
 
 		out  = Distributions.pdf.(z,samples)
-		#=outS  = round.(out,digits=20)=#
+		out  = round.(out,digits=20)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		param.bn[bVal] = outS
 		# param.bn[bVal] = outS

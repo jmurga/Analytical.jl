@@ -62,7 +62,7 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	afac = @. shape*(2^fac[:,1]) 
 	bfac = @. scale*(2^fac[:,2])
 
-	lfac = rand(0.0:0.05:0.9,iterations)
+	lfac = rand(0.05:0.05:0.9,iterations)
 	nTot = rand(0.1:0.01:0.9,iterations)
 
 	nLow       = @. nTot * lfac
@@ -158,17 +158,4 @@ function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL
 	end
 
 	return r
-end
-
-function ndArrayToCsv(;input,output)
-
-	if length(size(input)) < 3
-		df = input[1,:,:]'
-		CSV.write(output,DataFrame(df),delim='\t',header=false)
-	else
-		for i=1:size(input,1)
-			df = input[i,:,:]'
-			CSV.write(output * "_" *string(i)*".tsv",DataFrame(df),delim='\t',header=false)
-		end
-	end
 end
