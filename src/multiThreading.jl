@@ -58,21 +58,21 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	# fac         = rand(-2:0.1:2,iterations,2)
 	#=alpha = round(amk,digits=1)=#
 
-	fac  = rand(-2:0.05:2,iterations,2)
-	afac = @. shape*(2^fac[:,1]) 
-	bfac = @. scale*(2^fac[:,2])
+    fac    = rand(-2:0.05:2,iterations,2)
+    afac   = @. shape*(2^fac[:,1])
+    bfac   = @. scale*(2^fac[:,2])
 
-	lfac = rand(0.05:0.05:0.9,iterations)
-	nTot = rand(0.1:0.01:0.9,iterations)
+    lfac   = rand(0.01:0.01:0.9,iterations)
+    nTot   = rand(0.1:0.01:0.9,iterations)
 
-	nLow       = @. nTot * lfac
-	nParam      = [param for i in 1:iterations];
-	nDac        = [dac for i in 1:iterations];
-	ngh = rand(repeat(gH,iterations),iterations);
-	ngl = rand(repeat(gL,iterations),iterations);
+    nLow   = @. nTot * lfac
+    nParam = [param for i in 1:iterations];
+    nDac   = [dac for i in 1:iterations];
+    ngh    = rand(repeat(gH,iterations),iterations);
+    ngl    = rand(repeat(gL,iterations),iterations);
 	# Estimations to thread pool
 
-	out = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 13,iterations)
+    out    = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 13,iterations)
 
 	@sync @distributed for i in eachindex(afac)
 		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],dac=nDac[i]);

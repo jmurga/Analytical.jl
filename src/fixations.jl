@@ -25,7 +25,6 @@ function fixNeut(param::parameters)
 	return out
 end
 
-
 # Negative fixations
 """
 
