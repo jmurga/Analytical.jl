@@ -21,7 +21,7 @@ Expected neutral fixations rate reduce by a background selection value.
 """
 function fixNeut(param::parameters)
 	# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
-	out::Float64 = 0.255*(1.0/(param.B*param.NN))
+	out::Float64 = 0.25*(1.0/(param.B*param.NN))
 	return out
 end
 
@@ -45,7 +45,7 @@ Expected fixation rate from negative DFE.
 """
 function fixNegB(param::parameters,ppos::Float64)
 	# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
-	out::Float64 = 0.745*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-SpecialFunctions.zeta(param.al,1.0+param.be/(2.0*param.B))+SpecialFunctions.zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
+	out::Float64 = 0.75*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-SpecialFunctions.zeta(param.al,1.0+param.be/(2.0*param.B))+SpecialFunctions.zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
 	return out
 end
 
@@ -110,6 +110,6 @@ function fixPosSim(param::parameters,gamma::Int64,ppos::Float64)
 	redPlus = phiReduction(param,gamma)
 
 	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
-	out::Float64 = 0.745*ppos*redPlus*pFix(param,gamma)
+	out::Float64 = 0.75*ppos*redPlus*pFix(param,gamma)
 	return out
 end

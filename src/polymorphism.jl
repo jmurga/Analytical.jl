@@ -11,7 +11,7 @@
 
 	DiscSFSNeutDown()
 
-Expected rate of neutral allele frequency reduce by background selection. The spectrum depends on the number of individual []
+Expected rate of neutral allele frequency reduce by backgrou	nd selection. The spectrum depends on the number of individual []
 
 ```math
 \\mathbb{E}[Ps_{(x)}] = \\sum{x^{*}=x}{x^{*}=1}f_{B}(x)
@@ -33,7 +33,7 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 
 	# subsetDict = get(param.bn,param.B,1)
 	# subsetDict = binom
-	out::Array{Float64,1} = param.B*(param.thetaMidNeutral)*0.255*(binom*solvedNeutralSfs)
+	out::Array{Float64,1} = param.B*(param.thetaMidNeutral)*0.25*(binom*solvedNeutralSfs)
 	# out = @view out[2:end-1]
 	# out = out[2:end-1]
 
@@ -113,8 +113,8 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		replace!(solvedPositiveSfs, NaN => 0.0)
 
 		# subsetDict = get(param.bn,param.B,1)
-		# out               = (param.thetaMidNeutral)*redPlus*0.745*(subsetDict*solvedPositiveSfs)
-		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.745*(binom*solvedPositiveSfs)
+		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solvedPositiveSfs)
+		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.75*(binom*solvedPositiveSfs)
 		# out = out[2:end-1]
 
 	end
@@ -149,7 +149,7 @@ end
 
 # 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
 # 		replace!(solvedPositiveSfs, NaN => 0.0)
-# 		out               = (adap.thetaMidNeutral)*redPlus*0.745*(adap.bn[adap.B]*solvedPositiveSfs)
+# 		out               = (adap.thetaMidNeutral)*redPlus*0.75*(adap.bn[adap.B]*solvedPositiveSfs)
 # 	end
 
 # 	return view(out,2:lastindex(out)-1,:)
@@ -170,8 +170,8 @@ Expected rate of positive selected allele frequency reduce by background selecti
 function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
 	# subsetDict = get(param.bn,param.B,1)
 	solvedNegative = DiscSFSSelNeg(param,ppos)
-	# out::Array = param.B*(param.thetaMidNeutral)*0.745*(subsetDict*solvedNegative)
-	out = param.B*(param.thetaMidNeutral)*0.745*(binom*solvedNegative)
+	# out::Array = param.B*(param.thetaMidNeutral)*0.75*(subsetDict*solvedNegative)
+	out = param.B*(param.thetaMidNeutral)*0.75*(binom*solvedNegative)
 	# out = @view out[2:end-1]
 
 	# return out[2:end-1]

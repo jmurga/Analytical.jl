@@ -49,13 +49,13 @@ Mutable structure containing the variables required to solve the analytical appr
 
 """
 @with_kw mutable struct parameters
-	gamNeg::Int64             = -457
+	gamNeg::Int64              = -457
 	gL::Int64                  = 10
 	gH::Int64                  = 500
 	alLow::Float64             = 0.2
 	alTot::Float64             = 0.4
-	thetaF::Float64           = 1e-3
-	thetaMidNeutral::Float64 = 1e-3
+	thetaF::Float64            = 1e-3
+	thetaMidNeutral::Float64   = 1e-3
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
 	B::Float64                 = 0.999 
@@ -196,7 +196,7 @@ function binomOp!(param::parameters)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		param.bn[bVal] = outS
 		# param.bn[bVal] = outS
-		param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.255*(outS*neutralSfs),digits=10)
+		param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.25*(outS*neutralSfs),digits=10)
 
 	end
 end

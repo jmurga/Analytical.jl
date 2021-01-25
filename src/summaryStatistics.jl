@@ -20,20 +20,26 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
  - `Array{Int64,1}` containing the expected count of neutral and selected fixations.
 
 """
-function poissonFixation(;observedValues::Array, λds::Array, λdn::Array)
+function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,λweak::Array,λstrong::Array)
 
 	ds = @. λds / (λds + λdn)
 	dn = @. λdn / (λds + λdn)
+	dweak = @. λweak / (λds + λdn)
+	dstrong = @. λstrong / (λds + λdn)
 
 	# poissonS  = (ds .* observedValues) .|> Poisson
 	# poissonD  = (dn .* observedValues) .|> Poisson
 	# sampledDs = rand.(poissonS,1)
 	# sampledDn = rand.(poissonD,1)
 
-	sampledDs  = PoissonRandom.pois_rand.(ds .* observedValues)
-	sampledDn  = PoissonRandom.pois_rand.(dn .* observedValues)
+    sampledDs     = PoissonRandom.pois_rand.(ds .* observedValues)
+    sampledDn     = PoissonRandom.pois_rand.(dn .* observedValues)
+    sampledWeak   = PoissonRandom.pois_rand.(dweak .* observedValues)
+    sampledStrong = PoissonRandom.pois_rand.(dstrong .* observedValues)
 
-	out = sampledDn, sampledDs
+    alphas = [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
+
+	out = alphas,sampledDn, sampledDs
 	return out
 end
 
@@ -107,13 +113,13 @@ function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array)
 	ps = λpol[:,1]=#
 
 	## Outputs
-	expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2])
+	alphas, expDn, expDs    = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],λweak=λdiv[3],λstrong=λdiv[4])
 	expPn, expPs    = poissonPolymorphism(observedValues=afs,λps=λpol[1],λpn=λpol[2])
 
 	## Alpha from expected values. Used as summary statistics
 	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)'),digits=5)
 
-	return αS,expDn,expDs,expPn,expPs
+	return αS,alphas,expDn,expDs,expPn,expPs
 end
 
 """
@@ -265,7 +271,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[param.dac],λdiv=[ds,dn],λpol=[neut[param.dac],sel[param.dac]])
+	alxSummStat, alphas, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[param.dac],λdiv=[ds,dn,[fPosL],[fPosH]],λpol=[neut[param.dac],sel[param.dac]])
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -278,20 +284,21 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 
 	ds_nopos       = fN_nopos
 	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
-	dnS_nopos      = dn_nopos - fPosL_nopos
+	dnS_nopos      = fPosL_nopos
 
 	## Polymorphism
 	sel_nopos = selN
 
 	## Outputs
-	αW         = param.alLow/param.alTot
+	#=αW         = param.alLow/param.alTot=#
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
 
 	##########
 	# Output #
 	##########
 	
-	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+#=	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+=#	alphas = round.(alphas,digits=5)
 	expectedValues = hcat(alphas,alxSummStat)
 
 	return (α,α_nopos,expectedValues)
