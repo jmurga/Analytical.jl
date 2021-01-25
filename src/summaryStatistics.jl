@@ -381,7 +381,7 @@ function summaryStatsFromRates(;rates::DataFrame,divergence::Array,sfs::Array,da
 	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
 
 
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
+	alxSummStat, alphas, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
 
 	expectedValues = hcat(alphas,alxSummStat)
 
