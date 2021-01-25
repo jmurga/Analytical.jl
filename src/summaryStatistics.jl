@@ -37,7 +37,7 @@ function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,λweak
     sampledWeak   = PoissonRandom.pois_rand.(dweak .* observedValues)
     sampledStrong = PoissonRandom.pois_rand.(dstrong .* observedValues)
 
-    alphas = [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
+    alphas = @. [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
 
 	out = alphas,sampledDn, sampledDs
 	return out
@@ -371,14 +371,17 @@ function summaryStatsFromRates(;rates::DataFrame,divergence::Array,sfs::Array,da
 
 	tmp = convert(Array,rates[:,9:end])
 
-	neut = convert(Array,tmp[:,1:size(dac,1)]');sel = convert(Array,tmp[:,(size(dac,1)+1):(size(dac,1)*2)]');
+	neut = convert(Array,tmp[:,1:size(dac,1)]')
+	sel = convert(Array,tmp[:,(size(dac,1)+1):(size(dac,1)*2)]');
 	ds = tmp[:,(size(dac,1)*2)+1]
 	dn = tmp[:,(size(dac,1)*2)+2]
+	dweak = tmp[:,(size(dac,1)*2)+3]
+	dstrong = tmp[:,(size(dac,1)*2)+4]
 
-	alphas = tmp[:,(size(dac,1)*2)+3:end]
+	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
 
 
-	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn],λpol=[neut,sel])
+	alxSummStat, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
 
 	expectedValues = hcat(alphas,alxSummStat)
 
