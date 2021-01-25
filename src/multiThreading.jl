@@ -72,20 +72,18 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	ngl    = rand(repeat(gL,iterations),iterations);
 	# Estimations to thread pool
 
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 13,iterations)
-
+	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 12,iterations)
 	@sync @distributed for i in eachindex(afac)
 		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],dac=nDac[i]);
 		out[:,:,i] = tmp;
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
-
 	df = DataFrame(df)
 
 	neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(dac,1)]
 	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(dac,1)]
-	names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
+	names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong")]...))
 
 	JLD2.jldopen(output, "a+") do file
 		file[string(param.N)* "/" * string(param.n) * "/shape:" * string(param.al) * "/estimations"] = df
@@ -146,7 +144,7 @@ function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL
 	setThetaF!(param)
 	setPpos!(param)
 
-	r = zeros(size(param.bRange,2) * dm,(size(dac,1) * 2) + 13)
+	r = zeros(size(param.bRange,2) * dm,(size(dac,1) * 2) + 12)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
