@@ -51,12 +51,7 @@ function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	return df
 end
 
-function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,dac::Array{Int64,1},iterations::Int64,output::String)
-
-	# iterations  = trunc(Int,iterations/19) + 1
-	# N random prior combinations
-	# fac         = rand(-2:0.1:2,iterations,2)
-	#=alpha = round(amk,digits=1)=#
+function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,iterations::Int64,output::String)
 
 	fac    = rand(-2:0.05:2,iterations,2)
 	afac   = @. shape*(2^fac[:,1])
@@ -67,27 +62,37 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 
 	nLow   = @. nTot * lfac
 	nParam = [param for i in 1:iterations];
-	nDac   = [dac for i in 1:iterations];
 	ngh    = rand(repeat(gH,iterations),iterations);
 	ngl    = rand(repeat(gL,iterations),iterations);
+	
 	# Estimations to thread pool
-
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(dac,1) *2) + 15,iterations)
+	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
 	@sync @distributed for i in eachindex(afac)
-		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i],dac=nDac[i]);
+		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
 		out[:,:,i] = tmp;
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
 	df = DataFrame(df)
 
-	neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(dac,1)]
-	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(dac,1)]
+	neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(param.dac,1)]
+	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(param.dac,1)]
+
 	names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
 
+    models = df[:,1:8]
+    neut   = df[:,9:8+size(param.dac,1)]
+    sel    = df[:,9+size(param.dac,1):8+size(param.dac,1)*2]
+    dsdn   = df[:,end-6:end-3]
+    alphas = df[:,end-2:end]
+
 	JLD2.jldopen(output, "a+") do file
-		file[string(param.N)* "/" * string(param.n) * "/shape:" * string(param.al) * "/estimations"] = df
-		file[string(param.N)* "/" * string(param.n) * "/shape:" * string(param.al) * "/dac"] = dac
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/models"] = models
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/neut"]   = neut
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/sel"]    = sel
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/dsdn"]   = dsdn
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/alphas"]   = alphas
+        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/dac"]    = param.dac
 	end
 
 	return df
@@ -132,7 +137,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 end
 
 
-function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64,dac::Array{Int64,1})
+function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64)
 
 	# Matrix and values to solve
 	dm 			= 1
@@ -144,14 +149,14 @@ function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL
 	setThetaF!(param)
 	setPpos!(param)
 
-	r = zeros(size(param.bRange,2) * dm,(size(dac,1) * 2) + 15)
+	r = zeros(size(param.bRange,2) * dm,(size(param.dac,1) * 2) + 15)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
 		setThetaF!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
 		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
-		x = gettingRates(param,dac)
+		x = gettingRates(param)
 		r[j,:] = x
 	end
 

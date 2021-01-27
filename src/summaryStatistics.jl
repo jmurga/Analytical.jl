@@ -304,8 +304,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 	return (α,α_nopos,expectedValues)
 end
 
-
-function gettingRates(param::parameters,dac::Array{Int64,1})
+function gettingRates(param::parameters)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -362,29 +361,26 @@ function gettingRates(param::parameters,dac::Array{Int64,1})
 	
 	alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
 	
-	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[dac],sel[dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
+	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
 
 	return (analyticalValues)
 end
 
-function summaryStatsFromRates(;rates::DataFrame,divergence::Array,sfs::Array,dac::Array{Int64,1})
+function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array)
 
-	tmp = convert(Array,rates[:,9:end])
+	tmp = rates[string(param.N) * "/" * string(param.n) * "/shape:" * string(param.al)]
 
-	neut = convert(Array,tmp[:,1:size(dac,1)]')
-	sel = convert(Array,tmp[:,(size(dac,1)+1):(size(dac,1)*2)]');
-	ds = tmp[:,(size(dac,1)*2)+1]
-	dn = tmp[:,(size(dac,1)*2)+2]
-	dweak = tmp[:,(size(dac,1)*2)+3]
-	dstrong = tmp[:,(size(dac,1)*2)+4]
+	neut = permutedims(convert(Array,tmp["neut"]))
+	sel = permutedims(convert(Array,tmp["sel"]))
+	dsdn = permutedims(convert(Array,tmp["dsdn"]))
+	alphas = convert(Array,tmp["alphas"])
+	
+	ds = dsdn[1,:]
+	dn = dsdn[2,:]
+	dweak = dsdn[3,:]
+	dstrong = dsdn[4,:]
 
-	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
-
-
-	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
-
-
-	alxSummStat, alphas, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[dac],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
+	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[tmp["dac"]],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
 
 	expectedValues = hcat(alphas,alxSummStat)
 
