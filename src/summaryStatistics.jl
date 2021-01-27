@@ -360,9 +360,9 @@ function gettingRates(param::parameters,dac::Array{Int64,1})
 	# Output #
 	##########
 	
-	#=alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)=#
+	alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
 	
-	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[dac],sel[dac],ds,dn,fPosL,fPosH,dims=1)'
+	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[dac],sel[dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
 
 	return (analyticalValues)
 end
@@ -377,6 +377,9 @@ function summaryStatsFromRates(;rates::DataFrame,divergence::Array,sfs::Array,da
 	dn = tmp[:,(size(dac,1)*2)+2]
 	dweak = tmp[:,(size(dac,1)*2)+3]
 	dstrong = tmp[:,(size(dac,1)*2)+4]
+
+	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
+
 
 	#=alphas = tmp[:,(size(dac,1)*2)+3:end]=#
 
