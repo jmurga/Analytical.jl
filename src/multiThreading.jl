@@ -68,7 +68,7 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
 	@time @sync @distributed for i in eachindex(afac)
-		@inbounds out[:,:,i] = Analytical.iterRates(param = param,convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
+		@inbounds out[:,:,i] = iterRates(param = param,convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);

@@ -11,10 +11,10 @@ ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
 RUN julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO"])'
 
-# ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
+ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
 
 RUN julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
-# RUN /root/julia-1.5.1/bin/julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/root/mktest.so", precompile_execution_file="/root/precompile_mktest.jl")'
+RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/root/mktest.so", precompile_execution_file="/root/precompile_mktest.jl")'
 
 RUN git clone https://github.com/molpopgen/ABCreg.git /root/ABCreg
 RUN cd /root/ABCreg/src && make
@@ -24,4 +24,5 @@ ENV PATH /root/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
-CMD ["julia"]
+# CMD ["julia"]
+CMD ["julia","--sysimage","/root/mktest.so"]

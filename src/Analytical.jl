@@ -1,14 +1,11 @@
 module Analytical
 
-	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2,DataFrames
+	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2, DataFrames
 
-	import DataFrames: DataFrame
-	import DataFrames: names!
 	import GZip: open
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 	import FastaIO: readfasta
-	import SparseArrays: SparseMatrixCSC
 
 	include("parameters.jl")
 	include("fixations.jl")
