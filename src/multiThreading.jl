@@ -51,7 +51,7 @@ function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	return df
 end
 
-function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,iterations::Int64,output::String)
+function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,iterations::Int64,output::String)
 
 	fac    = rand(-2:0.05:2,iterations,2)
 	afac   = @. shape*(2^fac[:,1])
@@ -61,14 +61,14 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	nTot   = rand(0.1:0.01:0.9,iterations)
 
 	nLow   = @. nTot * lfac
-	nParam = [param for i in 1:iterations];
+	#=nParam = [param for i in 1:iterations];=#
 	ngh    = rand(repeat(gH,iterations),iterations);
 	ngl    = rand(repeat(gL,iterations),iterations);
 	
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
-	@sync @distributed for i in eachindex(afac)
-		out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
+	@time @sync @distributed for i in eachindex(afac)
+		@inbounds out[:,:,i] = Analytical.iterRates(param = param,convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
@@ -96,6 +96,7 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 
 	return df
 end
+
 """
 	bgsIter(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
 
