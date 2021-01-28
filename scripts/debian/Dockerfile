@@ -9,7 +9,7 @@ RUN R -e 'install.packages(c("abc","ggplot2","data.table","dplyr"), repos = "htt
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO"])'
+RUN julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall"])'
 
 ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
 
