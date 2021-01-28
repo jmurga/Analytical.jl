@@ -72,12 +72,12 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
-	df = DataFrame(df)
+	df = DataFrames.DataFrame(df)
 
 	neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(param.dac,1)]
 	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(param.dac,1)]
 
-	names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
+	DataFrames.names!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
 
     models = df[:,1:8]
     neut   = df[:,9:8+size(param.dac,1)]
