@@ -73,10 +73,14 @@ Mutable structure containing the variables required to solve the analytical appr
 	nn::Int64 = 2*n
 	dac::Array{Int64,1} = [2,4,5,10,20,50,200,500,700]
 
-	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
-	neut::Dict = Dict{Float64,Array{Float64,1}}()
-	# bn::Dict = Dict{Float64,Array{Float64,2}}()
+	#=bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
+	#=neut::Dict = Dict{Float64,Array{Float64,1}}()=#
 end
+
+@with_kw mutable struct binomialDict
+	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
+end
+#=const binomialDict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
 
 ################################
 ###### Solving parameters ######
@@ -174,9 +178,9 @@ Site Frequency Spectrum convolution depeding on background selection values. Pas
 # Returns
  - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
 """
-function binomOp!(param::parameters)
+function binomOp!(param::parameters,convolutedBn::Dict)
 
-	bn = Dict(param.bRange[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.bRange))
+	#=bn = Dict(param.bRange[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.bRange))=#
 
 	for bVal in param.bRange
 
@@ -194,9 +198,9 @@ function binomOp!(param::parameters)
 		out  = Distributions.pdf.(z,samples)
 		out  = round.(out,digits=20)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
-		param.bn[bVal] = outS
+		convolutedBn[bVal] = outS
 		# param.bn[bVal] = outS
-		param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.25*(outS*neutralSfs),digits=10)
+		#=param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.25*(outS*neutralSfs),digits=10)=#
 
 	end
 end

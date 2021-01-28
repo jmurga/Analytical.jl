@@ -142,7 +142,7 @@ Analytical α(x) estimation. Solve α(x) from the expectation generally. We used
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;param::parameters)
+function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 
 	##############################################################
 						# Solve the model  #
@@ -176,11 +176,11 @@ function analyticalAlpha(;param::parameters)
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = DiscSFSNeutDown(param,param.bn[param.B])
+	neut = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 
@@ -239,7 +239,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
+function alphaByFrequencies(param::parameters,convolutedSamples::binomialDict,divergence::Array,sfs::Array)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -255,12 +255,12 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 	dn       = [fNeg + fPosL + fPosH]
 
 	## Polymorphism	## Polymorphism
-	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
 	# neut = param.neut[param.B]
 
-	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
@@ -271,7 +271,7 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
 
-	alxSummStat, alphas, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[param.dac],λdiv=[ds,dn,[fPosL],[fPosH]],λpol=[neut[param.dac],sel[param.dac]])
+	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[param.dac],λdiv=[ds,dn,[fPosL],[fPosH]],λpol=[neut[param.dac],sel[param.dac]])
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -297,14 +297,14 @@ function alphaByFrequencies(param::parameters,divergence::Array,sfs::Array)
 	# Output #
 	##########
 	
-#=	alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
-=#	alphas = round.(alphas,digits=5)
+	#=alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)=#
+	alphas = round.(alphasDiv,digits=5)
 	expectedValues = hcat(alphas,alxSummStat)
 
 	return (α,α_nopos,expectedValues)
 end
 
-function gettingRates(param::parameters)
+function gettingRates(param::parameters,convolutedSamples::binomialDict)
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -320,12 +320,12 @@ function gettingRates(param::parameters)
 	dn       = fNeg + fPosL + fPosH
 
 	## Polymorphism	## Polymorphism
-	neut::Array{Float64,1} = DiscSFSNeutDown(param,param.bn[param.B])
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
 	# neut = param.neut[param.B]
 
-	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,param.bn[param.B])
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,param.bn[param.B])
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,param.bn[param.B])
+	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
@@ -361,19 +361,21 @@ function gettingRates(param::parameters)
 	
 	alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
 	
-	analyticalValues = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
+	analyticalValues::Array{Float64,2} = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
 
 	return (analyticalValues)
 end
 
-function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array)
+function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
 	tmp = rates[string(param.N) * "/" * string(param.n) * "/shape:" * string(param.al)]
 
-	neut = permutedims(convert(Array,tmp["neut"]))
-	sel = permutedims(convert(Array,tmp["sel"]))
-	dsdn = permutedims(convert(Array,tmp["dsdn"]))
-	alphas = convert(Array,tmp["alphas"])
+	idx    = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
+
+	neut = permutedims(convert(Array,tmp["neut"]))[:,idx]
+	sel = permutedims(convert(Array,tmp["sel"]))[:,idx]
+	dsdn = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
+	alphas = convert(Array,tmp["alphas"])[idx,:]
 	
 	ds = dsdn[1,:]
 	dn = dsdn[2,:]
@@ -382,7 +384,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[tmp["dac"]],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
 
-	expectedValues = hcat(alphas,alxSummStat)
+	expectedValues = hcat(alphasDiv,alxSummStat)
 
 	return(expectedValues)
 end

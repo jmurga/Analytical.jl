@@ -68,8 +68,7 @@ function ratesToStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
 	@sync @distributed for i in eachindex(afac)
-		tmp = iterRates(param = nParam[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
-		out[:,:,i] = tmp;
+		out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
@@ -137,7 +136,7 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 end
 
 
-function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64)
+function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64)
 
 	# Matrix and values to solve
 	dm 			= 1
@@ -156,8 +155,7 @@ function iterRates(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL
 		setThetaF!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
 		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
-		x = gettingRates(param)
-		r[j,:] = x
+		@inbounds r[j,:] = gettingRates(param,convolutedSamples)
 	end
 
 	return r
