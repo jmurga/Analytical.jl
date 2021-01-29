@@ -61,14 +61,15 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	nTot   = rand(0.1:0.01:0.9,iterations)
 
 	nLow   = @. nTot * lfac
-	#=nParam = [param for i in 1:iterations];=#
+	nParam = [param for i in 1:iterations];
+	nBinom = [convolutedSamples for i in 1:iterations];
 	ngh    = rand(repeat(gH,iterations),iterations);
 	ngl    = rand(repeat(gL,iterations),iterations);
 	
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
 	@time @sync @distributed for i in eachindex(afac)
-		@inbounds out[:,:,i] = iterRates(param = param,convolutedSamples=convolutedSamples,alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
+		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
