@@ -51,11 +51,11 @@ function summaryStats(;param::parameters,gH::Array{Int64,1},gL::Array{Int64,1},s
 	return df
 end
 
-function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},shape::Float64=0.184,scale::Float64=0.000402,iterations::Int64,output::String)
+function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
 
 	fac    = rand(-2:0.05:2,iterations,2)
-	afac   = @. shape*(2^fac[:,1])
-	bfac   = @. scale*(2^fac[:,2])
+	afac   = @. param.al*(2^fac[:,1])
+	#=bfac   = @. (param.al/param.be)*(2^fac[:,2])=#
 
 	lfac   = rand(0.05:0.05:0.9,iterations)
 	nTot   = rand(0.1:0.01:0.9,iterations)
@@ -65,11 +65,12 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	nBinom = [convolutedSamples for i in 1:iterations];
 	ngh    = rand(repeat(gH,iterations),iterations);
 	ngl    = rand(repeat(gL,iterations),iterations);
+	ngamNeg    = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
 	@time @sync @distributed for i in eachindex(afac)
-		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],afac=afac[i],bfac=bfac[i]);
+		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],gamNeg=ngamNeg[i],afac=afac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
@@ -87,12 +88,12 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
     alphas = df[:,end-2:end]
 
 	JLD2.jldopen(output, "a+") do file
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/models"] = models
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/neut"]   = neut
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/sel"]    = sel
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/dsdn"]   = dsdn
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/alphas"]   = alphas
-        file[string(param.N)* "/" * string(param.n) * "/shape:" * string(shape) * "/dac"]    = param.dac
+        file[string(param.N)* "/" * string(param.n) * "/models"] = models
+        file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
+        file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
+        file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
+        file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas
+        file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
 
 	return df
@@ -138,13 +139,14 @@ function bgsIter(;param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL=I
 end
 
 
-function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,afac::Float64,bfac::Float64)
+function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,gamNeg::Int64,afac::Float64)
 
 	# Matrix and values to solve
 	dm 			= 1
-	param.al    = afac; param.be = bfac;
+	param.al    = afac; param.be = abs(afac/gamNeg);
 	param.alLow = alLow; param.alTot = alTot;
-	param.gH = gH;param.gL = gL
+	param.gH = gH;param.gL = gL; param.gamNeg = gamNeg
+
 	# Solve probabilites without B effect to achieve α value
 	param.B = 0.999
 	setThetaF!(param)

@@ -368,14 +368,14 @@ end
 
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
-	tmp = rates[string(param.N) * "/" * string(param.n) * "/shape:" * string(param.al)]
+    tmp    = rates[string(param.N) * "/" * string(param.n) * "/shape:" * string(param.al)]
+    idx    = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
 
-	idx    = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
-
-	neut = permutedims(convert(Array,tmp["neut"]))[:,idx]
-	sel = permutedims(convert(Array,tmp["sel"]))[:,idx]
-	dsdn = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
-	alphas = convert(Array,tmp["alphas"])[idx,:]
+    models = tmp["models"][idx,:]
+    neut   = permutedims(convert(Array,tmp["neut"]))[:,idx]
+    sel    = permutedims(convert(Array,tmp["sel"]))[:,idx]
+    dsdn   = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
+    alphas = convert(Array,tmp["alphas"])[idx,:]
 	
 	ds = dsdn[1,:]
 	dn = dsdn[2,:]
@@ -386,5 +386,5 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 
 	expectedValues = hcat(alphasDiv,alxSummStat)
 
-	return(expectedValues)
+	return(expectedValues,models)
 end
