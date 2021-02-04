@@ -368,7 +368,7 @@ end
 
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
-    tmp    = rates[string(param.N) * "/" * string(param.n) * "/shape:" * string(param.al)]
+    tmp    = rates[string(param.N) * "/" * string(param.n)]
     idx    = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
 
     models = tmp["models"][idx,:]
