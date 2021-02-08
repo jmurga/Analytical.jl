@@ -359,7 +359,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	# Output #
 	##########
 	
-	alphas = round.(vcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)
+	alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)
 	
 	analyticalValues::Array{Float64,2} = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
 
@@ -368,23 +368,24 @@ end
 
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
-    tmp    = rates[string(param.N) * "/" * string(param.n)]
-    idx    = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
+    tmp     = rates[string(param.N) * "/" * string(param.n)]
+    idx     = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
 
-    models = tmp["models"][idx,:]
-    neut   = permutedims(convert(Array,tmp["neut"]))[:,idx]
-    sel    = permutedims(convert(Array,tmp["sel"]))[:,idx]
-    dsdn   = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
-    alphas = convert(Array,tmp["alphas"])[idx,:]
+    models  = @. round(abs(tmp["models"][idx,:]),digits=5)
+    alphas  = tmp["alphas"][idx,:]
+    neut    = permutedims(convert(Array,tmp["neut"]))[:,idx]
+    sel     = permutedims(convert(Array,tmp["sel"]))[:,idx]
+    dsdn    = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
+    alphas  = convert(Array,tmp["alphas"])[idx,:]
 	
-	ds = dsdn[1,:]
-	dn = dsdn[2,:]
-	dweak = dsdn[3,:]
-	dstrong = dsdn[4,:]
+    ds      = dsdn[1,:]
+    dn      = dsdn[2,:]
+    dweak   = dsdn[3,:]
+    dstrong = dsdn[4,:]
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[tmp["dac"]],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
 
-	expectedValues = hcat(alphasDiv,alxSummStat)
+	expectedValues = hcat(alphas,alxSummStat)
 
 	return(expectedValues,models)
 end
