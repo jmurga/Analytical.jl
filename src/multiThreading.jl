@@ -74,18 +74,19 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
-	df = DataFrames.DataFrame(df)
+	models = DataFrame(df[:,1:8],[Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be")])
 
-	neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(param.dac,1)]
-	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(param.dac,1)]
-
-	DataFrames.rename!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))
-
-    models = df[:,1:8]
+    neut   = df[:,9:8+size(param.dac,1)]
+    sel    = df[:,9+size(param.dac,1):8+size(param.dac,1)*2]
     neut   = df[:,9:8+size(param.dac,1)]
     sel    = df[:,9+size(param.dac,1):8+size(param.dac,1)*2]
     dsdn   = df[:,end-6:end-3]
-    alphas = df[:,end-2:end]
+    alphas = DataFrame(df[:,end-2:end],[Symbol("αW"),Symbol("αS"),Symbol("α")])
+
+	#=neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(param.dac,1)]
+	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(param.dac,1)]=#
+	#=DataFrames.rename!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))=#
+
 
 	JLD2.jldopen(output, "a+") do file
         file[string(param.N)* "/" * string(param.n) * "/models"] = models
