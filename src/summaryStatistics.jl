@@ -369,6 +369,35 @@ end
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
     tmp     = rates[string(param.N) * "/" * string(param.n)]
+	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
+
+    models  = Array.(view.(fill(tmp["models"],replicas),idx,:));
+    alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));
+    neut    = Array.(view.(fill(tmp["neut"],replicas),idx,:));
+    sel     = Array.(view.(fill(tmp["sel"],replicas),idx,:));
+    dsdn    = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));
+    alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));
+	
+    expectedValues =  pmap(ratesToSummaries,alphas,models,sfs,divergence,neut,sel,dsdn);
+	return(expectedValues)
+end
+
+function ratesToSummaries(al::Array{Float64,2},m::Array{Float64,2},s::Array{Int64,1},d::Array{Int64,1},nt::Array{Float64,2},sl::Array{Float64,2},x::Array{Float64,2})
+	ds      = x[:,1]
+	dn      = x[:,2]
+	dweak   = x[:,3]
+	dstrong = x[:,4]
+	gn = abs.(m[:,4])
+	sh = round.(m[:,end-1],digits=5)
+
+	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
+	expectedValues = hcat(al,gn,sh,alxSummStat)
+end
+
+
+#=function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
+
+    tmp     = rates[string(param.N) * "/" * string(param.n)]
     idx     = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
 
     models  = @. round(abs(tmp["models"][idx,:]),digits=5)
@@ -388,4 +417,4 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	expectedValues = hcat(alphas,alxSummStat)
 
 	return(expectedValues,models)
-end
+end=#
