@@ -366,7 +366,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	return (analyticalValues)
 end
 
-function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
+function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
 
     tmp     = rates[string(param.N) * "/" * string(param.n)]
 	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
@@ -382,7 +382,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	return(expectedValues)
 end
 
-function ratesToSummaries(al::Array{Float64,2},m::Array{Float64,2},s::Array{Int64,1},d::Array{Int64,1},nt::Array{Float64,2},sl::Array{Float64,2},x::Array{Float64,2})
+function ratesToSummaries(al::Array,m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
 	ds      = x[:,1]
 	dn      = x[:,2]
 	dweak   = x[:,3]
