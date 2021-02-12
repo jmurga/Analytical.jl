@@ -5,7 +5,25 @@ RUN apt-get update\
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 
-RUN R -e 'install.packages(c("abc","ggplot2","data.table","dplyr"), repos = "https://cloud.r-project.org",dependecies=TRUE)'
+ENV PATH /opt/conda/bin:$PATH
+
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh && \
+    /opt/conda/bin/conda clean -tipsy && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+    echo "conda activate base" >> ~/.bashrc && \
+    find /opt/conda/ -follow -type f -name '*.a' -delete && \
+    find /opt/conda/ -follow -type f -name '*.js.map' -delete && \
+    /opt/conda/bin/conda clean -afy
+
+RUN conda install -c conda-forge jupyter -y
+
+RUN conda init bash 
+
+RUN R -e 'install.packages(c("abc","ggplot2","data.table","dplyr","IRkernel"), repos = "https://cloud.r-project.org",dependecies=TRUE)'
+RUN R -e 'IRkernel::installspec()'
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
@@ -24,5 +42,6 @@ ENV PATH /root/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
-# CMD ["julia"]
 CMD ["julia","--sysimage","/root/mktest.so"]
+
+	

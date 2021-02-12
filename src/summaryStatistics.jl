@@ -366,7 +366,13 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	return (analyticalValues)
 end
 
+
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
+
+	scumu = cumulativeSfs(sfs)
+
+	s = sum(scumu[:,2:3],dims=2)
+	d = [sum(divergence[1:2])]
 
     tmp     = rates[string(param.N) * "/" * string(param.n)]
 	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
@@ -378,22 +384,26 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
     dsdn    = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));
     alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));
 	
-    expectedValues =  pmap(ratesToSummaries,alphas,models,sfs,divergence,neut,sel,dsdn);
+	#=expectedValues = SharedArray{Float64,3}(summstatSize,	size(tmp["dac"],1) + 5, size(idx,1))=#
+	#=@sync @distributed for i in eachindex(idx)
+		expectedValues[:,:,i] = ratesToSummaries(alphas[i],models[i],sfs[i],divergence[i],neut[i],sel[i],dsdn[i]);
+	end=#
+    expectedValues =  pmap(ratesToSummaries,alphas,models,s,d,neut,sel,dsdn);
+
 	return(expectedValues)
 end
-
+	
 function ratesToSummaries(al::Array,m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
-	ds      = x[:,1]
-	dn      = x[:,2]
-	dweak   = x[:,3]
-	dstrong = x[:,4]
-	gn = abs.(m[:,4])
-	sh = round.(m[:,end-1],digits=5)
+    ds      = x[:,1]
+    dn      = x[:,2]
+    dweak   = x[:,3]
+    dstrong = x[:,4]
+    gn      = abs.(m[:,4])
+    sh      = round.(m[:,end-1],digits=5)
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
 	expectedValues = hcat(al,gn,sh,alxSummStat)
 end
-
 
 #=function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
 
