@@ -369,11 +369,6 @@ end
 
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
 
-	scumu = cumulativeSfs(sfs)
-
-	s = sum(scumu[:,2:3],dims=2)
-	d = [sum(divergence[1:2])]
-
     tmp     = rates[string(param.N) * "/" * string(param.n)]
 	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
 
