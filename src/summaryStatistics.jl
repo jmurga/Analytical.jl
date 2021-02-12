@@ -383,7 +383,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	#=@sync @distributed for i in eachindex(idx)
 		expectedValues[:,:,i] = ratesToSummaries(alphas[i],models[i],sfs[i],divergence[i],neut[i],sel[i],dsdn[i]);
 	end=#
-    expectedValues =  pmap(ratesToSummaries,alphas,models,s,d,neut,sel,dsdn);
+    expectedValues =  pmap(ratesToSummaries,alphas,models,sfs,divergence,neut,sel,dsdn);
 
 	return(expectedValues)
 end
