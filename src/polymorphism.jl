@@ -206,20 +206,26 @@ end
 
 Changing SFS considering all values above a frequency *x*. The original asymptotic-MK approach takes Pn(x) and Ps(x) as the number of polymorphic sites at frequency *x* rather than above *x*, but this approach scales poorly as sample size increases. We define the polymorphic spectrum as stated above since these quantities trivially have the same asymptote but are less affected by changing sample size.
 """
-function cumulativeSfs(sfsTemp::Array)
+function cumulativeSfs(sfsTemp::Array,freqs::Bool=true)
 
 	out      = Array{Float64}(undef, size(sfsTemp,1),size(sfsTemp,2))
-	out[1,2:end] = sum(sfsTemp[:,2:end],dims=1)
+
+	if freqs
+		idx = 2
+	else
+		idx = 1
+	end
+	out[1,idx:end] = sum(sfsTemp[:,idx:end],dims=1)
 
 	@simd for i in 2:(size(sfsTemp)[1])
 
 		#=app = view(out,i-1,:) .- view(sfsTemp,i-1,:)=#
-		app = out[i-1,2:end] .- sfsTemp[i-1,2:end]
+		app = out[i-1,2:end] .- sfsTemp[i-1,idx:end]
 
 		if sum(app) > 0.0
-			out[i,2:end] = app
+			out[i,idx:end] = app
 		else
-			out[i,2:end] = zeros(length(app))
+			out[i,idx:end] = zeros(length(app))
 		end
 	end
 	out[:,1] = sfsTemp[:,1]

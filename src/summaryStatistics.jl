@@ -182,7 +182,7 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	tmp = cumulativeSfs(hcat(collect(neut,selH,selL,selN),false)
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
@@ -261,7 +261,7 @@ function alphaByFrequencies(param::parameters,convolutedSamples::binomialDict,di
 	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
 	neut, selH, selL, selN = splitColumns(tmp)
@@ -326,7 +326,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN))
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
 	neut, selH, selL, selN = splitColumns(tmp)
