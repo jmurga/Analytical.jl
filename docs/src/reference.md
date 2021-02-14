@@ -4,8 +4,9 @@
 
 ```@docs
 Analytical.parameters
+Analytical.binomialDict
 Analytical.Br
-Analytical.set_theta_f!
+Analytical.setThetaF!
 Analytical.setPpos!
 Analytical.binomOp!
 ```
@@ -36,6 +37,9 @@ Analytical.sampledAlpha
 Analytical.alphaByFrequencies
 Analytical.bgsIter
 Analytical.summaryStats
+Analytical.gettingRates
+Analytical.summaryStatsFromRates
+Analytical.ratesToSummaries
 ```
 
 ## Inference tools
