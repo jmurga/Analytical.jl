@@ -209,19 +209,21 @@ Changing SFS considering all values above a frequency *x*. The original asymptot
 function cumulativeSfs(sfsTemp::Array)
 
 	out      = Array{Float64}(undef, size(sfsTemp,1),size(sfsTemp,2))
-	out[1,:] = sum(sfsTemp,dims=1)
+	out[1,2:end] = sum(sfsTemp[:,2:end],dims=1)
 
 	@simd for i in 2:(size(sfsTemp)[1])
 
-		app = view(out,i-1,:) .- view(sfsTemp,i-1,:)
+		#=app = view(out,i-1,:) .- view(sfsTemp,i-1,:)=#
+		app = out[i-1,2:end] .- sfsTemp[i-1,2:end]
 
 		if sum(app) > 0.0
-			out[i,:] = app
+			out[i,2:end] = app
 		else
-			out[i,:] = zeros(length(app))
+			out[i,2:end] = zeros(length(app))
 		end
 	end
-
+	out[:,1] = sfsTemp[:,1]
+	
 	return out
 end
 

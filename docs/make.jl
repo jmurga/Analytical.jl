@@ -1,4 +1,4 @@
-using Documenter, AnalyticaluSfsFromFasta
+using Documenter, Analytical
 
 
 makedocs(

@@ -21,48 +21,48 @@ Function to parse polymorphism and divergence by subset of genes. The input data
 """
 function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1},B::Union{Nothing,Float64}=nothing,bins::Union{Nothing,Int64}=nothing)
 
-    g(x) = parse.(Float64,x[2:end-1])
-    
-    s = (sample*2)
-    freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
+	g(x) = parse.(Float64,x[2:end-1])
+	
+	s = (sample*2)
+	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
-    df   = CSV.read(data,header=false,delim='\t',DataFrame)
-    #=df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)=#
-    
+	df   = CSV.read(data,header=false,delim='\t',DataFrame)
+	#=df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)=#
+	
 
-    if(!isnothing(B))
+	if(!isnothing(B))
 		df = df[df[:,end] .== B,:]
-        println(nrow(df))
-        tmp  = split.(df[:,sfsColumns], ",")
+		println(nrow(df))
+		tmp  = split.(df[:,sfsColumns], ",")
 	else
-        tmp  = split.(df[:,sfsColumns], ",")
-    end
+		tmp  = split.(df[:,sfsColumns], ",")
+	end
 
-    pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
-    ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
+	pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> StatsBase.countmap))
+	ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> StatsBase.countmap))
 
-    # Dn, Ds, Pn, Ps, sfs
-    Dn           = sum(df[:,divColumns[1]])
-    Ds           = sum(df[:,divColumns[2]])
-    Pn           = sum(values(pn))
-    Ps           = sum(values(ps))
-    sfsPn        = cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
-    sfsPs        = (cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
+	# Dn, Ds, Pn, Ps, sfs
+	Dn           = sum(df[:,divColumns[1]])
+	Ds           = sum(df[:,divColumns[2]])
+	Pn           = sum(values(pn))
+	Ps           = sum(values(ps))
+	sfsPn        = cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
+	sfsPs        = (cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
 
-    if(!isnothing(bins))
-        sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),40)[:,2]
-        sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),40)[:,2]
+	if(!isnothing(bins))
+		sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),40)[:,2]
+		sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),40)[:,2]
 
-        sfs = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
-    else
-        sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
-    end
-    α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)[dac]
+		sfs = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
+	else
+		sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
+	end
+	α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)[dac]
 
-    D = [Dn+Ds]
-    cSfs = sfsPn+sfsPs
+	D = [Dn+Ds]
+	cSfs = sfsPn+sfsPs
 
-    return (α,cSfs,D,sfs,[Dn,Ds])
+	return (α,cSfs,D,sfs,[Dn,Ds])
 end
 """
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
@@ -131,4 +131,25 @@ function readData(file)
 
 	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
 	return out
+end
+
+function bootstrapData(sFile::Array{Float64,2},dFile::Array{Float64,2},replicas::Int64,outputFolder::String)
+	
+	# Open Data
+	sfs        = Array(CSV.read(sFile,DataFrame))
+	divergence = fill(Array(CSV.read(dFile,DataFrame)),replicas)
+	scumu      = fill(cumulativeSfs(sfs[:,2:end]),replicas)
+
+	# Bootstraping
+	b(x)       = PoissonRandom.pois_rand.(x)
+	bootstrap  = b.(scumu)
+
+	# Output
+	outSfs = @. output * "sfs" * string(1:replicas) * ".tsv"
+	outDiv = @. output * "div" * string(1:replicas) * ".tsv"
+	for i  = 1:replicas
+		tmp = hcat(sfs[:,1],bootstrap[i])
+		CSV.write(out,DataFrame(tmp),header=false)
+		CSV.write(out,DataFrame(divergence[i]),header=false)
+	end
 end

@@ -8,6 +8,7 @@ Our approach estimates directly $\alpha_{(x)}$ and several statistics ($B$, $\al
 
 ## Installation
 
+Here new 
 To install our module we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/). If is your first time using Julia, you can easily export the Julia bin through ```export PATH="/path/to/directory/julia-1.v.v/bin:$PATH"``` in your shell.
 
 ```bash
