@@ -1,5 +1,4 @@
-using Documenter, Analytical
-
+using Documenter,Analytical
 
 makedocs(
     modules   = [Analytical],
