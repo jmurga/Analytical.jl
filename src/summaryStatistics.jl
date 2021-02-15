@@ -394,5 +394,5 @@ function ratesToSummaries(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arra
 	sh      = round.(m[:,end-1],digits=5)
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
-	expectedValues = hcat(al,gn,sh,alxSummStat)
+	expectedValues = hcat(alphasDiv,gn,sh,alxSummStat)
 end

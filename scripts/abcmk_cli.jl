@@ -7,7 +7,6 @@ using Fire,Distributed
     addprocs(2)
     @eval @everywhere using Analytical
 
-
 end
 
 "Summary statistics from rates"
