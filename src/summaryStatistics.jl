@@ -32,12 +32,12 @@ function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,λweak
 	# sampledDs = rand.(poissonS,1)
 	# sampledDn = rand.(poissonD,1)
 
-    sampledDs     = PoissonRandom.pois_rand.(ds .* observedValues)
-    sampledDn     = PoissonRandom.pois_rand.(dn .* observedValues)
-    sampledWeak   = PoissonRandom.pois_rand.(dweak .* observedValues)
-    sampledStrong = PoissonRandom.pois_rand.(dstrong .* observedValues)
+	sampledDs     = PoissonRandom.pois_rand.(ds .* observedValues)
+	sampledDn     = PoissonRandom.pois_rand.(dn .* observedValues)
+	sampledWeak   = PoissonRandom.pois_rand.(dweak .* observedValues)
+	sampledStrong = PoissonRandom.pois_rand.(dstrong .* observedValues)
 
-    alphas = @. [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
+	alphas = @. [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
 
 	out = alphas,sampledDn, sampledDs
 	return out
@@ -81,7 +81,7 @@ function poissonPolymorphism(;observedValues::Array, λps::Array, λpn::Array)
 	sampledPs =  PoissonRandom.pois_rand.(observedValues .* λ1)
 	sampledPn =  PoissonRandom.pois_rand.(observedValues .* λ2)
 
-	return (sampledPn, sampledPs)	
+	return (sampledPn, sampledPs)
 end
 
 """
@@ -193,7 +193,7 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	## Outputs
 	α = @. 1 - ((ds/dn) * (sel/neut))
 
-	
+
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
@@ -266,7 +266,7 @@ function alphaByFrequencies(param::parameters,convolutedSamples::binomialDict,di
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
-	
+
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
 	# α = view(α,1:trunc(Int64,param.nn*cutoff),:)
@@ -296,7 +296,7 @@ function alphaByFrequencies(param::parameters,convolutedSamples::binomialDict,di
 	##########
 	# Output #
 	##########
-	
+
 	#=alphas = round.(hcat(α_nopos[(param.nn-1)] * αW , α_nopos[(param.nn-1)] * (1 - αW), α_nopos[(param.nn-1)]), digits=5)=#
 	alphas = round.(alphasDiv,digits=5)
 	expectedValues = hcat(alphas,alxSummStat)
@@ -331,7 +331,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
-	
+
 	## Outputs
 	α = @. 1 - (ds/dn) * (sel/neut)
 
@@ -358,68 +358,41 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	##########
 	# Output #
 	##########
-	
+
 	alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)
-	
 	analyticalValues::Array{Float64,2} = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
 
 	return (analyticalValues)
 end
 
-
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
 
-    tmp     = rates[string(param.N) * "/" * string(param.n)]
+	tmp     = rates[string(param.N) * "/" * string(param.n)]
 	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
 
-    models  = Array.(view.(fill(tmp["models"],replicas),idx,:));
-    alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));
-    neut    = Array.(view.(fill(tmp["neut"],replicas),idx,:));
-    sel     = Array.(view.(fill(tmp["sel"],replicas),idx,:));
-    dsdn    = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));
-    alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));
-	
+	models  = Array.(view.(fill(tmp["models"],replicas),idx,:));
+	neut    = Array.(view.(fill(tmp["neut"],replicas),idx,:));
+	sel     = Array.(view.(fill(tmp["sel"],replicas),idx,:));
+	dsdn    = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));
+	#=alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));=#
+
 	#=expectedValues = SharedArray{Float64,3}(summstatSize,	size(tmp["dac"],1) + 5, size(idx,1))=#
 	#=@sync @distributed for i in eachindex(idx)
 		expectedValues[:,:,i] = ratesToSummaries(alphas[i],models[i],sfs[i],divergence[i],neut[i],sel[i],dsdn[i]);
 	end=#
-    expectedValues =  pmap(ratesToSummaries,alphas,models,sfs,divergence,neut,sel,dsdn);
+	expectedValues =  pmap(ratesToSummaries,models,sfs,divergence,neut,sel,dsdn);
 
 	return(expectedValues)
 end
-	
-function ratesToSummaries(al::Array,m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
-    ds      = x[:,1]
-    dn      = x[:,2]
-    dweak   = x[:,3]
-    dstrong = x[:,4]
-    gn      = abs.(m[:,4])
-    sh      = round.(m[:,end-1],digits=5)
+
+function ratesToSummaries(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
+	ds      = x[:,1]
+	dn      = x[:,2]
+	dweak   = x[:,3]
+	dstrong = x[:,4]
+	gn      = abs.(m[:,4])
+	sh      = round.(m[:,end-1],digits=5)
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
 	expectedValues = hcat(al,gn,sh,alxSummStat)
 end
-
-#=function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64)
-
-    tmp     = rates[string(param.N) * "/" * string(param.n)]
-    idx     = StatsBase.sample(1:size(tmp["neut"],1),summstatSize,replace=false)
-
-    models  = @. round(abs(tmp["models"][idx,:]),digits=5)
-    alphas  = tmp["alphas"][idx,:]
-    neut    = permutedims(convert(Array,tmp["neut"]))[:,idx]
-    sel     = permutedims(convert(Array,tmp["sel"]))[:,idx]
-    dsdn    = permutedims(convert(Array,tmp["dsdn"]))[:,idx]
-    alphas  = convert(Array,tmp["alphas"])[idx,:]
-	
-    ds      = dsdn[1,:]
-    dn      = dsdn[2,:]
-    dweak   = dsdn[3,:]
-    dstrong = dsdn[4,:]
-
-	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=divergence,afs=sfs[tmp["dac"]],λdiv=[ds,dn,dweak,dstrong],λpol=[neut,sel])
-
-	expectedValues = hcat(alphas,alxSummStat)
-
-	return(expectedValues,models)
-end=#
