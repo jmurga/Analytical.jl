@@ -59,7 +59,7 @@ Mutable structure containing the variables required to solve the analytical appr
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
 	B::Float64                 = 0.999 
-	bRange::Array{Float64,2}   = permutedims(push!(collect(0.1:0.025:0.975),0.999)
+	bRange::Array{Float64,2}   = permutedims(push!(collect(0.1:0.025:0.975),0.999))
 	pposL::Float64             = 0
 	pposH::Float64             = 0.001
 	N::Int64                   = 1000

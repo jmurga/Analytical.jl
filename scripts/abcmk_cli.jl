@@ -52,7 +52,7 @@ end
 
 	@time @eval summstat = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
 
-	@showprogress for i in eachindex(α)
+	for i in eachindex(α)
 		CSV.write(output * "/alpha_" * string(i) * ".tsv",DataFrame(repeat(α[i]',2)),delim='\t',header=false)
 		CSV.write(output * "/" * "summstat_" * string(i) * ".tsv",DataFrame(summstat[i]),delim='\t',header=false)
 	end
