@@ -215,12 +215,13 @@ function cumulativeSfs(sfsTemp::Array,freqs::Bool=true)
 	else
 		idx = 1
 	end
+
 	out[1,idx:end] = sum(sfsTemp[:,idx:end],dims=1)
 
 	@simd for i in 2:(size(sfsTemp)[1])
 
 		#=app = view(out,i-1,:) .- view(sfsTemp,i-1,:)=#
-		app = out[i-1,2:end] .- sfsTemp[i-1,idx:end]
+		app = out[i-1,idx:end] .- sfsTemp[i-1,idx:end]
 
 		if sum(app) > 0.0
 			out[i,idx:end] = app
@@ -228,7 +229,10 @@ function cumulativeSfs(sfsTemp::Array,freqs::Bool=true)
 			out[i,idx:end] = zeros(length(app))
 		end
 	end
-	out[:,1] = sfsTemp[:,1]
+
+	if freqs
+		out[:,1] = sfsTemp[:,1]
+	end
 	
 	return out
 end

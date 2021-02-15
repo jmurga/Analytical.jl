@@ -182,7 +182,7 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
 	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	tmp = cumulativeSfs(hcat(collect(neut,selH,selL,selN)),false)
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
