@@ -69,7 +69,7 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
-	@time @sync @distributed for i in eachindex(afac)
+	@sync @distributed for i in eachindex(afac)
 		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],gamNeg=ngamNeg[i],afac=afac[i]);
 	end
 
