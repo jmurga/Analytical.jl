@@ -119,18 +119,21 @@ function meanQ(x::Array{Float64,2})
 	return vcat(m,permutedims(qt))
 end
 
-function readData(file)
-	df = read(file)
+function openSfsDiv(x,y,dac,h=false,bootstrap=false)
 
-	resampling = vcat([10,25,50,75],collect(100:100:1000),collect(1000:500:4000))
-	tmp = zeros(length(resampling),2)
-	for i in 1:length(resampling)
-		idx = StatsBase.sample(axes(df, 1), resampling[i]; replace = true, ordered = true)
-		tmp[i,:] = sum(convert(Array, df[idx,:]), dims = 1)
+	sfs = CSV.read(x,header=h,DataFrame) |> Array
+
+	if bootstrap
+		sfs[:,2:end] = PoissonRandom.pois_rand.(sfs[:,2:end])
 	end
 
-	out = vcat(convert(Matrix,unique(df)),tmp,sum(convert(Array, df), dims = 1))
-	return out
+	scumu = Analytical.cumulativeSfs(sfs)
+	s = sum(scumu[:,2:3],dims=2)[dac]
+	divergence = CSV.read(y,DataFrame,header=h) |> Array
+	d = [sum(divergence[1:2])]
+	α = @. 1 - (divergence[2]/divergence[1] * scumu[:,2]/scumu[:,3])[dac]
+	α = round.(α,digits=5)
+	return(s,d,α)	
 end
 
 function bootstrapData(sFile::Array{Float64,2},dFile::Array{Float64,2},replicas::Int64,outputFolder::String)

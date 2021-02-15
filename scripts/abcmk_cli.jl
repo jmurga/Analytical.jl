@@ -19,38 +19,59 @@ using Fire, Distributed
 end
 
 "Summary statistics from rates"
-@main function summStat(;ne::Int64=1000, samples::Int64=500,rates::String="rates.jld2",summstatSize::Int64=100000,replicas::Int64=100,analysis::String="folder",output::String="analysis",boostrap::Bool=false)
+@main function summStat(;ne::Int64=1000, samples::Int64=500,rates::String="rates.jld2",summstatSize::Int64=100000,replicas::Int64=100,analysis::String="<folder>",output::String="<output>",bootstrap::Bool=false,workers::Int64=1)
 	
-	addprocs(workers)
 
-	h5file = jldopen(rates)
+	#=ne=1000;samples=500;rates="/home/jmurga/rates.jld2";summstatSize=100000;replicas=100;analysis="/home/jmurga/mkt/202004/rawData/simulations/noDemog/noDemog_0.4_0.1_0.999";output="<output>";bootstrap=false=#
+	#=addprocs(workers)=#
+
+	function openSfsDiv(x,y,dac,h=false,bootstrap=false)
+
+		sfs = CSV.read(x,header=h,DataFrame) |> Array
+
+		if bootstrap
+			sfs[:,2:end] = PoissonRandom.pois_rand.(sfs[:,2:end])
+		end
+
+		scumu = Analytical.cumulativeSfs(sfs)
+		s = sum(scumu[:,2:3],dims=2)[dac]
+		divergence = CSV.read(y,DataFrame,header=h) |> Array
+		d = [sum(divergence[1:2])]
+		α = @. 1 - (divergence[2]/divergence[1] * scumu[:,2]/scumu[:,3])[dac]
+		α = round.(α,digits=5)
+		return(s,d,α)	
+	end
 
 	@eval @everywhere using Analytical
-	@eval using JLD2, DataFrames, CSV
+	@eval using JLD2, DataFrames, CSV, PoissonRandom
+	
+	@eval h5file = jldopen($rates)
 
-    @eval adap     = Analytical.parameters(N=$ne,n=$sample)
-    @eval adap.dac = h5file[string($ne) * "/" * string($sample) * "/dac"]
+    @eval adap     = Analytical.parameters(N=$ne,n=$samples)
+    @eval adap.dac = h5file[string($ne) * "/" * string($samples) * "/dac"]
 
 	run(`mkdir -p $output`)
-
 	r = collect(1:replicas)
-	if boostrap
-		sFile = fill("/home/jmurga/mkt/202004/rawData/simulations"* simulations *"/" * analysis * "/sfs.tsv",replicas)
-		dFile = fill("/home/jmurga/mkt/202004/rawData/simulations/" * simulations * analysis * "/div.tsv",replicas)
+	if bootstrap
+		sFile  = fill(analysis * "/sfs.tsv",replicas)
+		dFile  = fill(analysis * "/div.tsv",replicas)
 		header = fill(true,replicas)
+		b      = fill(true,replicas)
 	else
-		sFile = @. analysis * "/sfs" * string(r) * ".tsv"
-		dFile = @. analysis * "/div" * string(r) * ".tsv"
+		sFile  = @. analysis * "/sfs" * string(r) * ".tsv"
+		dFile  = @. analysis * "/div" * string(r) * ".tsv"
 		header = fill(false,replicas)
+		b      = fill(false,replicas)
 	end
-	
-	tmp = openSfsDiv.(sFile,dFile,fill(adap.dac,replicas),header)
+
+	println("here3")
+	@eval tmp = openSfsDiv.($sFile,$dFile,fill($adap.dac,$replicas),$header,$b)
 
 	sfs = [tmp[i][1] for i=1:replicas]
 	d   = [tmp[i][2] for i=1:replicas]
 	α   = [tmp[i][3] for i=1:replicas]
 
-	@time @eval summstat = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
+	@eval summstat = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
 
 	for i in eachindex(α)
 		CSV.write(output * "/alpha_" * string(i) * ".tsv",DataFrame(repeat(α[i]',2)),delim='\t',header=false)
@@ -58,16 +79,8 @@ end
 	end
 end
 
-
-
-function openSfsDiv(x,y,dac,h=false)
-
-	sfs = CSV.read(x,DataFrame,header=h) |> Array
-	scumu = Analytical.cumulativeSfs(sfs)
-	s = sum(scumu[:,2:3],dims=2)[dac]
-	divergence = CSV.read(y,DataFrame,header=h) |> Array
-	d = [sum(divergence[1:2])]
-	α = @. 1 - (divergence[2]/divergence[1] * scumu[:,2]/scumu[:,3])[dac]
-	α = round.(α,digits=5)
-	return(s,d,α)
+"ABCreg inference"
+@main function abcInference(;abcreg::String="<path to ABCreg>",parallel::String="<path to GNU parallel>")
+	
+	addprocs(workers)
 end
