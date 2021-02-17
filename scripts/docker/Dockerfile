@@ -27,9 +27,10 @@ RUN R -e 'IRkernel::installspec()'
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall"])'
+RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall"])'
 
 ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
+ADD scripts/abcmk_cli.jl /root/abcmk_cli.jl
 
 RUN julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/root/mktest.so", precompile_execution_file="/root/precompile_mktest.jl")'

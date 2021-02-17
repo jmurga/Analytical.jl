@@ -92,6 +92,7 @@ end
 	end	
 end
 
+#=
 "Plot Maximum a posterior distribution"
 @main function plotMap(;analysis::String="<folder>",output::String="<folder>")
 
@@ -129,3 +130,4 @@ end
 		println("Please install R, ggplot2 and abc in your system before execute this function")
 	end
 end
+=#

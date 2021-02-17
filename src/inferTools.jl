@@ -68,7 +68,7 @@ end
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
  -
 """
-function ABCreg(analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,parallel::Bool)
+function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,parallel::Bool)
 	
 	reg = chomp(read(`which reg`,String))
 
@@ -87,7 +87,7 @@ end
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
-function plotMap(analysis::String,output::String)
+function plotMap(;analysis::String,output::String)
 
 	try
 		@eval using RCall
@@ -100,22 +100,21 @@ function plotMap(analysis::String,output::String)
 		posteriors = open.(out)
 
 		maxp = DataFrame(Array{Float64,2}(undef,size(posteriors,1),5),[:aw,:as,:a,:gamNeg,:shape])
-		for i in eachindex(posteriors)
-			R"""getmap <- function(df){
-					temp = as.data.frame(df)
-				    d <-locfit(~temp[,1],temp);
-				    map<-temp[,1][which.max(predict(d,newdata=temp))]
-				}"""
-			tmp = posteriors[i]
-			maxp[i,:] = rcopy(R"""matrix(apply($tmp,2,getmap),nrow=1)""")
-		end
-
+		R"""getmap <- function(df){
+				temp = as.data.frame(df)
+			    d <-locfit(~temp[,1],temp);
+			    map<-temp[,1][which.max(predict(d,newdata=temp))]
+			}"""
+		getmap(x) = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
+		tmp = getmap.(posteriors)
+		maxp = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
+	
 		al  = maxp[:,1:3]
 		gam  = maxp[:,4:end]
 		p = R"""al = $al
 			dal = melt(al)
 			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.5) + scale_fill_manual(values=c('#30504f', '#e2bd9a', '#ab2710'))
-			ggsave(pal,filename=paste0($output,'/posteriorAlphas.svg'))
+			ggsave(pal,filename=paste0($output))
 			"""
 		return(maxp)
 	catch
