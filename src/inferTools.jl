@@ -131,3 +131,14 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	α = al.(scumu,divergence)
 	return(s,d,α)	
 end
+
+"""
+	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
+"""
+function sourcePlotMap(;outputFile::String)
+
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",outputFile)
+
+	include(outputFile)
+
+end

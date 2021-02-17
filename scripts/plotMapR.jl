@@ -1,3 +1,5 @@
+using RCall
+
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
