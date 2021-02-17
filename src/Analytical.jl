@@ -1,6 +1,6 @@
 module Analytical
 
-	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2, DataFrames, RCall
+	using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2, DataFrames
 
 	import GZip: open
 	import Parsers: parse
