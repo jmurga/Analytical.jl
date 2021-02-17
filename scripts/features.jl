@@ -1,6 +1,7 @@
 using QuadGK
 using SpecialFunctions
 using Roots
+using RCall
 
 function Gammadist(gamma)
 	return ((adap.be^adap.al)/SpecialFunctions.gamma(adap.al))*(gamma^(adap.al-1))*exp(-adap.be*gamma)
@@ -66,44 +67,40 @@ function get_B_vals()
 	return ret
 end
 
-function eMKT(sfs, div, m,cutoff)
+"""
+	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
+"""
+function plotMap(;analysis::String,output::String)
 
-	p_0 = convert(Integer,sfs[:,3] |> sum)
-    p_i = convert(Integer,sfs[:,2] |> sum)
-    d_0 = convert(Integer,div[2])
-    d_i = convert(Integer,div[1])
-    m_0 = convert(Integer,m[2])
- 	m_i = convert(Integer,m[1])
+	try
+		@eval using RCall
+		@eval R"""library(ggplot2);library(abc)"""
 
-    # divergence metrics
-    ka = di / mi
-    ks = d0 / m0
-    omega = ka/ks
+		out = filter(x -> occursin("post",x), readdir(analysis,join=true))
+		out = filter(x -> !occursin(".1.",x),out)
 
-    ### Estimating alpha with pi/p0 ratio
-    piMinus   = sfs[sfs[:,1] .<= cutoff,2] |> sum
-    piGreater = sfs[sfs[:,1] .> cutoff,2] |> sum
-    p0Minus   = sfs[sfs[:,1] .<= cutoff,3] |> sum
-    p0Greater = sfs[sfs[:,1] .> cutoff,3] |> sum
+		open(x) = Array(CSV.read(GZip.open(x),DataFrame,header=false))
+		posteriors = open.(out)
 
-	ratiop0 = p0Minus / p0Greater
+		maxp = DataFrame(Array{Float64,2}(undef,size(posteriors,1),5),[:aw,:as,:a,:gamNeg,:shape])
+		R"""getmap <- function(df){
+				temp = as.data.frame(df)
+			    d <-locfit(~temp[,1],temp);
+			    map<-temp[,1][which.max(predict(d,newdata=temp))]
+			}"""
+		getmap(x) = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
+		tmp = getmap.(posteriors)
+		maxp = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
 	
-    deleterious = piMinus - (piGreater * ratiop0)
-    piNeutral   = convert(Integer,round(p_i - deleterious))
-
-    alpha = 1 - (((p_i - deleterious) / p_0) * (d_0 / d_i))
-
-    ## Estimation of b: weakly deleterious
-    b = (deleterious / p_0) * (m0 / mi)
-
-    ## Estimation of f: neutral sites
-    f = (m0 * piNeutral) / (mi * p_0)
-
-    ## Estimation of d, strongly deleterious sites
-    d = 1 - (f + b)
-
-    # pvalue =  HypothesisTests.FisherExactTest(p_0, d_0, piNeutral, d_i)
-
-
-    return alpha
+		al  = maxp[:,1:3]
+		gam  = maxp[:,4:end]
+		p = rcopy(R"""al = $al
+			dal = melt(al)
+			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.5) + scale_fill_manual(values=c('#30504f', '#e2bd9a', '#ab2710'))
+			ggsave(pal,filename=paste0($output))
+			""")
+		return(maxp)
+	catch
+		println("Please install R, ggplot2 and abc in your system before execute this function")
+	end
 end
