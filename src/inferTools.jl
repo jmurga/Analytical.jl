@@ -27,8 +27,6 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
 	df   = CSV.read(data,header=false,delim='\t',DataFrame)
-	#=df   = filter([:Column2, :Column4] => (x, y) -> x > 0 || y > 0 , df)=#
-	
 
 	if(!isnothing(B))
 		df = df[df[:,end] .== B,:]
@@ -46,8 +44,8 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 	Ds           = sum(df[:,divColumns[2]])
 	Pn           = sum(values(pn))
 	Ps           = sum(values(ps))
-	sfsPn        = cumulativeSfs(reduce(vcat,values(merge(+,freq,pn))))
-	sfsPs        = (cumulativeSfs(reduce(vcat,values(merge(+,freq,ps)))))
+	sfsPn        = reduce(vcat,values(merge(+,freq,pn)))
+	sfsPs        = reduce(vcat,values(merge(+,freq,ps)))
 
 	if(!isnothing(bins))
 		sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),40)[:,2]
@@ -56,11 +54,12 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 		sfs = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
 	else
 		sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
+		scumu = cumulativeSfs(sfs)
 	end
-	α            = round.(1 .- Ds/Dn .*  sfsPn ./sfsPs,digits=5)[dac]
+	α            = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)[dac]
 
 	D = [Dn+Ds]
-	cSfs = sfsPn+sfsPs
+	cSfs = scumu[:,2] + scumu[:,3]
 
 	return (α,cSfs,D,sfs,[Dn,Ds])
 end
@@ -68,9 +67,10 @@ end
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
  -
 """
-function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,parallel::Bool)
+function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,abcreg::String,parallel::Bool)
 	
-	reg = chomp(read(`which reg`,String))
+	#=reg = chomp(read(`which reg`,String))=#
+	#=reg = chomp(read(`which reg`,String))=#
 
 	aFile = @. analysis * "/alpha_" * string(1:replicas) * ".tsv"
 	sumFile = @. analysis * "/summstat_" * string(1:replicas) * ".tsv"
@@ -79,7 +79,7 @@ function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64
 	if parallel
 		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P $P -S $S -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
 	else
-		r(a,s,o) = run(`reg -d $a -p $s -P $P -S $S -t $tol -b $o`)
+		r(a,s,o) = run(`$reg -d $a -p $s -P $P -S $S -t $tol -b $o`)
 		r.(aFile,bFile,out)
 	end	
 end
