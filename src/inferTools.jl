@@ -77,9 +77,9 @@ function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64
 	out = @. analysis * "/out_" * string(1:replicas)
 
 	if parallel
-		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P $P -S $S -t $tol -L -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
+		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P $P -S $S -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
 	else
-		r(a,s,o) = run(`reg -d $a -p $s -P $P -S $S -t $tol -L -b $o`)
+		r(a,s,o) = run(`reg -d $a -p $s -P $P -S $S -t $tol -b $o`)
 		r.(aFile,bFile,out)
 	end	
 end
@@ -145,5 +145,4 @@ function sourcePlotMapR(;script::String)
 	catch
 		"Please be sure you installed RCall, R and abc library in your system. Check our documentation if you have any installation problem: https://jmurga.github.io/Analytical.jl/dev/"
 	end
-
 end

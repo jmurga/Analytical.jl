@@ -1,4 +1,4 @@
-using RCall
+using RCall, CSV, DataFrames, GZip
 
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
