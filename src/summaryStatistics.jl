@@ -339,7 +339,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	# Accounting for for neutral and deleterious alleles segregating #
 	##################################################################
 	## Fixation
-	fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	#=fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
 	fNeg_nopos     = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
 	fPosL_nopos    = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
 	fPosH_nopos    = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
@@ -353,14 +353,14 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 
 	## Outputs
 	αW         = param.alLow/param.alTot
-	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)
+	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)=#
 
 	##########
 	# Output #
 	##########
 
-	alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)
-	analyticalValues::Array{Float64,2} = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,alphas,dims=1)'
+	#=alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)=#
+	analyticalValues::Array{Float64,2} = cat(param.B,(fPosL+fPosH)/dn,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,dims=1)'
 
 	return (analyticalValues)
 end

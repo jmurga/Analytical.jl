@@ -68,32 +68,24 @@ function ratesToStats(;param::parameters,convolutedSamples::binomialDict,gH::Arr
 	ngamNeg    = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Estimations to thread pool
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 15,iterations)
+	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 13,iterations)
 	@sync @distributed for i in eachindex(afac)
 		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],gamNeg=ngamNeg[i],afac=afac[i]);
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
-	models = DataFrame(df[:,1:8],[Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be")])
+	models = DataFrame(df[:,1:9],[:B,:hri,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
 
-    neut   = df[:,9:8+size(param.dac,1)]
-    sel    = df[:,9+size(param.dac,1):8+size(param.dac,1)*2]
-    neut   = df[:,9:8+size(param.dac,1)]
-    sel    = df[:,9+size(param.dac,1):8+size(param.dac,1)*2]
-    dsdn   = df[:,end-6:end-3]
-    alphas = DataFrame(df[:,end-2:end],[Symbol("αW"),Symbol("αS"),Symbol("α")])
-
-	#=neutSymbol = [Symbol("neut"*string(i)) for i in 1:size(param.dac,1)]
-	selSymbol = [Symbol("sel"*string(i)) for i in 1:size(param.dac,1)]=#
-	#=DataFrames.rename!(df,vcat([Symbol("B"),Symbol("alLow"),Symbol("alTot"),Symbol("gamNeg"),Symbol("gL"),Symbol("gH"),Symbol("al"),Symbol("be"),neutSymbol,selSymbol,Symbol("ds"),Symbol("dn"),Symbol("dweak"),Symbol("dstrong"),Symbol("αW"),Symbol("αS"),Symbol("α")]...))=#
-
+    neut   = df[:,10:9+size(param.dac,1)]
+    sel    = df[:,10+size(param.dac,1):9+size(param.dac,1)*2]
+    dsdn   = df[:,end-3:end]
 
 	JLD2.jldopen(output, "a+") do file
         file[string(param.N)* "/" * string(param.n) * "/models"] = models
         file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
         file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
         file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
-        file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas
+        #=file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas=#
         file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
 
@@ -146,14 +138,14 @@ function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Flo
 	dm 			= 1
 	param.al    = afac; param.be = abs(afac/gamNeg);
 	param.alLow = alLow; param.alTot = alTot;
-	param.gH = gH;param.gL = gL; param.gamNeg = gamNeg
+	param.gH    = gH;param.gL = gL; param.gamNeg = gamNeg
 
 	# Solve probabilites without B effect to achieve α value
 	param.B = 0.999
 	setThetaF!(param)
 	setPpos!(param)
 
-	r = zeros(size(param.bRange,2) * dm,(size(param.dac,1) * 2) + 15)
+	r = zeros(size(param.bRange,2) * dm,(size(param.dac,1) * 2) + 13)
 	for j in eachindex(param.bRange)
 		param.B = param.bRange[j]
 		# Solve mutation given a new B value.
@@ -162,6 +154,6 @@ function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Flo
 		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
 		@inbounds r[j,:] = gettingRates(param,convolutedSamples)
 	end
-
+	r[:,2] = @. r[:,2]/r[end,2]
 	return r
 end
