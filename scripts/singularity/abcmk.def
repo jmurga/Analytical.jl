@@ -1,4 +1,4 @@
-BootStrap: docker
+    BootStrap: docker
 From: julia:latest
 
 %environment
@@ -13,7 +13,6 @@ From: julia:latest
 
 %post
 
-
     apt-get update && apt-get install -y --no-install-recommends apt-utils
 
 	apt-get install -y libglib2.0-0 libxext6 wget bzip2 ca-certificates curl git vim make build-essential libgsl-dev libz-dev gzip parallel r-base
@@ -22,12 +21,13 @@ From: julia:latest
 
     R -e 'install.packages(c("abc","ggplot2","data.table","dplyr"), repos = "https://cloud.r-project.org",dependecies=TRUE)'
 
-    /usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall"])'
+    /usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(["IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall","ClusterManagers"])'
     /usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 
     /usr/local/julia/bin/julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/mktest.so", precompile_execution_file="/precompile_mktest.jl")'
+    git clone https://github.com/molpopgen/ABCreg.git /root/ABCreg
+    cd ABCreg/src && make
 
 %runscript
     exec julia --sysimage /mktest.so "$@"
-
-
+    

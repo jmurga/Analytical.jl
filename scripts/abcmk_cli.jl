@@ -25,14 +25,25 @@ function openSfsDiv(x,y,dac,replicas,bootstrap="false")
 end
 
 "Function to estimate rates"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",solutions::Int64=1000000,output::String="/home/jmurga/rates.jld2",workers::Int64=1)
+@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",solutions::Int64=1000000,output::String="/home/jmurga/rates.jld2",workers::Int64=1,cluster::String="local")
 
 	tmpNeg    = parse.(Int,split(gamNeg," "))
 	tmpWeak   = parse.(Int,split(gL," "))
 	tmpStrong = parse.(Int,split(gH," "))
 	dac       = parse.(Int,split(dac,","))
 
-	addprocs(workers)
+	if cluster == "local"
+		addprocs(workers)
+	else
+		@eval using ClusterManagers
+		if cluster == "slurm"
+			@eval ClusterManagers.addprocs_slurm(workers)
+		elseif cluster == "sge"
+			@eval ClusterManagers.addprocs_sge(workers)
+		elseif cluster == "htcondor"
+			@eval ClusterManagers.addprocs_htc(workers)
+		end
+	end
 
 	@eval @everywhere using Analytical
 	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac)
@@ -53,38 +64,33 @@ end
 	@eval @everywhere using Analytical
 	@eval using JLD2, DataFrames, CSV, PoissonRandom, ProgressMeter
 	
-	@eval h5file = jldopen($rates)
+    @eval h5file    = jldopen($rates)
 
-	@eval adap     = Analytical.parameters(N=$ne,n=$samples)
-	@eval adap.dac = h5file[string($ne) * "/" * string($samples) * "/dac"]
+    @eval adap      = Analytical.parameters(N=$ne,n=$samples)
+    @eval adap.dac  = h5file[string($ne) * "/" * string($samples) * "/dac"]
 
-	@eval sFile = filter(x -> occursin("sfs",x), readdir($analysis,join=true))
-	@eval dFile = filter(x -> occursin("div",x), readdir($analysis,join=true))
+    @eval sFile     = filter(x -> occursin("sfs",x), readdir($analysis,join=true))
+    @eval dFile     = filter(x -> occursin("div",x), readdir($analysis,join=true))
 
-	@eval sfs,d,α = openSfsDiv($sFile,$dFile,$adap.dac,$replicas,$bootstrap)
+    @eval sfs,d,α   = openSfsDiv($sFile,$dFile,$adap.dac,$replicas,$bootstrap)
 
-	@eval summstat = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
+    @eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
 
-	@eval w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false)
+    @eval w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false)
 
 	@eval w.(permutedims.($α),@. $analysis * "/alpha_" * string(1:$replicas) * ".tsv")
 	@eval w.(summstat,@. $analysis * "/summstat_" * string(1:$replicas) * ".tsv")
-	#=
-	for i in eachindex(α)
-		@eval CSV.write($analysis * "/alpha_" * string($i) * ".tsv",DataFrame($α[$i]'),delim='\t',header=false)
-		@eval CSV.write($analysis * "/" * "summstat_" * string(i) * ".tsv",DataFrame($summstat[$i]),delim='\t',header=false)
-	end=#
+
 end
 
 "ABCreg inference"
 @main function abcInference(;analysis::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,workers::Int64=1,parallel::String="true")
 	
-	reg = chomp(read(`which reg`,String))
-
-	@eval aFile = @. $analysis * "/alpha_" * string(1:$replicas) * ".tsv"
-	@eval sumFile = @. $analysis * "/summstat_" * string(1:$replicas) * ".tsv"
-	@eval out = @. $analysis * "/out_" * string(1:$replicas)
-	if parallel == "true"
+    reg           = chomp(read(`which reg`,String))
+    @eval aFile   = @. $analysis * "/alpha_" * string(1:$replicas) * ".tsv"
+    @eval sumFile = @. $analysis * "/summstat_" * string(1:$replicas) * ".tsv"
+    @eval out     = @. $analysis * "/out_" * string(1:$replicas)
+    if parallel  == "true"
 		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P 5 -S 9 -t 0.01 -L -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
 	else
 		@eval r(a,s,o) = run(`reg -d $a -p $s -P 5 -S 9 -t 0.01 -L -b $o`)
@@ -104,22 +110,21 @@ end
 				    d <-locfit(~temp[,1],temp);
 				    map<-temp[,1][which.max(predict(d,newdata=temp))]}"""
 
-		out = filter(x -> occursin("post",x), readdir(analysis,join=true))
-		out = filter(x -> !occursin(".1.",x),out)
+        out              = filter(x -> occursin("post",x), readdir(analysis,join=true))
+        out              = filter(x -> !occursin(".1.",x),out)
 
-		open(x) = Array(CSV.read(GZip.open(x),DataFrame,header=false))
-		@eval posteriors = open.($out)
+        open(x)          = Array(CSV.read(GZip.open(x),DataFrame,header=false))
+        @eval posteriors = open.($out)
 		
-		@eval getmap(x) = rcopy(R"""matrix(apply(x,2,getmap),nrow=1)""")
-		@eval tmp = getmap.($posteriors)
-		@eval maxp = DataFrame($tmp,[:aw,:as,:a,:gamNeg,:shape])
+        @eval getmap(x)  = rcopy(R"""matrix(apply(x,2,getmap),nrow=1)""")
+        @eval tmp        = getmap.($posteriors)
+        @eval maxp       = DataFrame($tmp,[:aw,:as,:a,:gamNeg,:shape])
 	
-		al  = maxp[:,1:3]
-		gam  = maxp[:,4:end]
+        al               = maxp[:,1:3]
+        gam              = maxp[:,4:end]
 
 		@eval @rput(al)
 		@eval @rput(output)
-
 		@eval p = R"""al = al
 			dal = melt(al)
 			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.5) + scale_fill_manual(values=c('#30504f', '#e2bd9a', '#ab2710'))

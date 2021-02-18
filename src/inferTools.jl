@@ -133,12 +133,17 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 end
 
 """
-	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
+	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called plotMap which used R to 
+ 		estimate and plot the Maximum A Posterior following ABCreg examples. It uses locfit and ggplot2 libraries.
 """
-function sourcePlotMap(;outputFile::String)
+function sourcePlotMapR(;script::String)
 
-	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",outputFile)
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",script)
 
-	include(outputFile)
+	try
+		include(script)
+	catch
+		"Please be sure you installed RCall, R and abc library in your system. Check our documentation if you have any installation problem: https://jmurga.github.io/Analytical.jl/dev/"
+	end
 
 end

@@ -27,7 +27,7 @@ RUN R -e 'IRkernel::installspec()'
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall"])'
+RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall","ClusterManagers"])'
 
 ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
 ADD scripts/abcmk_cli.jl /root/abcmk_cli.jl
