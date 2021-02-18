@@ -367,14 +367,21 @@ end
 
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
 
-	tmp     = rates[string(param.N) * "/" * string(param.n)]
-	idx     = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
+    tmp    = rates[string(param.N) * "/" * string(param.n)]
+    idx    = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
 
-	models  = Array.(view.(fill(tmp["models"],replicas),idx,:));
-	neut    = Array.(view.(fill(tmp["neut"],replicas),idx,:));
-	sel     = Array.(view.(fill(tmp["sel"],replicas),idx,:));
-	dsdn    = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));
-	#=alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));=#
+    models = map(x -> view(tmp["models"],x,:), idx)
+    neut   = map(x -> view(tmp["neut"],x,:), idx)
+    sel    = map(x -> view(tmp["sel"],x,:), idx)
+    neut   = map(x -> view(tmp["neut"],x,:), idx)
+    dsdn   = map(x -> view(tmp["dsdn"],x,:), idx)
+	
+	#=
+    models  = Array.(view.(fill(tmp["models"],replicas),idx,:));
+    neut   = Array.(view.(tmp["neut"],idx,:));
+    sel    = Array.(view.(fill(tmp["sel"],replicas),idx,:));
+    dsdn   = Array.(view.(fill(tmp["dsdn"],replicas),idx,:));=#
+    #      = alphas  = Array.(view.(fill(tmp["alphas"],replicas),idx,:));=#
 
 	#=expectedValues = SharedArray{Float64,3}(summstatSize,	size(tmp["dac"],1) + 5, size(idx,1))=#
 	#=@sync @distributed for i in eachindex(idx)
