@@ -15,7 +15,6 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 
     fac     = rand(-2:0.05:2,iterations,2)
     afac    = @. param.al*(2^fac[:,1])
-    #       = bfac   = @. (param.al/param.be)*(2^fac[:,2])=#
 
     lfac    = rand(0.05:0.05:0.9,iterations)
     nTot    = rand(0.1:0.01:0.9,iterations)
@@ -34,7 +33,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	end
 
 	df = vcat(eachslice(out,dims=3)...);
-	models = DataFrame(df[:,1:8],[:B,:hri,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
+	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
 
     neut   = df[:,9:(8+size(param.dac,1))]
     sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
