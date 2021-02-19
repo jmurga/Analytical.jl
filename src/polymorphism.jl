@@ -176,7 +176,6 @@ function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCS
 
 	# return out[2:end-1]
 	return out
-
 end
 
 function DiscSFSSelNeg(param::parameters,ppos::Float64)

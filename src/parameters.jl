@@ -249,3 +249,100 @@ function phiReduction(param::parameters,gammaValue::Int64)
 	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
 	return out
 end
+
+"""
+	alphaByFrequencies(gammaL,gammaH,pposL,param.pposH,data,nopos)
+
+Analytical α(x) estimation. Solve α(x) from the expectation generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
+
+```math
+\\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
+```
+
+# Arguments
+ - `gammaL::Int64`: strength of weakly positive selection
+ - `gammaH::Int64`: strength of strong positive selection
+ - `pposL`::Float64: probability of weakly selected allele
+ - `param.pposH`::Float64: probability of strong selected allele
+ - `data::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
+ - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
+
+# Returns
+ - `Array{Float64,1}` α(x).
+"""
+function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
+
+	##############################################################
+						# Solve the model  #
+	##############################################################
+	B = param.B
+
+	setThetaF!(param)
+	thetaF = param.thetaF
+	# Solve the probabilities of fixations without background selection
+	## First set non-bgs
+	param.B = 0.999
+	## Solve the mutation rate
+	setThetaF!(param)
+	## Solve the probabilities
+	setPpos!(param)
+	# Return to the original values
+	param.thetaF = thetaF
+	param.B = B
+
+	##############################################################
+	# Accounting for positive alleles segregating due to linkage #
+	##############################################################
+
+	# Fixation
+	fN     = param.B*fixNeut(param)
+	fNeg   = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
+	fPosL  = fixPosSim(param,param.gL,0.5*param.pposL)
+	fPosH  = fixPosSim(param,param.gH,0.5*param.pposH)
+
+	ds = fN
+	dn = fNeg + fPosL + fPosH
+
+	## Polymorphism
+	neut = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
+
+	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
+	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
+
+	neut, selH, selL, selN = splitColumns(tmp)
+	sel = (selH+selL)+selN
+
+	# ps = @. neut / (sel+neut)
+	# pn = @. sel / (sel+neut)
+
+	## Outputs
+	α = @. 1 - ((ds/dn) * (sel/neut))
+
+
+	##################################################################
+	# Accounting for for neutral and deleterious alleles segregating #
+	##################################################################
+	## Fixation
+	fN_nopos     = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fNeg_nopos   = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosL_nopos  = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
+	fPosH_nopos  = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
+
+	ds_nopos = fN_nopos
+	dn_nopos = fNeg_nopos + fPosL_nopos + fPosH_nopos
+
+	## Polymorphism
+	sel_nopos = selN
+	ps_nopos = @. neut / (sel_nopos + neut)
+	pn_nopos = @. sel_nopos / (sel_nopos + neut)
+
+	α_nopos = 1 .- (ds_nopos/dn_nopos) .* (sel_nopos./neut)
+
+	##########
+	# Output #
+	##########
+	return (α,α_nopos)
+end
