@@ -54,8 +54,7 @@ end
 end
 
 "Summary statistics from rates. Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
-
-@main function summStat(;ne::Int64=1000, samples::Int64=500,rates::String="rates.jld2",summstatSize::Int64=100000,replicas::Int64=100,analysis::String="<folder>",bootstrap::String="true",workers::Int64=1)
+@main function summaries(;ne::Int64=1000, samples::Int64=500,rates::String="rates.jld2",summstatSize::Int64=100000,replicas::Int64=100,analysis::String="<folder>",bootstrap::String="true",workers::Int64=1)
 	
 	#=ne=1000;samples=661;rates="/home/jmurga/ratesBgs.jld2";summstatSize=100000;replicas=100;analysis="/home/jmurga/mkt/202004/rawData/summStat/tgp/wg";bootstrap="true"=#
 

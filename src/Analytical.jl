@@ -11,7 +11,7 @@ module Analytical
 	include("fixations.jl")
 	include("polymorphism.jl")
 	include("summaryStatistics.jl")
-	include("multiThreading.jl")
+	include("rates.jl")
 	include("inferTools.jl")
 	include("readFasta.jl")
 	include("methods.jl")
