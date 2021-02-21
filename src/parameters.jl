@@ -196,7 +196,7 @@ function binomOp!(param::parameters,convolutedBn::Dict)
 		z    = f.(samplesFreqs)
 
 		out  = Distributions.pdf.(z,samples)
-		out  = round.(out,digits=20)
+		out  = round.(out,digits=10)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		convolutedBn[bVal] = outS
 		# param.bn[bVal] = outS

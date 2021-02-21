@@ -1,3 +1,22 @@
+
+
+using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2, DataFrames, ProgressMeter
+
+import GZip: open
+import Parsers: parse
+import OrderedCollections: OrderedDict
+import FastaIO: readfasta
+
+include("/home/jmurga/.julia/dev/Analytical/src/parameters.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/fixations.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/polymorphism.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/summaryStatistics.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/rates.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/inferTools.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/readFasta.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/methods.jl")
+
+
 using Distributed
 addprocs()
 @everywhere using Analytical, DataFrames, CSV

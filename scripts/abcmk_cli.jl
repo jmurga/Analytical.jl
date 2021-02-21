@@ -60,8 +60,8 @@ end
 
 	addprocs(workers)
 	
-	@eval @everywhere using Analytical
-	@eval using JLD2, DataFrames, CSV, PoissonRandom, ProgressMeter
+	@eval @everywhere using Analytical, DataFrames, CSV, PoissonRandom, ProgressMeter
+	@eval using JLD2
 	
     @eval h5file    = jldopen($rates)
 
@@ -75,10 +75,10 @@ end
 
     @eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
 
-    @eval w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false)
+    @eval @everywhere w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false)
 
-	@eval w.(permutedims.($α),@. $analysis * "/alpha_" * string(1:$replicas) * ".tsv")
-	@eval w.(summstat,@. $analysis * "/summstat_" * string(1:$replicas) * ".tsv")
+	@eval progress_pmap(w,permutedims.($α),@. $analysis * "/alpha_" * string(1:$replicas) * ".tsv";progress=Progress($replicas,desc="Writting alphas"))
+	@eval progress_pmap(summstat,@. $analysis * "/summstat_" * string(1:$replicas) * ".tsv";progress=Progress($replicas,desc="Writting summaries"))
 
 end
 

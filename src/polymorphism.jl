@@ -61,8 +61,6 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		out = out[2:end-1]
 	else
 
-		exponentialType = Union{Float64,ArbFloat{48}}
-
 		redPlus = phiReduction(param,gammaValue)
 
 		# Solving sfs
@@ -73,47 +71,50 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
 		gammaCorrected = gammaValue*param.B
 
-		if isinf(exp(2*gammaCorrected))
-			# Checked mpmath, BigFloat, DecFP.Dec128, Quadmath.Float128
-			gammaExp1 = exp(ArbFloat(gammaCorrected*2,bits=24))
-			gammaExp2 = exp(ArbFloat(gammaCorrected*-2,bits=24))
-		else
-			gammaExp1 = exp(gammaCorrected*2)
-			gammaExp2 = exp(gammaCorrected*-2)
-		end
+		gammaExp1 = exp(gammaCorrected*2)
+		gammaExp2 = exp(gammaCorrected*-2)
 
+		positiveSfs(i::Float64,g1::Float64=gammaExp1,g2::Float64=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 
 		# Original
 		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
-		function positiveSfs(i::Float64,g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat{48}}}
-			if i > 0 && i < 1.0
-				local tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
-				return Float64(tmp)
-			else
-				return Float64(0.0)
-			end
-		end
-		#
-		#
-		# function pSfs(x::Array{Float64,2},g1::T,g2::T,ppos::Float64) where {T<:Union{Float64,ArbFloat{48}}}
-		# 	out = Array{Float64,1}[]
-		# 	@inbounds @simd for i in x
-		# 		if i > 0 && i < 1.0
-		# 			tmp = ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i)))
-		# 		else
-		# 			tmp = 0.0
-		# 		end
-		#
-		# 	end
-		# 	return out
-		# end
 
 		# Allocating outputs
-		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2,gammaExp1,gammaExp2,ppos))
+		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
 
 		# subsetDict = get(param.bn,param.B,1)
 		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solvedPositiveSfs)
+		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.75*(binom*solvedPositiveSfs)
+		# out = out[2:end-1]
+
+	end
+
+	return out
+end
+
+function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
+
+	if ppos == 0.0
+		out = zeros(Float64,param.nn + 1)
+		out = out[2:end-1]
+	else
+		redPlus = phiReduction(param,gammaValue)
+
+		# Solving sfs
+		NN2 = convert(Int64,ceil(param.NN*param.B))
+		xa1  = collect(0:NN2)
+		xa2  = xa1/(NN2)
+
+		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
+		gammaCorrected = gammaValue*param.B
+		gammaExp1::ArbFloat{48} = exp(ArbFloat(gammaCorrected*2,bits=24))
+		gammaExp2::ArbFloat{48} = exp(ArbFloat(gammaCorrected*-2,bits=24))
+
+		positiveSfs(i::Float64,g1::ArbFloat{48}=gammaExp1,g2::ArbFloat{48}=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		# Allocating outputs
+		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
+		replace!(solvedPositiveSfs, NaN => 0.0)
 		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.75*(binom*solvedPositiveSfs)
 		# out = out[2:end-1]
 

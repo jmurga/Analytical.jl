@@ -13,48 +13,47 @@ Function to solve randomly *N* scenarios
 """
 function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
 
-    fac     = rand(-2:0.05:2,iterations,2)
-    afac    = @. param.al*(2^fac[:,1])
+	fac     = rand(-2:0.05:2,iterations,2)
+	afac    = @. param.al*(2^fac[:,1])
 
-    lfac    = rand(0.05:0.05:0.9,iterations)
-    nTot    = rand(0.1:0.01:0.9,iterations)
+	lfac    = rand(0.05:0.05:0.9,iterations)
+	nTot    = rand(0.1:0.01:0.9,iterations)
 
-    nLow    = @. nTot * lfac
-    nParam  = [param for i in 1:iterations];
-    nBinom  = [convolutedSamples for i in 1:iterations];
-    ngh     = rand(repeat(gH,iterations),iterations);
-    ngl     = rand(repeat(gL,iterations),iterations);
-    ngamNeg = rand(repeat(gamNeg,iterations),iterations);
+	nLow    = @. nTot * lfac
+	nParam  = [param for i in 1:iterations];
+	nBinom  = [convolutedSamples for i in 1:iterations];
+	ngh     = rand(repeat(gH,iterations),iterations);
+	ngl     = rand(repeat(gL,iterations),iterations);
+	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Estimations to thread pool
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
-	@sync @distributed for i in eachindex(afac)
-		@inbounds out[:,:,i] = iterRates(param = nParam[i],convolutedSamples=nBinom[i],alTot = nTot[i], alLow = nLow[i],gH=ngh[i],gL=ngl[i],gamNeg=ngamNeg[i],afac=afac[i]);
+	@sync @distributed for i in 1:iterations
+		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i]);
 	end
-
 	df = vcat(eachslice(out,dims=3)...);
+	
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
-
-    neut   = df[:,9:(8+size(param.dac,1))]
-    sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-    dsdn   = df[:,(end-3):end]
+	neut   = df[:,9:(8+size(param.dac,1))]
+	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
+	dsdn   = df[:,(end-3):end]
 
 	JLD2.jldopen(output, "a+") do file
-        file[string(param.N)* "/" * string(param.n) * "/models"] = models
-        file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
-        file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
-        file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
-        #=file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas=#
-        file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
+		file[string(param.N)* "/" * string(param.n) * "/models"] = models
+		file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
+		file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
+		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
+		#=file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas=#
+		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
-
+	
 	return df
 end
 
 """
 	iterRates(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
 """
-function iterRates(;param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL=Int64,gamNeg::Int64,afac::Float64)
+function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64)
 
 	# Matrix and values to solve
 	param.al    = afac; param.be = abs(afac/gamNeg);
@@ -115,9 +114,13 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 
 	## Polymorphism	## Polymorphism
 	neut::Array{Float64,1} = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
-	# neut = param.neut[param.B]
 
-	selH::Array{Float64,1} = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	if isinf(exp(param.gH * 2))
+		selH = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	else
+		selH = DiscSFSSelPosDownArb(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	end
+
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)

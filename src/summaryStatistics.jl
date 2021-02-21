@@ -126,9 +126,8 @@ function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arr
 	dn      = x[:,2]
 	dweak   = x[:,3]
 	dstrong = x[:,4]
-	gn      = abs.(m[:,5])
+	gn      = abs.(m[:,4])
 	sh      = round.(m[:,end-1],digits=5)
-	hri     = m[:,2]
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
 	expectedValues = hcat(round.(alphasDiv,digits=5),gn,sh,alxSummStat)
@@ -148,7 +147,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx))
 	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx))
 	
-	expectedValues =  progress_pmap(samplingFromRates,models,sfs,divergence,neut,sel,dsdn);
+	expectedValues =  progress_pmap(samplingFromRates,models,sfs,divergence,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 
 	return(expectedValues)
 end
