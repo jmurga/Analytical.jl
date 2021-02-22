@@ -13,8 +13,8 @@ Function to solve randomly *N* scenarios
 """
 function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
 
-	fac     = rand(-2:0.05:2,iterations,2)
-	afac    = @. param.al*(2^fac[:,1])
+	fac     = rand(-2:0.05:2,iterations)
+	afac    = @. param.al*(2^fac)
 
 	lfac    = rand(0.05:0.05:0.9,iterations)
 	nTot    = rand(0.1:0.01:0.9,iterations)
@@ -72,7 +72,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 		setThetaF!(param)
 		# Solven given same probabilites probabilites ≠ bgs mutation rate.
 		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
-		@inbounds r[j,:] = gettingRates(param,convolutedSamples)
+		@inbounds r[j,:] = gettingRates(param,convolutedSamples.bn[param.B])
 	end
 	return r
 end
@@ -97,7 +97,7 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 # Returns
  - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
 """
-function gettingRates(param::parameters,convolutedSamples::binomialDict)
+function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64})
 
 	##############################################################
 	# Accounting for positive alleles segregating due to linkage #
@@ -113,16 +113,16 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	dn       = fNeg + fPosL + fPosH
 
 	## Polymorphism	## Polymorphism
-	neut::Array{Float64,1} = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
+	neut::Array{Float64,1} = DiscSFSNeutDown(param,cnvBinom)
 
-	if isinf(exp(param.gH * 2))
-		selH = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
+		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
 	else
-		selH = DiscSFSSelPosDownArb(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+		DiscSFSSelPosDownArb(param,param.gH,param.pposH,cnvBinom)
 	end
 
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,cnvBinom)
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 
@@ -157,7 +157,7 @@ function gettingRates(param::parameters,convolutedSamples::binomialDict)
 	##########
 
 	#=alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)=#
-	analyticalValues::Array{Float64,2} = cat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,dims=1)'
+	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)
 end

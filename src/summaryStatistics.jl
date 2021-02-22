@@ -122,6 +122,7 @@ end
 	samplingFromRates(gammaL,gammaH,pposL,pposH,observedData,nopos)
 """
 function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
+
 	ds      = x[:,1]
 	dn      = x[:,2]
 	dweak   = x[:,3]
@@ -141,11 +142,11 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	tmp    = rates[string(param.N) * "/" * string(param.n)]
 	idx    = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
 
-	models = Array.(map(x -> view(tmp["models"],x,:), idx))
-	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx))
-	sel    = Array.(map(x -> view(tmp["sel"],x,:), idx))
-	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx))
-	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx))
+	models = Array.(map(x -> view(tmp["models"],x,:), idx));
+	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx));
+	sel    = Array.(map(x -> view(tmp["sel"],x,:), idx));
+	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx));
+	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx));
 	
 	expectedValues =  progress_pmap(samplingFromRates,models,sfs,divergence,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 

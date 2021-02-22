@@ -1,5 +1,3 @@
-
-
 using Parameters, NLsolve, SpecialFunctions, Distributions, Roots, ArbNumerics, StatsBase, LsqFit, PoissonRandom, SparseArrays, Distributed, CSV, SharedArrays, JLD2, DataFrames, ProgressMeter
 
 import GZip: open
