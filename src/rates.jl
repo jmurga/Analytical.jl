@@ -16,7 +16,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	fac     = rand(-2:0.05:2,iterations)
 	afac    = @. param.al*(2^fac)
 
-	lfac    = rand(0.05:0.05:0.9,iterations)
+	lfac    = rand(0.0:0.05:0.9,iterations)
 	nTot    = rand(0.1:0.01:0.9,iterations)
 
 	nLow    = @. nTot * lfac
