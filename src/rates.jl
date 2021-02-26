@@ -46,7 +46,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		#=file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas=#
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
-	
+
 	return df
 end
 

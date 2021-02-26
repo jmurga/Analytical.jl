@@ -137,9 +137,18 @@ end
 """
 	summaryStatsFromRates(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
 """
-function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence::Array,sfs::Array,summstatSize::Int64,replicas::Int64)
+function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 
+	#Opening files
+	sFile = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
+	dFile = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
+
+	sfs,d,α = openSfsDiv(sFile,dFile,param.dac,100,bootstrap);
+
+	#Open rates
 	tmp    = rates[string(param.N) * "/" * string(param.n)]
+
+	#Subset index
 	idx    = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
 
 	models = Array.(map(x -> view(tmp["models"],x,:), idx));
@@ -148,7 +157,15 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,divergence
 	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx));
 	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx));
 	
-	expectedValues =  progress_pmap(samplingFromRates,models,sfs,divergence,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
+	#Making summaries
+	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
+
+	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
+	
+	#Writting ABCreg input
+	progress_pmap(w,α, @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
+	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));
+
 
 	return(expectedValues)
 end
