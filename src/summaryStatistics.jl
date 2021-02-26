@@ -163,7 +163,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
 	
 	#Writting ABCreg input
-	progress_pmap(w,α, @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
+	progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
 	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));
 
 
