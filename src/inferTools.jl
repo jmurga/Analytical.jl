@@ -16,8 +16,11 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `divColumns::Array{Int64,1}`: non-synonymous and synonymous divergence columns. Please introduce first the non-synonymous number.
 
 # Returns
- - `Array{Array{Int64,N} where N,1}`: Array of arrays containing the total polymorphic sites (1), total Site Frequency Spectrum (2) and total divergence (3). Each array contains one row/column per file.
- - File writed in `output`
+ - `Array{Int64,1}`: α values
+ - `Array{Int64,1}`: Cumulative SFS
+ - `Array{Int64,2}`: Total divergence counts
+ - `Array{Int64,1}`: Synonymous and non-synonymous divergence counts
+ - 
 """
 function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],dac::Array{Int64,1},B::Union{Nothing,Float64}=nothing,bins::Union{Nothing,Int64}=nothing)
 
@@ -61,11 +64,12 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 	D = [Dn+Ds]
 	cSfs = scumu[:,2] + scumu[:,3]
 
-	return (α,cSfs,D,sfs,[Dn,Ds])
+	return (α,cSfs,D,[Dn,Ds])
 end
 """
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
- -
+
+Could be parallelize if GNU parallel is available in your system
 """
 function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,abcreg::String,parallel::Bool)
 	
@@ -80,13 +84,13 @@ function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64
 		run(`parallel -j$workers --link $abcreg -d "{1}" -p "{2}" -P $P -S $S -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
 	else
 		r(a,s,o) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
-		r.(aFile,bFile,out)
+		r.(aFile,sumFile,out)
 	end	
 end
 
 
 """
-	Bootstrap data
+	Bootstrap data following polyDFE manual
 """
 function bootstrapData(sFile::Array{Float64,2},dFile::Array{Float64,2},replicas::Int64,outputFolder::String)
 	
@@ -134,7 +138,7 @@ end
 
 """
 	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called plotMap which used R to 
- 		estimate and plot the Maximum A Posterior following ABCreg examples. It uses locfit and ggplot2 libraries.
+		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
 function sourcePlotMapR(;script::String)
 

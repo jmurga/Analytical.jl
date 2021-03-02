@@ -11,19 +11,25 @@ Function to solve randomly *N* scenarios
 # Returns
  - `Array`: summary statistics
 """
-function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Array{Int64,1},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
+function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
 
 	fac     = rand(-2:0.05:2,iterations)
 	afac    = @. param.al*(2^fac)
 
-	lfac    = rand(0.0:0.05:0.9,iterations)
 	nTot    = rand(0.1:0.01:0.9,iterations)
+	
+	if isnothing(gL)
+		nLow    = fill(0.0,iterations)
+		ngl     = rand(repeat([1],iterations),iterations);
+	else
+		lfac    = rand(0.0:0.05:0.9,iterations)
+		nLow    = @. nTot * lfac
+		ngl     = rand(repeat(gL,iterations),iterations);
+	end
 
-	nLow    = @. nTot * lfac
 	nParam  = [param for i in 1:iterations];
 	nBinom  = [convolutedSamples for i in 1:iterations];
 	ngh     = rand(repeat(gH,iterations),iterations);
-	ngl     = rand(repeat(gL,iterations),iterations);
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Estimations to thread pool

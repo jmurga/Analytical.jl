@@ -4,8 +4,7 @@
 
 # E[Dn]  = LT(E[Dn+] + E[Dn-] + E[Dns])
 
-# Neutral fixation reduced by background selection
-
+# Neutral fixation corrected by background selection
 """
 
  - fixNeut()
@@ -20,12 +19,12 @@ Expected neutral fixations rate reduce by a background selection value.
 
 """
 function fixNeut(param::parameters)
-	# SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
+	# Synonymous probabilty * (fixation probabilty corrected by BGS value)
 	out::Float64 = 0.25*(1.0/(param.B*param.NN))
 	return out
 end
 
-# Negative fixations
+# Negative fixations corrected by background selection
 """
 
 	fixNegB(ppos)
@@ -44,7 +43,7 @@ Expected fixation rate from negative DFE.
 
 """
 function fixNegB(param::parameters,ppos::Float64)
-	# NON-SYNONYMOUS * NEGATIVE PROBABILITY * FIXATION PROBABILITY FROM GAMMA DISTRIBUTION
+	# Non-synonymous * negative probability * fixation probability from gamma distribution
 	out::Float64 = 0.75*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-SpecialFunctions.zeta(param.al,1.0+param.be/(2.0*param.B))+SpecialFunctions.zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
 	return out
 end
@@ -69,14 +68,13 @@ Expected positive fixation rate.
 function pFix(param::parameters,gam::Int64)
 
 	s::Float64    = gam/(param.NN)
-	# s::Float64    = rand(Distributions.Exponential(gam/(param.NN+0.0)))
 	pfix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gam))
 
+	# Fixation probability corrected for large following Uricchio et al. 2014
 	if s >= 0.1
 		pfix = ℯ^(-(1.0+s))
 		lim = 0
 		while(lim < 200)
-			# s::Float64    = rand(Distributions.Exponential(gam/(param.NN+0.0)))
 			pfix = ℯ^((1.0+s)*(pfix-1.0))
 			lim  = lim + 1
 		end
@@ -109,7 +107,7 @@ function fixPosSim(param::parameters,gamma::Int64,ppos::Float64)
 
 	redPlus = phiReduction(param,gamma)
 
-	# NON-SYNONYMOUS * POSITIVE PROBABILITY * BGS REDUCTION * FIXATION PROB
+	# Non-synonymous * positive probability * bgs reduction * fixation prob
 	out::Float64 = 0.75*ppos*redPlus*pFix(param,gamma)
 	return out
 end

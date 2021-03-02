@@ -1,37 +1,18 @@
 using Fire, Distributed
 
-function openSfsDiv(x,y,dac,replicas,bootstrap="false")
-
-	sfs = Array.(CSV.read.(x,DataFrame))
-	divergence = Array.(CSV.read.(y,DataFrame))
-
-	if bootstrap == "true"
-		sfs = repeat(sfs,replicas)
-		pr(x) = hcat(x[:,1],PoissonRandom.pois_rand.(x[:,2:end]))
-		sfs = pr.(sfs)
-		divergence = repeat(divergence,replicas)
-
-	end
-
-	scumu = Analytical.cumulativeSfs.(sfs)
-	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
-	s = f.(scumu)
-
-
-	d = [[sum(divergence[i])] for i in eachindex(divergence)]
-	al(a,b,c=dac) = @. round(1 - (b[2]/b[1] * a[:,2]/a[:,3])[c],digits=5)
-	α = al.(scumu,divergence)
-	return(s,d,α)	
-end
-
 "Function to estimate rates"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",solutions::Int64=1000000,output::String="/home/jmurga/rates.jld2",workers::Int64=1,cluster::String="local")
+@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10;nothing", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::Float64=0.001,theta::Float64=0.001,solutions::Int64=1000000,output::String="/home/jmurga/rates.jld2",workers::Int64=1,cluster::String="local")
 
 	tmpNeg    = parse.(Int,split(gamNeg," "))
-	tmpWeak   = parse.(Int,split(gL," "))
 	tmpStrong = parse.(Int,split(gH," "))
 	dac       = parse.(Int,split(dac,","))
 
+	if (tmpWeak == "nothing")
+		gL = nothing
+	else
+		gL = parse.(Int,split(gL," "))
+		gL = collect(gL[1]:gL[2])
+	end
 	if cluster == "local"
 		addprocs(workers)
 	else
@@ -46,11 +27,11 @@ end
 	end
 
 	@eval @everywhere using Analytical
-	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac)
+	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,rho=$rho,thetaMidNeutral=$theta,al=$shape)
 
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=collect($tmpWeak[1]:$tmpWeak[2]),gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,shape=$adap.al,output=$output);
+	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$gL,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,shape=$adap.al,output=$output);
 end
 
 "Summary statistics from rates. Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
@@ -63,22 +44,22 @@ end
 	@eval @everywhere using Analytical, DataFrames, CSV, PoissonRandom, ProgressMeter
 	@eval using JLD2
 	
+	addprocs(workers)
+	
+	@eval @everywhere using Analytical, DataFrames, CSV, PoissonRandom, ProgressMeter
+	@eval using JLD2
+	
     @eval h5file    = jldopen($rates)
 
     @eval adap      = Analytical.parameters(N=$ne,n=$samples)
     @eval adap.dac  = h5file[string($ne) * "/" * string($samples) * "/dac"]
 
-    @eval sFile     = filter(x -> occursin("sfs",x), readdir($analysis,join=true))
-    @eval dFile     = filter(x -> occursin("div",x), readdir($analysis,join=true))
+    @eval if $bootstrap == "true"
+    	@eval summstat  = Analytical.summaryStatsFromRates(;param=$adap,rates=$h5file,analysisFolder=$analysis,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
+    else
+    	@eval summstat  = Analytical.summaryStatsFromRates(;param=$adap,rates=$h5file,analysisFolder=$analysis,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
+    end
 
-    @eval sfs,d,α   = openSfsDiv($sFile,$dFile,$adap.dac,$replicas,$bootstrap)
-
-    @eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,divergence=$d,sfs=$sfs,summstatSize=$summstatSize,replicas=$replicas)
-
-    @eval @everywhere w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false)
-
-	@eval progress_pmap(w,permutedims.($α),@. $analysis * "/alpha_" * string(1:$replicas) * ".tsv";progress=Progress($replicas,desc="Writting alphas"))
-	@eval progress_pmap(summstat,@. $analysis * "/summstat_" * string(1:$replicas) * ".tsv";progress=Progress($replicas,desc="Writting summaries"))
 
 end
 
