@@ -3,7 +3,7 @@ using RCall, CSV, DataFrames, GZip
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
-function plotMap(;analysis::String,output::String,title::String="Posteriors")
+function plotMap(;analysis::String,output::String,weak::Bool=true,title::String="Posteriors")
 
 	try
 		@eval using RCall
@@ -15,21 +15,34 @@ function plotMap(;analysis::String,output::String,title::String="Posteriors")
 		open(x)      = Array(CSV.read(GZip.open(x),DataFrame,header=false))
 		posteriors   = open.(out)
 
-		maxp         = DataFrame(Array{Float64,2}(undef,size(posteriors,1),5),[:aw,:as,:a,:gamNeg,:shape])
 		R"""getmap <- function(df){
 				temp = as.data.frame(df)
 				d <-locfit(~temp[,1],temp);
 				map<-temp[,1][which.max(predict(d,newdata=temp))]
 			}"""
 		getmap(x)    = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
-		tmp          = getmap.(posteriors)
-		maxp         = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
-	
-		al           = maxp[:,1:3]
-		gam          = maxp[:,4:end]
-		p            = rcopy(R"""al = $al
+
+		if !weak
+			posteriors = [posteriors[i][:,3:end] for i in eachindex(posteriors)]
+			tmp          = getmap.(posteriors)
+			maxp         = DataFrame(vcat(tmp...),[:a,:gamNeg,:shape])
+			al           = maxp[:,1:1]
+			gam          = maxp[:,2:end]
+		else
+			tmp          = getmap.(posteriors)
+			maxp         = DataFrame(vcat(tmp...),[:a,:gamNeg,:shape])
+			maxp         = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
+			al           = maxp[:,1:3]
+			gam          = maxp[:,4:end]
+		end
+
+		p = rcopy(R"""al = $al
+			lbls = ifelse(ncol(al) > 1,c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha))),c(expression(paste('Posterior ',alpha))))
+			clrs = ifelse(ncol(al) > 1,c('#30504f', '#e2bd9a', '#ab2710'),c('#ab2710'))
+
+
 			dal = melt(al)
-			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.7) + scale_fill_manual('Posterior distribution',values=c('#30504f', '#e2bd9a', '#ab2710') ,labels=c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
+			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.7) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
 			ggsave(pal,filename=paste0($output))
 			""")
 		return(maxp,gam)
