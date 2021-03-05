@@ -28,5 +28,5 @@ From: julia:latest
 	make -C /ABCreg/src
 
 %runscript
-	exec julia --sysimage /mktest.so /abc_cli.jl "$@"
+	exec julia /abcmk_cli.jl "$@"
 	

@@ -15,6 +15,12 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 
 	fac     = rand(-2:0.05:2,iterations)
 	afac    = @. param.al*(2^fac)
+	
+	idx = findall(afac .> 1)
+	
+	if !isempty(idx)
+		afac[idx] .= 0.999
+	end
 
 	nTot    = rand(0.1:0.01:0.9,iterations)
 	

@@ -7,22 +7,22 @@ using Fire, Distributed
 	tmpStrong = parse.(Int,split(gH," "))
 	dac       = parse.(Int,split(dac,","))
 
-	if (tmpWeak == "nothing")
-		gL = nothing
+	if (gL == "nothing")
+		tmpWeak = nothing
 	else
-		gL = parse.(Int,split(gL," "))
-		gL = collect(gL[1]:gL[2])
+		tmpWeak = parse.(Int,split(gL," "))
+		tmpWeak = collect(tmpWeak[1]:tmpWeak[2])
 	end
 	if cluster == "local"
-		addprocs(workers)
+		addprocs(Int(workers))
 	else
 		@eval using ClusterManagers
 		if cluster == "slurm"
-			@eval ClusterManagers.addprocs_slurm(workers)
+			@eval ClusterManagers.addprocs_slurm(Int(workers))
 		elseif cluster == "sge"
-			@eval ClusterManagers.addprocs_sge(workers)
+			@eval ClusterManagers.addprocs_sge(Int(workers))
 		elseif cluster == "htcondor"
-			@eval ClusterManagers.addprocs_htc(workers)
+			@eval ClusterManagers.addprocs_htc(Int(workers))
 		end
 	end
 
@@ -31,7 +31,7 @@ using Fire, Distributed
 
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$gL,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,shape=$adap.al,output=$output);
+	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,shape=$adap.al,output=$output);
 end
 
 "Summary statistics from rates. Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"

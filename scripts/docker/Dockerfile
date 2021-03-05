@@ -18,6 +18,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     find /opt/conda/ -follow -type f -name '*.js.map' -delete && \
     /opt/conda/bin/conda clean -afy
 
+RUN mkdir -p /analysis
 RUN conda install -c conda-forge jupyter -y
 
 RUN conda init bash 
@@ -29,20 +30,20 @@ ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
 RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall","ClusterManagers"])'
 
-ADD scripts/precompile_mktest.jl /root/precompile_mktest.jl
-ADD scripts/abcmk_cli.jl /root/abcmk_cli.jl
+ADD scripts/precompile_mktest.jl /analysis/precompile_mktest.jl
+ADD scripts/abcmk_cli.jl /analysis/abcmk_cli.jl
 
 RUN julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
-RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/root/mktest.so", precompile_execution_file="/root/precompile_mktest.jl")'
+RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/analysis/mktest.so", precompile_execution_file="/analysis/precompile_mktest.jl")'
 
-RUN git clone https://github.com/molpopgen/ABCreg.git /root/ABCreg
-RUN cd /root/ABCreg/src && make
+RUN git clone https://github.com/molpopgen/ABCreg.git /analysis/ABCreg
+RUN cd /analysis/ABCreg/src && make
 
-# ENV PATH /root/julia-1.5.1/bin:$PATH
-ENV PATH /root/ABCreg/src:$PATH
+# ENV PATH /analysis/julia-1.5.1/bin:$PATH
+ENV PATH /analysis/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
-CMD ["julia","--sysimage","/root/mktest.so"]
+CMD ["julia","--sysimage","/analysis/mktest.so"]
 
 	
