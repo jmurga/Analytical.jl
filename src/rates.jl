@@ -19,7 +19,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	idx = findall(afac .> 1)
 	
 	if !isempty(idx)
-		afac[idx] .= 0.999
+		afac[idx] = rand(afac[afac .< 1],size(idx,1))
 	end
 
 	nTot    = rand(0.1:0.01:0.9,iterations)
