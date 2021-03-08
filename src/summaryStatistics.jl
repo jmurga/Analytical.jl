@@ -161,7 +161,13 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 
 	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
-	
+
+	# Control outlier cases
+	i(e)           = replace!(e, -Inf=>NaN)
+	expectedValues = i.(expectedValues)
+	f(e) = e[vec(.!any(isnan.(e),dims=2)),:]
+	expectedValues = pmap(f,expectedValues)
+
 	#Writting ABCreg input
 	progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
 	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));
