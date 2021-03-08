@@ -1,61 +1,83 @@
 """
 	rates(param::parameters,iterations::Int64,divergence::Array,sfs::Array)
 
-Function to solve randomly *N* scenarios
+Function to solve randomly *N* scenarios. N = iterations ⋅ param.bRange
 
 # Arguments
  - `param::parameters`
+ - `convolutedSamples::binomialDict`
+ - `gH::Array{Int64,1}`
+ - `gL::Union{Array{Int64,1},Nothing}`
+ - `gamNeg::Array{Int64,1}`
+ - `shape::Float64=0.184`
  - `iterations::Int64`
- - `divergence::Array`
- - `sfs::Array`
+ - `output::String`
 # Returns
- - `Array`: summary statistics
+ - `Array`: summary statistics.
+ - `Output`: HDF5 file containing models solved and rates.
 """
 function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
 
+	# Iterations = models to solve
+	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
 	fac     = rand(-2:0.05:2,iterations)
 	afac    = @. param.al*(2^fac)
 	
+	# Deleting shape > 1. Negative alpha_x values
 	idx = findall(afac .> 1)
-	
 	if !isempty(idx)
 		afac[idx] = rand(afac[afac .< 1],size(idx,1))
 	end
 
+	# Random α values
 	nTot    = rand(0.1:0.01:0.9,iterations)
 	
+	# Defining αW. It is possible to solve non-accounting for weak fixations
 	if isnothing(gL)
+		# Setting αW to 0 for all estimations
 		nLow    = fill(0.0,iterations)
+		# Random strong selection coefficients
 		ngl     = rand(repeat([1],iterations),iterations);
 	else
+		# Setting αW as proportion of α
 		lfac    = rand(0.0:0.05:0.9,iterations)
 		nLow    = @. nTot * lfac
+		# Random weak selection coefficients
 		ngl     = rand(repeat(gL,iterations),iterations);
 	end
 
+	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomialDict)
 	nParam  = [param for i in 1:iterations];
 	nBinom  = [convolutedSamples for i in 1:iterations];
+	
+	# Random strong selection coefficients
 	ngh     = rand(repeat(gH,iterations),iterations);
+	# Random negative selection coefficients
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
-	# Estimations to thread pool
+	# Estimations to thread pool. 
+	# Allocate ouput Array
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@sync @distributed for i in 1:iterations
+	 	# Each iteration solve 1 model accounting all B value in param.bRange
 		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i]);
 	end
+
+	# Reducing array
 	df = vcat(eachslice(out,dims=3)...);
 	
+	# Saving models and rates
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
 	neut   = df[:,9:(8+size(param.dac,1))]
 	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
 	dsdn   = df[:,(end-3):end]
 
+	# Writting HDF5 file
 	JLD2.jldopen(output, "a+") do file
 		file[string(param.N)* "/" * string(param.n) * "/models"] = models
 		file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
 		file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
 		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
-		#=file[string(param.N)* "/" * string(param.n) * "/alphas"] = alphas=#
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
 
@@ -67,23 +89,27 @@ end
 """
 function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64)
 
-	# Matrix and values to solve
-	param.al    = afac; param.be = abs(afac/gamNeg);
+	# Creating model to solve
+	# Γ distribution
+	param.al    = afac; param.be = abs(afac/gamNeg); param.gamNeg = gamNeg
+	# α, αW
 	param.alLow = alLow; param.alTot = alTot;
-	param.gH    = gH;param.gL = gL; param.gamNeg = gamNeg
+	# Positive selection coefficients
+	param.gH    = gH;param.gL = gL
 
-	# Solve probabilites without B effect to achieve α value
+	# Solving θ on non-coding region and probabilites to achieve α value without BGS
 	param.B = 0.999
 	setThetaF!(param)
 	setPpos!(param)
 
+	# Allocate array to solve the model for all B values
 	r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
 	for j in eachindex(param.bRange)
+		# Set B value
 		param.B = param.bRange[j]
-		# Solve mutation given a new B value.
+		# Solve θ non-coding for the B value.
 		setThetaF!(param)
-		# Solven given same probabilites probabilites ≠ bgs mutation rate.
-		#x,y,z::Array{Float64,2} = alphaByFrequencies(param,divergence,sfs,dac)
+		# Solve model for the B value
 		@inbounds r[j,:] = gettingRates(param,convolutedSamples.bn[param.B])
 	end
 	return r
@@ -111,9 +137,9 @@ Analytical α(x) estimation. We used the expected rates of divergence and polymo
 """
 function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64})
 
-	##############################################################
-	# Accounting for positive alleles segregating due to linkage #
-	##############################################################
+	################################################
+	# Subset rates accounting for positive alleles #
+	################################################
 
 	# Fixation
 	fN       = param.B*fixNeut(param)
@@ -124,25 +150,23 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	ds       = fN
 	dn       = fNeg + fPosL + fPosH
 
-	## Polymorphism	## Polymorphism
+	# Polymorphism	
 	neut::Array{Float64,1} = DiscSFSNeutDown(param,cnvBinom)
-
 	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
 		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
 	else
 		DiscSFSSelPosDownArb(param,param.gH,param.pposH,cnvBinom)
 	end
-
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,cnvBinom)
+	# Cumulative rates
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
 
 	## Outputs
-	α = @. 1 - (ds/dn) * (sel/neut)
+	#=α = @. 1 - (ds/dn) * (sel/neut)=#
 
 	##################################################################
 	# Accounting for for neutral and deleterious alleles segregating #
@@ -164,11 +188,12 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	αW         = param.alLow/param.alTot
 	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)=#
 
+
+	#=alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)=#
+
 	##########
 	# Output #
 	##########
-
-	#=alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)=#
 	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)

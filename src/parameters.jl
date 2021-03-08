@@ -95,7 +95,7 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 ```
 
 # Arguments
- - `Lmax::Int64`: non-coding flaking length
+ - `param::parameters`
  - `theta::Float64`
 # Returns
  - `Float64`: expected reduction in diversity given a non-coding length, mutation rate and defined recombination.
@@ -123,7 +123,7 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 function setThetaF!(param::parameters)
 
 	i(θ,p=param) = Br(p,θ)-p.B
-	thetaF      = Roots.find_zero(i,0.0)
+	thetaF       = Roots.find_zero(i,0.0)
 	param.thetaF = thetaF
 end
 
@@ -149,7 +149,6 @@ Find the probabilty of positive selected alleles given the model. It solves a eq
 # Returns
  - `Tuple{Float64,Float64}`: weakly and strong beneficial alleles probabilites.
 """
-
 function setPpos!(param::parameters)
 
 	function f!(F,x,param=param)
@@ -173,7 +172,7 @@ function setPpos!(param::parameters)
 """
 	binomOp(param)
 
-Site Frequency Spectrum convolution depeding on background selection values. Pass the SFS to a binomial distribution to sample the allele frequencies probabilites.
+Site Frequency Spectrum convolution depeding on background selection values. Pass the sampled SFS into a binomial distribution to sample the allele frequencies probabilites.
 
 # Returns
  - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
@@ -251,36 +250,31 @@ function phiReduction(param::parameters,gammaValue::Int64)
 end
 
 """
-	alphaByFrequencies(gammaL,gammaH,pposL,param.pposH,data,nopos)
+	analyticalAlpha(gammaL,gammaH,pposL,param.pposH,data,nopos)
 
-Analytical α(x) estimation. Solve α(x) from the expectation generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
+Analytical α(x) estimation. Solve α(x) generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
 ```math
 \\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
 ```
 
 # Arguments
- - `gammaL::Int64`: strength of weakly positive selection
- - `gammaH::Int64`: strength of strong positive selection
- - `pposL`::Float64: probability of weakly selected allele
- - `param.pposH`::Float64: probability of strong selected allele
- - `data::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
- - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
-
+ - `param::parameters`
+ - `convolutedSamples::binomialDict`
 # Returns
  - `Array{Float64,1}` α(x).
 """
 function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 
-	##############################################################
-						# Solve the model  #
-	##############################################################
+	################################################################
+		# Solve the model similarly to original python mktest  #	
+	################################################################
 	B = param.B
 
 	setThetaF!(param)
 	thetaF = param.thetaF
-	# Solve the probabilities of fixations without background selection
-	## First set non-bgs
+	# Solve the probabilities of fixations without BGS
+	## Set non-bgs
 	param.B = 0.999
 	## Solve the mutation rate
 	setThetaF!(param)
@@ -290,9 +284,9 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	param.thetaF = thetaF
 	param.B = B
 
-	##############################################################
-	# Accounting for positive alleles segregating due to linkage #
-	##############################################################
+	################################################################
+	 # Accounting for positive alleles segregating due to linkage # 
+	################################################################
 
 	# Fixation
 	fN     = param.B*fixNeut(param)
@@ -322,9 +316,8 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	α = @. 1 - ((ds/dn) * (sel/neut))
 
 
-	##################################################################
-	# Accounting for for neutral and deleterious alleles segregating #
-	##################################################################
+	#############################################################
+	#		Accounting for neutral and deleterious alleles		#	#############################################################
 	## Fixation
 	fN_nopos     = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
 	fNeg_nopos   = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
