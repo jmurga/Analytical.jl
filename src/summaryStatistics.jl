@@ -135,7 +135,19 @@ function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arr
 end
 
 """
-	summaryStatsFromRates(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
+	param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
+
+Estimate summary statistics using observed data and analytical rates. *analysisFolder* will check for the SFS and divergence file and will be used to output summary statistics.
+
+# Arguments
+ - `param::parameters`
+ - `rates::JLD2.JLDFile`
+ - `analysisFolder::String`
+ - `summstatSize::Int64`
+ - `replicas::Int64`
+ - `bootstrap::Bool`
+# Output
+ - Obserded data and summary statistics to ABC inference
 """
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 

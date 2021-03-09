@@ -55,12 +55,14 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Random negative selection coefficients
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
+	ρ = rand(collect(0.0001:0.0001:0.01),iterations)
+	θ = rand(collect(0.0001:0.0001:0.01),iterations)
 	# Estimations to thread pool. 
 	# Allocate ouput Array
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@sync @distributed for i in 1:iterations
 	 	# Each iteration solve 1 model accounting all B value in param.bRange
-		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i]);
+		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i],ρ[i],θ[i]);
 	end
 
 	# Reducing array
@@ -86,8 +88,24 @@ end
 
 """
 	iterRates(param::parameters,afac::Float64,bfac::Float64,alTot::Float64,alLow::Float64,divergence::Array,sfs::Array)
+
+Estimating rates given a model for all B range.
+
+# Arguments
+ - `param::parameters`
+ - `convolutedSamples::binomialDict`
+ - `alTot::Float64`
+ - `alLow::Float64`
+ - `gH::Int64`
+ - `gL::Int64`
+ - `gamNeg::Int64`
+ - `afac::Float64`
+ - `ρ::Float64`
+ - `θ::Float64`
+# Output
+ - `Array{Float64,2}`
 """
-function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64)
+function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,ρ::Float64,θ::Float64)
 
 	# Creating model to solve
 	# Γ distribution
@@ -97,6 +115,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	# Positive selection coefficients
 	param.gH    = gH;param.gL = gL
 
+	param.rho = ρ; param.thetaMidNeutral = θ
 	# Solving θ on non-coding region and probabilites to achieve α value without BGS
 	param.B = 0.999
 	setThetaF!(param)
@@ -118,22 +137,13 @@ end
 """
 	gettingRates(gammaL,gammaH,pposL,pposH,observedData,nopos)
 
-Analytical α(x) estimation. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. We solve α(x) from empirical observed values. The values will be use to sample from a Poisson distribution the total counts of polymorphism and divergence using the rates. The mutation rate, the locus length and the time of the branch should be proportional to the observed values.
-
-```math
-\\mathbb{E}[\\alpha_{x}] =  1 - \\left(\\frac{\\mathbb{E}[D_{s}]}{\\mathbb{E}[D_{N}]}\\frac{\\mathbb{E}[P_{N}]}{\\mathbb{E}[P_{S}]}\\right)
-```
+Estimating analytical rates of fixation and polymorphism to approach α value accouting for background selection, weakly and strong positive selection. Output values will be used to sample from a Poisson distribution the total counts of polymorphism and divergence using observed data. 
 
 # Arguments
- - `gammaL::Int64`: strength of weakly positive selection
- - `gammaH::Int64`: strength of strong positive selection
- - `pposL`::Float64: probability of weakly selected allele
- - `pposH`::Float64: probability of strong selected allele
- - `observedData::Array{Any,1}`: Array containing the total observed divergence, polymorphism and site frequency spectrum.
- - `nopos::String("pos","nopos","both")`: string to perform α(x) account or not for both positive selective alleles.
-
+ - `param::parameters`
+ - `cnvBinom::SparseMatrixCSC{Float64,Int64}`
 # Returns
- - `Tuple{Array{Float64,1},Array{Float64,2}}` containing α(x) and the summary statistics array (Ds,Dn,Ps,Pn,α).
+ - `Array{Float64,2}` containing solved model, fixation and polymorphic rates
 """
 function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64})
 
