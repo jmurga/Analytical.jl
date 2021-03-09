@@ -63,18 +63,19 @@ The success rate managing the Poisson distribution by the observed count each fr
 """
 function poissonPolymorphism(;observedValues::Array, λps::Array, λpn::Array)
 
-	λ1 = similar(λps);λ2 = similar(λpn)
+	# Neutral λ;
+	λ1 = @. λps / (λps + λpn) * observedValues
+	# Selected λ;
+	λ2 = @. λpn / (λps + λpn) * observedValues
 
-	sampledPs = similar(observedValues)
-	sampledPn = similar(observedValues)
+	# Replace negative and 0 rates values. Strange behaviour depending on θ and Γ values
+	# Relative rates output NaN values due to 0 divisons.
 
-	# Neutral λ
-	λ1 = @. λps / (λps + λpn)
-	# Selected λ
-	λ2 = @. λpn / (λps + λpn)
+	replace!(λ1,NaN=>1)	
+	replace!(λ2,NaN=>1)
 
-	sampledPs =  PoissonRandom.pois_rand.(observedValues .* λ1)
-	sampledPn =  PoissonRandom.pois_rand.(observedValues .* λ2)
+	sampledPs =  PoissonRandom.pois_rand.(λ1)
+	sampledPn =  PoissonRandom.pois_rand.(λ2)
 
 	return (sampledPn, sampledPs)
 end
@@ -104,9 +105,6 @@ Ouput the expected values from the Poisson sampling process. Please check [`pois
 """
 function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array)
 
-	#=pn = λpol[:,2]
-	ps = λpol[:,1]=#
-
 	## Outputs
 	alphas, expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],λweak=λdiv[3],λstrong=λdiv[4])
 	expPn, expPs         = poissonPolymorphism(observedValues=afs,λps=λpol[1],λpn=λpol[2])
@@ -123,12 +121,12 @@ end
 """
 function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
 
-	ds      = x[:,1]
-	dn      = x[:,2]
-	dweak   = x[:,3]
-	dstrong = x[:,4]
-	gn      = abs.(m[:,4])
-	sh      = round.(m[:,end-1],digits=5)
+	ds             = x[:,1]
+	dn             = x[:,2]
+	dweak          = x[:,3]
+	dstrong        = x[:,4]
+	gn             = abs.(m[:,4])
+	sh             = round.(m[:,end-1],digits=5)
 
 	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
 	expectedValues = hcat(round.(alphasDiv,digits=5),gn,sh,alxSummStat)
@@ -174,13 +172,13 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 
 	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
 
-	# Control outlier cases
+	# Controling outlier cases
 	i(e)           = replace!(e, -Inf=>NaN)
 	expectedValues = i.(expectedValues)
 	f(e) = e[vec(.!any(isnan.(e),dims=2)),:]
 	expectedValues = pmap(f,expectedValues)
 
-	#Writting ABCreg input
+	# Writting ABCreg input
 	progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
 	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));
 
