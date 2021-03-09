@@ -55,14 +55,12 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Random negative selection coefficients
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
-	ρ = rand(collect(0.0001:0.0001:0.01),iterations)
-	θ = rand(collect(0.0001:0.0001:0.01),iterations)
 	# Estimations to thread pool. 
 	# Allocate ouput Array
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@sync @distributed for i in 1:iterations
 	 	# Each iteration solve 1 model accounting all B value in param.bRange
-		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i],ρ[i],θ[i]);
+		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i]);
 	end
 
 	# Reducing array
@@ -105,7 +103,7 @@ Estimating rates given a model for all B range.
 # Output
  - `Array{Float64,2}`
 """
-function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,ρ::Float64,θ::Float64)
+function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64)
 
 	# Creating model to solve
 	# Γ distribution
@@ -115,8 +113,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	# Positive selection coefficients
 	param.gH    = gH;param.gL = gL
 
-	param.rho = ρ; param.thetaMidNeutral = θ
-	# Solving θ on non-coding region and probabilites to achieve α value without BGS
+	# Solving θ on non-coding region and probabilites to get α value without BGS
 	param.B = 0.999
 	setThetaF!(param)
 	setPpos!(param)
@@ -160,7 +157,7 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	ds       = fN
 	dn       = fNeg + fPosL + fPosH
 
-	# Polymorphism	
+	# Polymorphism
 	neut::Array{Float64,1} = DiscSFSNeutDown(param,cnvBinom)
 	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
 		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
