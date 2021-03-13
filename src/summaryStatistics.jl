@@ -22,15 +22,15 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
 """
 function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,λweak::Array,λstrong::Array)
 
-	ds = @. λds / (λds + λdn)
-	dn = @. λdn / (λds + λdn)
-	dweak = @. λweak / (λds + λdn)
-	dstrong = @. λstrong / (λds + λdn)
+	ds = @. λds / (λds + λdn) * observedValues
+	dn = @. λdn / (λds + λdn) * observedValues
+	dweak = @. λweak / (λds + λdn) * observedValues
+	dstrong = @. λstrong / (λds + λdn) * observedValues
 
-	sampledDs     = PoissonRandom.pois_rand.(ds .* observedValues)
-	sampledDn     = PoissonRandom.pois_rand.(dn .* observedValues)
-	sampledWeak   = PoissonRandom.pois_rand.(dweak .* observedValues)
-	sampledStrong = PoissonRandom.pois_rand.(dstrong .* observedValues)
+	sampledDs     = PoissonRandom.pois_rand.(ds)
+	sampledDn     = PoissonRandom.pois_rand.(dn)
+	sampledWeak   = PoissonRandom.pois_rand.(dweak)
+	sampledStrong = PoissonRandom.pois_rand.(dstrong)
 
 	alphas = @. [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
 

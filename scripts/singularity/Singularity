@@ -4,10 +4,14 @@ From: julia:latest
 %environment
 	export LC_ALL=C.UTF-8
 	export LANG=C.UTF-8
+
 	export PATH=$/usr/local/julia/bin:$PATH
+    export JULIA_DEPOT_PATH=:/opt/.julia
 
 %post
 	
+    export JULIA_DEPOT_PATH=/opt/.julia
+    
 	apt-get update && apt-get install -y --no-install-recommends apt-utils
 
 	apt-get install -y libglib2.0-0 libxext6 wget bzip2 ca-certificates curl git vim make build-essential libgsl-dev libz-dev gzip parallel r-base

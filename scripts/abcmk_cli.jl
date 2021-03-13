@@ -32,6 +32,11 @@ using Fire, Distributed
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
 	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,shape=$adap.al,output=$output);
+
+	# remove the workers
+	for i in workers()
+		rmprocs(i)
+	end
 end
 
 "Summary statistics from rates. Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
