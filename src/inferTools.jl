@@ -51,21 +51,79 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 	sfsPs        = reduce(vcat,values(merge(+,freq,ps)))
 
 	if(!isnothing(bins))
-		sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),40)[:,2]
-		sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),40)[:,2]
+        sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),bins)[:,2]
+        sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),bins)[:,2]
 
-		sfs = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
+        sfs   = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
 	else
-		sfs = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
-		scumu = cumulativeSfs(sfs)
+        sfs   = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
+        scumu = cumulativeSfs(sfs)
 	end
-	α            = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)[dac]
+    α    = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)
 
-	D = [Dn+Ds]
-	cSfs = scumu[:,2] + scumu[:,3]
+    D    = [Dn+Ds]
+    cSfs = scumu[:,2] + scumu[:,3]
 
 	return (α,cSfs,D,[Dn,Ds])
 end
+
+"""
+	parseSfs(;data,output,sfsColumns,divColumns)
+
+Function to parse polymorphism and divergence by subset of genes. The input data is based iMKT [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). Please be sure the file is tabulated.
+
+| GeneId | Pn | DAF0f separated by ; | Ps | DAF0F separated by ; | Dn | Ds |
+|--------|----|--------------------------|----|-------------------------|----|----|
+| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
+| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
+| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
+
+# Arguments
+ - `data`: String or Array of strings containing files names with full path.
+
+# Returns
+ - `Array{Int64,1}`: α values
+ - `Array{Int64,1}`: Cumulative SFS
+ - `Array{Int64,2}`: Total divergence counts
+ - `Array{Int64,1}`: Synonymous and non-synonymous divergence counts
+ - 
+"""
+function parseBinnedSfs(;data::String,population::String,geneList::Union{Nothing,Array{String,1}}=nothing,cumulative::Bool=false)
+
+	
+    df   = CSV.read(data,header=true,delim='\t',DataFrame)
+
+    tmp  = df[df.pop .== population, : ]
+    tmp  = tmp[(tmp.pi .!=0) .&(tmp.p0 .!=0),:]
+    tmp  = tmp[(tmp.di .!=0) .&(tmp.d0 .!=0),:]
+	
+	if(!isnothing(geneList))
+		tmp = tmp[∈(geneList).(tmp.id), :]
+	end
+
+	ds   = sum(tmp.d0)
+	dn   = sum(tmp.di)
+
+	ms   = sum(tmp.m0)
+	mn   = sum(tmp.mi)
+
+	s(x) = parse.(Int,split(x,";"))
+
+	sfsPs = sum(reduce(hcat,s.(tmp.daf4f)),dims=2)
+	sfsPn = sum(reduce(hcat,s.(tmp.daf0f)),dims=2)
+
+	if cumulative
+		f = collect(1:size(sfsPs,1)) ./ (size(sfsPs,1)+1)
+		sfs = cumulativeSfs(hcat(f,sfsPn,sfsPs))
+	else
+		f = collect(1:size(sfsPs,1)) ./ (size(sfsPs,1)+1)
+		sfs = hcat(f,sfsPn,sfsPs)
+	end
+
+	α = @. 1 - (ds/dn * sfs[:,2]/sfs[:,3])
+	return(sfs,[dn,ds],[mn,ms],α)
+end
+
 """
 	ABCreg(data, prior, nparams, nsummaries, outputPath, outputPrefix,tolerance, regressionMode,regPath)
 
