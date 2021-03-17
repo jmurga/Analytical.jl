@@ -169,7 +169,7 @@ function standardMK(;sfs::Array,divergence::Array,m::T=nothing) where {T<:Union{
 	
 	output["alpha"] = round(1 - ((pn/ps) * (ds / dn)),digits=3)
 	#  method = :mnnlike same results R, python two.sides
-	output["pvalue"] = pvalue(FisherExactTest(Int(ps),Int(ceil(pn)),Int(ds),Int(dn)))
+	output["pvalue"] = HypothesisTests.pvalue(HypothesisTests.FisherExactTest(Int(ps),Int(ceil(pn)),Int(ds),Int(dn)))
 
 	if (!isnothing(m))
 
