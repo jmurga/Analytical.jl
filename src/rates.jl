@@ -55,19 +55,24 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Random negative selection coefficients
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
+	# Random θ on coding regions
+	θ = rand(collect(0.0005:0.0005:0.01),iterations)
+	# Random ρ on coding regions
+	ρ = rand(collect(0.0005:0.0005:0.05),iterations)
+
 	# Estimations to thread pool. 
 	# Allocate ouput Array
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@sync @distributed for i in 1:iterations
 	 	# Each iteration solve 1 model accounting all B value in param.bRange
-		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i]);
+		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i]);
 	end
 
 	# Reducing array
 	df = vcat(eachslice(out,dims=3)...);
 	
 	# Saving models and rates
-	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:be])
+	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:θ])
 	neut   = df[:,9:(8+size(param.dac,1))]
 	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
 	dsdn   = df[:,(end-3):end]
@@ -103,7 +108,7 @@ Estimating rates given a model for all B range.
 # Output
  - `Array{Float64,2}`
 """
-function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64)
+function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
 
 	# Creating model to solve
 	# Γ distribution
@@ -112,7 +117,8 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	param.alLow = alLow; param.alTot = alTot;
 	# Positive selection coefficients
 	param.gH    = gH;param.gL = gL
-
+	# Mutation rate and recomb
+	param.thetaMidNeutral = θ; param.rho = ρ
 	# Solving θ on non-coding region and probabilites to get α value without BGS
 	param.B = 0.999
 	setThetaF!(param)
@@ -201,7 +207,7 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	##########
 	# Output #
 	##########
-	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.be,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
+	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)
 end

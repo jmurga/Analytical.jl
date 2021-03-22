@@ -42,11 +42,10 @@ function impMK(;sfs::Array,divergence::Array,m::T,cutoff::Float64=0.15) where {T
 
 	output = OrderedDict{String,Float64}()
 
-	ps = sum(sfs[:,2])
-	pn = sum(sfs[:,3])
+	pn = sum(sfs[:,2])
+	ps = sum(sfs[:,3])
 	dn = divergence[1]
 	ds = divergence[2]
-	
 	
 	deleterious = 0
 	### Estimating slightly deleterious with pn/ps ratio
