@@ -64,8 +64,8 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Allocate ouput Array
 	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@sync @distributed for i in 1:iterations
-	 	# Each iteration solve 1 model accounting all B value in param.bRange
-		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i]);
+		# Each iteration solve 1 model accounting all B value in param.bRange
+		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
 	end
 
 	# Reducing array
