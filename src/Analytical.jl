@@ -6,6 +6,7 @@ module Analytical
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 	import FastaIO: readfasta
+	import Random: randstring
 
 	include("parameters.jl")
 	include("fixations.jl")

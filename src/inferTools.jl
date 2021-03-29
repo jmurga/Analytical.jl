@@ -61,10 +61,10 @@ function parseSfs(;sample::Int64,data::String,sfsColumns::Array{Int64,1}=[3,5],d
 	end
     α    = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)
 
-    D    = [Dn+Ds]
-    cSfs = scumu[:,2] + scumu[:,3]
+    #=D    = [Dn+Ds]
+    cSfs = scumu[:,2] + scumu[:,3]=#
 
-	return (α,cSfs,D,[Dn,Ds])
+	return (α,sfs,[Dn,Ds])
 end
 
 """

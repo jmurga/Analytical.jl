@@ -1,14 +1,14 @@
-function sequencesToMatrix(samples::Int64,length::Int64,sequences::Array{Tuple{String,String},1})
+function sequencesToMatrix(samples::Int64,l::Int64,sequences::Array{Tuple{String,String},1})
 
-	matrix = Array{Char}(undef,samples + 2,length)
+	matrix = Array{Char}(undef,samples + 2,l)
 
 	deleteIndex = Array{Int8}[]
 
-	for i in 1:samples
+	@simd for i in 1:samples
 		# Extract each sample sequence
 		# tmp = multiFasta[samples[i]][:].seq
 		tmp = sequences[i][2]
-		matrix[i+1,:] = collect(tmp)
+		@inbounds matrix[i+1,:] = collect(tmp)
 		# if(len(tmp) != seqLen)
 		# 	print('errorAlign')
 		# 	break
@@ -40,22 +40,17 @@ function degeneracy(data::String,codonDict::String)
 		"GAT"=> "002", "GAC"=> "002", "GAA"=> "002", "GAG"=> "002",
 		"GGT"=> "004", "GGC"=> "004", "GGA"=> "004", "GGG"=> "004")
 
-	if (codonDict == "standard")
-		degenerateCodonTable = standardDict
-	end
-
-	degen="";
 	vectorIter = collect(1:3:length(data));
-	@inbounds for i in vectorIter
-		codon = data[i:i+2]
-
+	degen = Array{String}(undef,size(vectorIter,1))
+	for i in 1:size(vectorIter,1)
+		codon = data[vectorIter[i]:vectorIter[i]+2]
 		if ('N' in codon) || ('-' in codon)
 			degen = string(degen,codon)
 		else
-		degen = degen * degenerateCodonTable[codon]
+		degen[i] =  standardDict[codon]
 		end
 	end
-
+	degen = join(degen)
 	return degen
 end
 
@@ -87,11 +82,11 @@ function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 
 			# Check if pol != AA and monomorphic
 			if (size(unique(pol),1) == 1 && unique(pol)!= aa)
-					div = 1; af = 0
+					div = 1.0; af = 0.0
 					tmp = [af div functionalClass]
 					push!(output,tmp);
 			else
-					div    = 0
+					div    = 0.0
 					an     = size(pol,1)
 					ac     = countmap(pol)
 
@@ -125,24 +120,24 @@ function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 	pn = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .!= "4fold",1])))
 	ps = sort!(OrderedDict(StatsBase.countmap(sfs[sfs[:,2] .== "4fold",1])))
 
-	sfsPn        = reduceSfs(reduce(vcat,values(merge(+,freq,pn))),bins)'[:,1]
-	sfsPs        = reduceSfs(reduce(vcat,values(merge(+,freq,ps))),bins)'[:,1]
-	daf          = DataFrame(f=collect(1:bins)/bins,pi=sfsPn,p0=sfsPs)
+	sfsPn        = reduce(vcat,values(merge(+,freq,pn)))
+	sfsPs        = reduce(vcat,values(merge(+,freq,ps)))
+	sfs::DataFrame = DataFrame(reduceSfs(hcat(freq.keys,sfsPn,sfsPs),bins),[:f,:pi,:p0])
 
 	divergence = rawSfsOutput[rawSfsOutput[:,2].==1,2:3]
 
-	div = DataFrame(countmap(divergence[:,2]))
-	return(daf,div)
+	d::DataFrame = DataFrame(countmap(divergence[:,2]))
+	return(sfs,d)
 end
 
 function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples::Int64,bins::Int64,codonTable::String)
 
 	multiFasta = readfasta(file);
-	ref        = readfasta(reference)
-	out        = readfasta(outgroup)
+	ref        = readfasta(reference);
+	out        = readfasta(outgroup);
 
-	s = samples
-	seqLen  = length(ref[1][2])
+    s      = size
+    seqLen = length(ref[1][2])
 
 	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
 
@@ -155,8 +150,8 @@ function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples:
 
 	joinedSfsDiv = iterFastaMatrix(m)
 
-	sfs, div = formatSfs(joinedSfsDiv,samples,bins)
-	return sfs,div
+	sfs, d = formatSfs(joinedSfsDiv,samples,bins)
+	return sfs,d
 end
 
 function uSfsFromVcf(file::String)
