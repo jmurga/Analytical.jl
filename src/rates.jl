@@ -62,7 +62,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		θ = rand(collect(0.0005:0.0005:0.01),iterations)
 	end
 	# Random ρ on coding regions
-	if !isnothing(theta)
+	if !isnothing(rho)
 		ρ = fill(rho,iterations)
 	else
 		ρ = rand(collect(0.0005:0.0005:0.05),iterations)
