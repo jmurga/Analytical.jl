@@ -16,7 +16,7 @@ Function to solve randomly *N* scenarios. N = iterations ⋅ param.bRange
  - `Array`: summary statistics.
  - `Output`: HDF5 file containing models solved and rates.
 """
-function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},shape::Float64=0.184,iterations::Int64,output::String)
+function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},theta::Union{Float64,Nothing}=nothing,rho::Union{Float64,Nothing}=nothing,shape::Float64=0.184,iterations::Int64,output::String)
 
 	# Iterations = models to solve
 	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
@@ -56,9 +56,18 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Random θ on coding regions
-	θ = rand(collect(0.0005:0.0005:0.01),iterations)
+	if !isnothing(theta)
+		θ = fill(theta,iterations)
+	else
+		θ = rand(collect(0.0005:0.0005:0.01),iterations)
+	end
 	# Random ρ on coding regions
-	ρ = rand(collect(0.0005:0.0005:0.05),iterations)
+	if !isnothing(theta)
+		ρ = fill(rho,iterations)
+	else
+		ρ = rand(collect(0.0005:0.0005:0.05),iterations)
+	end
+	
 
 	# Estimations to thread pool. 
 	# Allocate ouput Array
