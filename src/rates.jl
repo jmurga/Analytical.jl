@@ -59,20 +59,20 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	if !isnothing(theta)
 		θ = fill(theta,iterations)
 	else
-		θ = rand(collect(0.0005:0.0005:0.01),iterations)
+		θ = rand(0.0005:0.0005:0.01,iterations)
 	end
 	# Random ρ on coding regions
 	if !isnothing(rho)
 		ρ = fill(rho,iterations)
 	else
-		ρ = rand(collect(0.0005:0.0005:0.05),iterations)
+		ρ = rand(0.0005:0.0005:0.05,iterations)
 	end
 	
-
 	# Estimations to thread pool. 
 	# Allocate ouput Array
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
-	@sync @distributed for i in 1:iterations
+	#=out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)=#
+	out    = SharedArray{Float64,3}(size(param.bRange,2),(param.nn * 2 - 2) + 12,iterations)
+	@time @sync @distributed for i in 1:iterations
 		# Each iteration solve 1 model accounting all B value in param.bRange
 		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
 	end
@@ -82,9 +82,12 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	
 	# Saving models and rates
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:θ])
-	neut   = df[:,9:(8+size(param.dac,1))]
-	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
+	neut   = df[:,9:param.nn-1+8]
+	sel    = df[:,(9+param.nn-1):(8+param.nn*2-2)]
 	dsdn   = df[:,(end-3):end]
+	#=neut   = df[:,9:(8+size(param.dac,1))]
+	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
+	dsdn   = df[:,(end-3):end]=#
 
 	# Writting HDF5 file
 	JLD2.jldopen(output, "a+") do file
@@ -134,7 +137,8 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
+	#=r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)=#
+	r = spzeros(size(param.bRange,2),(param.nn * 2 - 2) + 12)
 	for j in eachindex(param.bRange)
 		# Set B value
 		param.B = param.bRange[j]
@@ -175,9 +179,9 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	# Polymorphism
 	neut::Array{Float64,1} = DiscSFSNeutDown(param,cnvBinom)
 	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
-		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
-	else
 		DiscSFSSelPosDownArb(param,param.gH,param.pposH,cnvBinom)
+	else
+		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
 	end
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,cnvBinom)
@@ -216,7 +220,8 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	##########
 	# Output #
 	##########
-	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
+	#=analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'=#
+	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut,sel,ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)
 end

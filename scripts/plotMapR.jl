@@ -44,8 +44,8 @@ function plotMap(;analysis::String,output::String,weak::Bool=true,title::String=
 
 
 			dal = melt(al)
-			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.7) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
-			ggsave(pal,filename=paste0($output))
+			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
+			ggsave(pal,filename=paste0($output),dpi=600)
 			""")
 		return(maxp)
 	catch

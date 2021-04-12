@@ -1,7 +1,7 @@
 using Fire, Distributed
 
 "Function to estimate rates"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10;nothing", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=1000000,output::String="/homejmurga/rates.jld2",workers::Int64=1,cluster::String="local")
+@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=1000000,output::String="/homejmurga/rates.jld2",workers::Int64=1,cluster::String="local")
 
 	tmpNeg    = parse.(Int,split(gamNeg," "))
 	tmpStrong = parse.(Int,split(gH," "))
@@ -45,7 +45,7 @@ using Fire, Distributed
 
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=rho,theta=theta,shape=$adap.al,output=$output);
+	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
 
 	# remove the workers
 	for i in Distributed.workers()

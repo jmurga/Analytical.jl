@@ -108,10 +108,10 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
 		gammaCorrected = gammaValue*param.B
-		gammaExp1::ArbFloat{48} = exp(ArbFloat(gammaCorrected*2,bits=24))
-		gammaExp2::ArbFloat{48} = exp(ArbFloat(gammaCorrected*-2,bits=24))
+		gammaExp1::Arb = exp(Arb(gammaCorrected*2,prec=10))
+		gammaExp2::Arb = exp(Arb(gammaCorrected*-2,prec=10))
 
-		positiveSfs(i::Float64,g1::ArbFloat{48}=gammaExp1,g2::ArbFloat{48}=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		positiveSfs(i::Float64,g1::Arb=gammaExp1,g2::Arb=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
