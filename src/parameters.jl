@@ -123,7 +123,7 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 function setThetaF!(param::parameters)
 
 	i(θ,p=param) = Br(p,θ)-p.B
-	thetaF       = Roots.find_zero(i,0.0)
+	thetaF       = find_zero(i,0.0)
 	param.thetaF = thetaF
 end
 
@@ -156,7 +156,7 @@ function setPpos!(param::parameters)
 		F[2] = alphaExpSimLow(param,x[1],x[2])-param.alLow
 	end
 
-	pposL,pposH = NLsolve.nlsolve(f!,[0.0; 0.0]).zero
+	pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
 	if pposL < 0.0
 		 pposL = 0.0
@@ -191,10 +191,10 @@ function binomOp!(param::parameters,convolutedBn::Dict)
 		replace!(neutralSfs, Inf => 0.0)
 
 
-		f(x) = Distributions.Binomial(param.nn,x)
+		f(x) = Binomial(param.nn,x)
 		z    = f.(samplesFreqs)
 
-		out  = Distributions.pdf.(z,samples)
+		out  = pdf.(z,samples)
 		out  = round.(out,digits=10)
 		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		convolutedBn[bVal] = outS
@@ -241,8 +241,8 @@ function phiReduction(param::parameters,gammaValue::Int64)
 	μ::Float64 = param.thetaF/(2.0*param.NN)
 	s::Float64 = gammaValue/(param.NN*1.0)
 
-	Ψ0::Float64 = SpecialFunctions.polygamma(1,(s+S)/r)
-	Ψ1::Float64 = SpecialFunctions.polygamma(1,(r+param.Lf*r+s+S)/r)
+	Ψ0::Float64 = polygamma(1,(s+S)/r)
+	Ψ1::Float64 = polygamma(1,(r+param.Lf*r+s+S)/r)
 	CC::Float64 = 1.0
 
 	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))

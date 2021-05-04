@@ -14,12 +14,12 @@ function asympFit(alphaValues::Array{Float64,1})
 	asympModel(x,p) = @. p[1] + p[2]*exp(-x*p[3])
 
 	# Fit values
-	fitted1    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
-	fitted2    = LsqFit.curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
+	fitted1    = curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
+	fitted2    = curve_fit(asympModel,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
 	asymp      = asympModel(size(alphaValues,1),fitted2.param)
 
 	ciLow, ciHigh   = try
-		LsqFit.confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]
+		confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]
 	catch err
 		(0.0,0.0)
 	end
@@ -168,7 +168,7 @@ function standardMK(;sfs::Array,divergence::Array,m::T=nothing) where {T<:Union{
 	
 	output["alpha"] = round(1 - ((pn/ps) * (ds / dn)),digits=3)
 	#  method = :mnnlike same results R, python two.sides
-	output["pvalue"] = HypothesisTests.pvalue(HypothesisTests.FisherExactTest(Int(ps),Int(ceil(pn)),Int(ds),Int(dn)))
+	output["pvalue"] = pvalue(FisherExactTest(Int(ps),Int(ceil(pn)),Int(ds),Int(dn)))
 
 	if (!isnothing(m))
 

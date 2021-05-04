@@ -37,7 +37,7 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 	# out = @view out[2:end-1]
 	# out = out[2:end-1]
 
-	return 	out
+	return out
 end
 
 ############Positive############
@@ -108,10 +108,10 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
 		gammaCorrected = gammaValue*param.B
-		gammaExp1::Arb = exp(Arb(gammaCorrected*2,prec=10))
-		gammaExp2::Arb = exp(Arb(gammaCorrected*-2,prec=10))
+		gammaExp1::Quadmath.Float128 = exp(Quadmath.Float128(gammaCorrected*2))
+		gammaExp2::Quadmath.Float128 = exp(Quadmath.Float128(gammaCorrected*-2))
 
-		positiveSfs(i::Float64,g1::Arb=gammaExp1,g2::Arb=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		positiveSfs(i::Float64,g1::Quadmath.Float128=gammaExp1,g2::Quadmath.Float128=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
@@ -187,7 +187,7 @@ function DiscSFSSelNeg(param::parameters,ppos::Float64)
 
 	solveZ   = similar(xa)
 
-	z(x::Float64,p::Float64=ppos) = (1.0-p)*(2.0^-param.al)*(beta^param.al)*(-SpecialFunctions.zeta(param.al,x+beta/2.0) + SpecialFunctions.zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
+	z(x::Float64,p::Float64=ppos) = (1.0-p)*(2.0^-param.al)*(beta^param.al)*(-zeta(param.al,x+beta/2.0) + zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
 
 	solveZ   = z.(xa)
 

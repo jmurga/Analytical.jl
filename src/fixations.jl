@@ -44,7 +44,7 @@ Expected fixation rate from negative DFE.
 """
 function fixNegB(param::parameters,ppos::Float64)
 	# Non-synonymous proportion * negative alleles probability * fixation probability from gamma distribution
-	out::Float64 = 0.75*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-SpecialFunctions.zeta(param.al,1.0+param.be/(2.0*param.B))+SpecialFunctions.zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
+	out::Float64 = 0.75*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-zeta(param.al,1.0+param.be/(2.0*param.B))+zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
 	return out
 end
 

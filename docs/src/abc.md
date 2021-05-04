@@ -2,13 +2,13 @@
 
 ## Prior distributions from analytical estimations
 
-In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*. In this case we will need a set of empirical observed values in order to subset the summary statistics.
+In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $3.7 \cdot 10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*. In this case we will need a set of empirical observed values in order to subset the summary statistics.
 
 We need to set the model accounting for the sampling value. The *SFS* is expected to be in raw frequencies. If the model is not properly set up, the *SFS* will not be correctly parsed. In our case, we are going to set up a model with default parameters only to parse the *SFS* and convolute the observed frequencies with a binomial distribution.
 
 ```julia
 using Analytical
-adap = Analytical.parameters(N=1000,n=661)
+adap = Analytical.parameters(n=661)
 ```
 
 Once the model account for the number of samples we can open the files. The function `Analytical.parseSfs` will return polymorphic and divergent counts and SFS accounting for the whole spectrum: `collect(1:adap.nn)/adap.nn`. In addition an output file will be created contained the observed values to input in *ABCreg*.

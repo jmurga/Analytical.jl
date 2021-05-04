@@ -27,10 +27,10 @@ function poissonFixation(;observedValues::Array, λds::Array, λdn::Array,λweak
 	dweak = @. λweak / (λds + λdn) * observedValues
 	dstrong = @. λstrong / (λds + λdn) * observedValues
 
-	sampledDs     = PoissonRandom.pois_rand.(ds)
-	sampledDn     = PoissonRandom.pois_rand.(dn)
-	sampledWeak   = PoissonRandom.pois_rand.(dweak)
-	sampledStrong = PoissonRandom.pois_rand.(dstrong)
+	sampledDs     = pois_rand.(ds)
+	sampledDn     = pois_rand.(dn)
+	sampledWeak   = pois_rand.(dweak)
+	sampledStrong = pois_rand.(dstrong)
 
 	alphas = @. [sampledWeak/sampledDn sampledStrong/sampledDn (sampledWeak+sampledStrong)/sampledDn]
 
@@ -74,8 +74,8 @@ function poissonPolymorphism(;observedValues::Array, λps::Array, λpn::Array)
 	replace!(λ1,NaN=>1)	
 	replace!(λ2,NaN=>1)
 
-	sampledPs =  PoissonRandom.pois_rand.(λ1)
-	sampledPn =  PoissonRandom.pois_rand.(λ2)
+	sampledPs = pois_rand.(λ1)
+	sampledPn = pois_rand.(λ2)
 
 	return (sampledPn, sampledPs)
 end
@@ -150,33 +150,35 @@ Estimate summary statistics using observed data and analytical rates. *analysisF
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 
 	#Opening files
-	sFile = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
-	dFile = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
+    sFile   = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
+    dFile   = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
 
-	sfs,d,α = openSfsDiv(sFile,dFile,param.dac,100,bootstrap);
+    sfs,d,α = openSfsDiv(sFile,dFile,param.dac,100,bootstrap);
 
 	#Open rates
 	tmp    = rates[string(param.N) * "/" * string(param.n)]
 
 	#Subset index
-	idx    = StatsBase.sample.(fill(1:size(tmp["neut"],1),replicas),fill(summstatSize,replicas),replace=false)
-
+	idx    = sample.(fill(1:size(tmp["models"],1),replicas),fill(summstatSize,replicas),replace=false)
 	models = Array.(map(x -> view(tmp["models"],x,:), idx));
-	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx));
-	sel    = Array.(map(x -> view(tmp["sel"],x,:), idx));
-	neut   = Array.(map(x -> view(tmp["neut"],x,:), idx));
 	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx));
-	
+
+	# Filtering polymorphic rate by dac
+	n    = hcat(map(x -> view(tmp["neut"][x],:),param.dac)...)
+	s    = hcat(map(x -> view(tmp["sel"][x],:),param.dac)...)
+	neut = Array.(map(x -> view(n,x,:), idx));
+	sel  = Array.(map(x -> view(s,x,:), idx));
+
 	#Making summaries
 	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 
-	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
+	w(x,name) = write(name,DataFrame(x),delim='\t',header=false);
 
 	# Controling outlier cases
-	i(e)           = replace!(e, -Inf=>NaN)
-	expectedValues = i.(expectedValues)
-	f(e) = e[vec(.!any(isnan.(e),dims=2)),:]
-	expectedValues = pmap(f,expectedValues)
+	fltInf(e)           = replace!(e, -Inf=>NaN)
+	expectedValues = fltInf.(expectedValues)
+	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
+	expectedValues = pmap(fltNan,expectedValues)
 
 	# Writting ABCreg input
 	progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));

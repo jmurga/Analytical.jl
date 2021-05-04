@@ -136,8 +136,8 @@ function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples:
 	ref        = readfasta(reference);
 	out        = readfasta(outgroup);
 
-    s      = size
-    seqLen = length(ref[1][2])
+    samples    = size(multiFasta)[1]
+    seqLen     = length(ref[1][2])
 
 	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
 

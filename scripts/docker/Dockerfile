@@ -28,7 +28,7 @@ RUN R -e 'IRkernel::installspec()'
 
 ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall","ClusterManagers"])'
+RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler,"Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
 
 ADD scripts/precompile_mktest.jl /analysis/precompile_mktest.jl
 ADD scripts/abcmk_cli.jl /analysis/abcmk_cli.jl
@@ -39,11 +39,8 @@ RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical,
 RUN git clone https://github.com/molpopgen/ABCreg.git /analysis/ABCreg
 RUN cd /analysis/ABCreg/src && make
 
-# ENV PATH /analysis/julia-1.5.1/bin:$PATH
 ENV PATH /analysis/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
 CMD ["julia","--sysimage","/analysis/mktest.so"]
-
-	

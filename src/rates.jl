@@ -69,31 +69,41 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	end
 	
 	# Estimations to thread pool. 
-	# Allocate ouput Array
-	#=out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)=#
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(param.nn * 2 - 2) + 12,iterations)
+	# Allocate ouput in SharedArray
+	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
 	@time @sync @distributed for i in 1:iterations
 		# Each iteration solve 1 model accounting all B value in param.bRange
 		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
+	end
+
+	# Remove the workers to free memory resources
+	# SharedArray is not remove after this process
+	for i in Distributed.workers()
+		rmprocs(i)
 	end
 
 	# Reducing array
 	df = vcat(eachslice(out,dims=3)...);
 	
 	# Saving models and rates
-	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:θ])
-	neut   = df[:,9:param.nn-1+8]
-	sel    = df[:,(9+param.nn-1):(8+param.nn*2-2)]
-	dsdn   = df[:,(end-3):end]
-	#=neut   = df[:,9:(8+size(param.dac,1))]
+	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
+	neut   = df[:,9:(8+size(param.dac,1))]
 	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = df[:,(end-3):end]=#
+	dsdn   = df[:,(end-3):end]
+
+	# Saving multiple summary statistics
+	n = OrderedDict{Int,Array}()
+	s = OrderedDict{Int,Array}()
+	for i in eachindex(param.dac)
+		n[param.dac[i]] = neut[:,i]
+		s[param.dac[i]] = sel[:,i]
+	end
 
 	# Writting HDF5 file
 	JLD2.jldopen(output, "a+") do file
 		file[string(param.N)* "/" * string(param.n) * "/models"] = models
-		file[string(param.N)* "/" * string(param.n) * "/neut"]   = neut
-		file[string(param.N)* "/" * string(param.n) * "/sel"]    = sel
+		file[string(param.N)* "/" * string(param.n) * "/neut"]   = n
+		file[string(param.N)* "/" * string(param.n) * "/sel"]    = s
 		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
@@ -137,8 +147,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	#=r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)=#
-	r = spzeros(size(param.bRange,2),(param.nn * 2 - 2) + 12)
+	r = spzeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
 	for j in eachindex(param.bRange)
 		# Set B value
 		param.B = param.bRange[j]
@@ -221,7 +230,7 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	# Output #
 	##########
 	#=analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'=#
-	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut,sel,ds,dn,fPosL,fPosH)'
+	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)
 end

@@ -1,7 +1,6 @@
 import Pkg
 
 Pkg.add(path="https://github.com/jmurga/Analytical.jl")
-Pkg.add("PoissonRandom")
 Pkg.add("CSV")
 Pkg.add("JLD2")
 Pkg.add("DataFrames")
