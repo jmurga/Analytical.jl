@@ -111,55 +111,28 @@ end
 	end
 end
 
-
 "ABCreg inference"
-@main function abcInference(;analysisFolder::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,workers::Int64=1,parallel::String="false")
+@main function abcInference(;analysisFolder::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,nthreads::Int64=1,ABCreg::String="/home/jmurga/ABCreg/src/reg",parallel::String="false")
 	
-	reg           = chomp(read(`which reg`,String))
 	@eval aFile   = @. $analysisFolder * "/alpha_" * string(1:$replicas) * ".tsv"
 	@eval sumFile = @. $analysisFolder * "/summstat_" * string(1:$replicas) * ".tsv"
 	@eval out     = @. $analysisFolder * "/out_" * string(1:$replicas)
 
 	if parallel  == "true"
-		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P 5 -S 9 -t $tol -L -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
+		run(`parallel -j$nthreads --link $ABCreg -d "{1}" -p "{2}" -P 5 -S 9 -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`);
 	else
-		@eval r(a,s,o) = run(`reg -d $a -p $s -P 5 -S 9 -t 0.01 -L -b $o`)
-		@eval r.($aFile,$sumFile,$out)
+		@eval r(a,s,o) = run(`reg -d $a -p $s -P 5 -S 9 -t 0.01 -b $o`)
+		@eval r.($aFile,$sumFile,$out);
 	end	
 end
 
 "Plot Maximum a posterior distribution"
-@main function plotMap(;analysis::String="<folder>",output::String="<folder>")
+@main function plotMap(;analysisFolder::String="<folder>",output::String="<folder>")
 
 	try
 		@eval using RCall, GZip, DataFrames, CSV
-		@eval R"""library(ggplot2);library(abc)"""
-		@eval R"""getmap <- function(df){
-					temp = as.data.frame(df)
-					d <-locfit(~temp[,1],temp);
-					map<-temp[,1][which.max(predict(d,newdata=temp))]}"""
-
-		out              = filter(x -> occursin("post",x), readdir(analysis,join=true))
-		out              = filter(x -> !occursin(".1.",x),out)
-
-		open(x)          = Array(CSV.read(GZip.open(x),DataFrame,header=false))
-		@eval posteriors = open.($out)
-		
-		@eval getmap(x)  = rcopy(R"""matrix(apply(x,2,getmap),nrow=1)""")
-		@eval tmp        = getmap.($posteriors)
-		@eval maxp       = DataFrame($tmp,[:aw,:as,:a,:gamNeg,:shape])
-	
-		al               = maxp[:,1:3]
-		gam              = maxp[:,4:end]
-
-		@eval @rput(al)
-		@eval @rput(output)
-		@eval p = R"""al = al
-			dal = melt(al)
-			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.5) + scale_fill_manual(values=c('#30504f', '#e2bd9a', '#ab2710'))
-			ggsave(pal,filename=paste0(output,'/posteriorAlphas.svg'))"""
-			
-		@eval CSV.write(output * "/mapDistribution.tsv",maxp,header=true,delim='\t')
+		@eval Analytical.sourcePlotMapR(script=$analysisFolder * "/script.jl")
+		@eval plotMap(analysisFolder=$analysisFolder);
 	catch
 		println("Please install R, ggplot2 and abc in your system before execute this function")
 	end

@@ -153,7 +153,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
     sFile   = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
     dFile   = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
 
-    sfs,d,α = openSfsDiv(sFile,dFile,param.dac,100,bootstrap);
+    sfs,d,α = openSfsDiv(sFile,dFile,param.dac,replicas,bootstrap);
 
 	#Open rates
 	tmp    = rates[string(param.N) * "/" * string(param.n)]
@@ -172,7 +172,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	#Making summaries
 	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 
-	w(x,name) = write(name,DataFrame(x),delim='\t',header=false);
+	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
 
 	# Controling outlier cases
 	fltInf(e)           = replace!(e, -Inf=>NaN)

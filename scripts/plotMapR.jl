@@ -3,7 +3,7 @@ using RCall, CSV, DataFrames, GZip
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
-function plotMap(;analysis::String,output::String,weak::Bool=true,title::String="Posteriors")
+function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
 		@eval using RCall
@@ -38,17 +38,18 @@ function plotMap(;analysis::String,output::String,weak::Bool=true,title::String=
 			gam          = maxp[:,4:end]
 		end
 
-		p = rcopy(R"""al = $al
+		R"""al = as.data.table($al)
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
 
-			dal = melt(al)
+			dal = data.table::melt(al)
 			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
-			ggsave(pal,filename=paste0($output),dpi=600)
-			""")
+			ggsave(pal,filename=paste0($analysisFolder,'map.png'),dpi=600)
+			"""
+		CSV.write(analysisFolder * "map.tsv",maxp,delim='\t',header=true)
 		return(maxp)
 	catch
-		println("Please install R, ggplot2 and abc in your system before execute this function")
+		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
 	end
 end
