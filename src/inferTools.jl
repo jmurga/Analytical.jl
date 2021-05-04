@@ -176,8 +176,8 @@ end
 
 function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
 
-	sfs = Array.(CSV.read.(x,DataFrame))
-	divergence = Array.(CSV.read.(y,DataFrame))
+	sfs = Array.(CSV.read.(x,DataFrame,header=false))
+	divergence = Array.(CSV.read.(y,DataFrame,header=false))
 
 	if bootstrap
 		sfs = repeat(sfs,replicas)
@@ -187,7 +187,7 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	end
 
 
-	scumu = cumulativeSfs.(sfs)
+	scumu = Analytical.cumulativeSfs.(sfs)
 	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
 	s = f.(scumu)
 

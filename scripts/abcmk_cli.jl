@@ -1,7 +1,7 @@
 using Fire, Distributed
 
-"Function to estimate rates"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=1000000,output::String="/home/jmurga/rates.jld2",workers::Int64=1)
+"Function to estimate rates based on prior values. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
+@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=100000,output::String="/home/jmurga/rates.jld2",nthreads::Int64=1)
 
 	tmpNeg    = parse.(Int,split(gamNeg," "))
 	tmpStrong = parse.(Int,split(gH," "))
@@ -27,9 +27,8 @@ using Fire, Distributed
 		theta = parse(Float64,theta)
 	end
 
-	addprocs(parse(Int,workers))
+	addprocs(nthreads)
 	
-
 	@eval @everywhere using Analytical
 	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
 
@@ -43,44 +42,47 @@ using Fire, Distributed
 	end
 end
 
-"Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
+"Function to parse polymorphic and divergence data from Uricchio et. al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
+
+	julia abcmk_cli.jl parseTgpData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
+
+"
 @main function parseTgpData(;analysisFolder::String="<folder>",geneList::String="false",bins::String="false")
 	
 	@eval using Analytical, DataFrames, CSV, ProgressMeter
 
-	@eval run(`mkdir -p $analysisFolder`)
+	run(`mkdir -p $analysisFolder`)
 
 	tgpData = analysisFolder * "/mk_with_positions_BGS.txt"
 	
-	@eval download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/mk_with_positions_BGS.txt",$tgpData)
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/mk_with_positions_BGS.txt",tgpData)
 
 	# Check if bins or genelist are defined
-	@eval if geneList != "false"
-		gList = CSV.read(geneList,DataFrame,header=false)[:,1]
+	@eval if $geneList != "false"
+		@eval gList = CSV.read($geneList,DataFrame,header=false)[:,1]
 	else
 		gList = nothing
 	end
 
-	@eval if bins != "false"
-		binsSize = parse(Int,$bins)
+	@eval if $bins != "false"
+		@eval binsSize = parse(Int,$bins)
 	else
 		binsSize = nothing
 	end
 
 	# Parsing TGP data
-	@eval α,sfs, divergence = parseSfs(sampleSize=661,data=$tgpData,geneList=$gList,bins=$binsSize)
+	@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$tgpData,geneList=$gList,bins=$binsSize)
 
 	# Writting data to folder
-	sName = analysisFolder * "/sfs.tsv"
-	dName = analysisFolder * "/div.tsv"
+	@eval sName = $analysisFolder * "/sfs.tsv"
+	@eval dName = $analysisFolder * "/div.tsv"
 
 	@eval CSV.write($sName,DataFrame($sfs),delim='\t',header=false)
 	@eval CSV.write($dName,DataFrame($divergence'),delim='\t',header=false)
-
 end
 
 "Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
-@main function parseDgnData(;analysisFolder::String,geneList::String="false",population::String="ZI")
+@main function parseDgnData(;analysisFolder::String="<analysisFolder>",geneList::String="false",population::String="ZI")
 	
 	@eval using Analytical, DataFrames, CSV, ProgressMeter
 	@eval run(`mkdir -p $analysisFolder`)
@@ -88,11 +90,10 @@ end
 end
 
 
-
-"Summary statistics from rates. Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
+"Estimate summary statistics from analytical rates. You must provide a path containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
 @main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",nthreads::Int64=1)
 	
-	#=ne=1000;samples=661;rates="/home/jmurga/test.jld2";summstatSize=100000;replicas=100;analysisFolder="/home/jmurga/test/abcmk/dna/";bootstrap="true";dac="2,4,5,10,20,50,200,661,921"=#
+	#=ne=1000;samples=661;rates="/home/jmurga/test.jld2";summstatSize=100000;replicas=100;analysisFolder="/home/jmurga/test/abcmk/dna2/";bootstrap="true";dac="2,4,5,10,20,50,200,661,921"=#
 
 	addprocs(nthreads)
 	
@@ -104,23 +105,23 @@ end
 	@eval adap      = Analytical.parameters(N=$ne,n=$samples,dac =parse.(Int,split($dac,",")))
 
 	@eval if $bootstrap == "true"
-		@eval summstat  = Analytical.summaryStatsFromRates(;param=$adap,rates=$h5file,analysisFolder=$analysisFolder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
+		@eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,analysisFolder=$analysisFolder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
 	else
-		@eval summstat  = Analytical.summaryStatsFromRates(;param=$adap,rates=$h5file,analysisFolder=$analysis,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
+		@eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,analysisFolder=$analysisFolder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
 	end
 end
 
 
-
 "ABCreg inference"
-@main function abcInference(;analysis::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,workers::Int64=1,parallel::String="true")
+@main function abcInference(;analysisFolder::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,workers::Int64=1,parallel::String="false")
 	
 	reg           = chomp(read(`which reg`,String))
-	@eval aFile   = @. $analysis * "/alpha_" * string(1:$replicas) * ".tsv"
-	@eval sumFile = @. $analysis * "/summstat_" * string(1:$replicas) * ".tsv"
-	@eval out     = @. $analysis * "/out_" * string(1:$replicas)
+	@eval aFile   = @. $analysisFolder * "/alpha_" * string(1:$replicas) * ".tsv"
+	@eval sumFile = @. $analysisFolder * "/summstat_" * string(1:$replicas) * ".tsv"
+	@eval out     = @. $analysisFolder * "/out_" * string(1:$replicas)
+
 	if parallel  == "true"
-		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P 5 -S 9 -t 0.01 -L -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
+		run(`parallel -j$workers --link $reg -d "{1}" -p "{2}" -P 5 -S 9 -t $tol -L -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
 	else
 		@eval r(a,s,o) = run(`reg -d $a -p $s -P 5 -S 9 -t 0.01 -L -b $o`)
 		@eval r.($aFile,$sumFile,$out)
