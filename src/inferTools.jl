@@ -21,11 +21,16 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Float64,1}`: Synonymous and non-synonymous divergence counts
  - 
 """
-function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{String,1}}=nothing,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing)
+function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{String,2}}=nothing,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
 
 	g(x) = parse.(Float64,x[2:end-1])
 	
-	s = (sampleSize*2)
+	if isolines
+		s = sampleSize
+	else
+		s = (sampleSize*2)
+	end
+	
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
 	df   = CSV.read(data,header=false,delim='\t',DataFrame)
@@ -67,63 +72,6 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
     α    = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)
 
 	return (α,sfs,[Dn,Ds])
-end
-
-"""
-	parseBinnedSfs(;data,output,sfsColumns,divColumns)
-
-Function to parse polymorphism and divergence by subset of genes. The input data is based iMKT [Murga-Moreno et. al 2019](https://doi.org/10.1038/s41559-019-0890-6). Please be sure the file is tabulated.
-
-| GeneId | Pn | DAF0f separated by ; | Ps | DAF0F separated by ; | Dn | Ds |
-|--------|----|--------------------------|----|-------------------------|----|----|
-| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
-| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
-| XXXX   | 0  | ,0,0,0,0,0,0,0,0         | 0  | ,0,0,0,0,0,0,0,0        | 0  | 0  |
-
-# Arguments
- - `data`: String or Array of strings containing files names with full path.
-
-# Returns
- - `Array{Int64,1}`: α values
- - `Array{Int64,1}`: Cumulative SFS
- - `Array{Int64,2}`: Total divergence counts
- - `Array{Int64,1}`: Synonymous and non-synonymous divergence counts
- - 
-"""
-function parseBinnedSfs(;data::String,population::String,geneList::Union{Nothing,Array{String,1}}=nothing,cumulative::Bool=false)
-
-	
-    df   = CSV.read(data,header=true,delim='\t',DataFrame)
-
-    tmp  = df[df.pop .== population, : ]
-    tmp  = tmp[(tmp.pi .!=0) .&(tmp.p0 .!=0),:]
-    tmp  = tmp[(tmp.di .!=0) .&(tmp.d0 .!=0),:]
-	
-	if(!isnothing(geneList))
-		tmp = tmp[∈(geneList).(tmp.id), :]
-	end
-
-	ds   = sum(tmp.d0)
-	dn   = sum(tmp.di)
-
-	ms   = sum(tmp.m0)
-	mn   = sum(tmp.mi)
-
-	s(x) = parse.(Int,split(x,";"))
-
-	sfsPs = sum(reduce(hcat,s.(tmp.daf4f)),dims=2)
-	sfsPn = sum(reduce(hcat,s.(tmp.daf0f)),dims=2)
-
-	if cumulative
-		f = collect(1:size(sfsPs,1)) ./ (size(sfsPs,1)+1)
-		sfs = cumulativeSfs(hcat(f,sfsPn,sfsPs))
-	else
-		f = collect(1:size(sfsPs,1)) ./ (size(sfsPs,1)+1)
-		sfs = hcat(f,sfsPn,sfsPs)
-	end
-
-	α = @. 1 - (ds/dn * sfs[:,2]/sfs[:,3])
-	return(sfs,[dn,ds],[mn,ms],α)
 end
 
 """

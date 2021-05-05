@@ -37,9 +37,9 @@ using Fire, Distributed
 	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
 
 	# remove the workers
-	for i in Distributed.workers()
-		rmprocs(i)
-	end
+	#for i in Distributed.workers()
+	#	rmprocs(i)
+	#end
 end
 
 "Function to parse polymorphic and divergence data from Uricchio et. al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/

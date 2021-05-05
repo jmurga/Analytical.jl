@@ -1,8 +1,8 @@
 # ABC-MK
 
-ABC-MK is an analytical approximation to $\alpha_{(x)}$. We explore the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios in order to estimate the strength and rate of adaptation.
+ABC-MK is an analytical approximation to $\alpha_{(x)}$. We have explored the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios in order to estimate the strength and rate of adaptation.
 
-Our approach estimates directly $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated to random *DFE*.  In conjunction, the associated values to these *DFE* can be used as priors distributions at *ABC* methods. If we subset enough parameters, we will consider any frequency spectrum and fixations under generalized models of selection, demography, and linkage associated with the empirical population and sample size. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
+Our approach estimates directly $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated to random *DFE*. In conjunction, the associated values to these *DFE* can be used as summary statistics at *ABC* methods. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
 
 ## Installation
 ### Docker
@@ -11,20 +11,17 @@ We highly recommend to use the Docker image to execute the software. The Docker 
 ```bash
 # Pull the image
 docker pull jmurga/abcmk
-# Run docker bash interactive session linking to some local volume to export data.
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder  jmurga/mktest
-# Run only jupyter notebook from docker image. Change the port if 8888 is already used
+# Run docker linking some local volume to export data
+docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder jmurga/mktest
+# Run jupyter notebook from docker image. Change the port if 8888 is already used
 docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
-You can directly perform the analysis without using the interactive command-line running the script [abcmk_cli.jl](https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmk_cli.jl):
-```bash
-julia abcmk_cli.jl --help
-```
+### Singularity
+We have created a Singularity container to use the software into HPC systems
 
-or using Docker (remember to link some folder to output your results!)
-```bash
-docker run -i -t -v ${HOME}/folderPath:/analysis/folder jmurga/abcmk abcmk_cli.jl --help
+```singularity
+singularity pull library://jmurga/default/abcmk
 ```
 
 ### Scratch installation
@@ -55,7 +52,7 @@ Or from Pkg REPL (by pressing `]` at Julia interpreter):
 add https://github.com/jmurga/Analytical.jl
 ```
 
-## ABC
+### ABC
 We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference, although another *ABC* software could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other *ABC* software.
 
 ABCreg needs *GSL* and *libz* to work. Please install both libraries before compile the software:
@@ -77,10 +74,19 @@ echo 'export PATH="${HOME}/ABCreg/src/:$PATH"' >> ${HOME}/.bashrc
 source ${HOME}/.bashrc
 ```
 
-## Dependencies
-All the dependencies are installed within the package. You don't need to install manually.
+### R
+We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
-#### Mandatory dependencies to solve the analytical equations
+Please if you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2, data.table, locfit. 
+
+```R
+R -e "install.packages(c('ggplot2','data.table','locfit'))"
+```
+
+## Dependencies
+All Julia dependencies are installed within the package. You don't need to install them manually.
+
+### Mandatory dependencies to solve the analytical equations
 - [`Roots`](https://github.com/JuliaMath/Roots.jl) - root finding.
 - [`NLsolve`](https://github.com/JuliaStats/Distributions.jl) - non-linear systems of equations solver.
 - [`Distributions`](https://github.com/JuliaStats/Distributions.jl) - probability distributions.

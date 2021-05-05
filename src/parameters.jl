@@ -4,48 +4,27 @@
 import Parameters: @with_kw
 
 """
-	parameters(
-		gamNeg::Int64,
-		gL::Int64,
-		gH::Int64,
-		alLow::Float64,
-		alTot::Float64,
-		thetaF::Float64,
-		thetaMidNeutral::Float64,
-		al::Float64,
-		be::Float64,
-		B::Float64,
-		bRange::Array{Float64,1}
-		pposL::Float64,
-		pposH::Float64,
-		N::Int64,
-		n::Int64,
-		Lf::Int64,
-		rho::Float64,
-		TE::Float64,
-	)
-
 Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. For this reason, *adap* is the only exported variable. Adap should be change before the perform the analytical approach, in other case, ```\$\\alpha_{(x)}\$``` will be solve with the default values.
 
 # Parameters
- - `gamNeg::Int64`:
- - `gL::Int64`:
- - `gH::Int64`:
- - `alLow::Float64`:
- - `alTot::Float64`:
- - `thetaF::Float64`:
- - `thetaMidNeutral::Float64`:
- - `al::Float64`:
- - `be::Float64`:
- - `B::Float64`:
- - `bRange::Array{Float64,1}`:
- - `pposL::Float64`:
- - `pposH::Float64`:
- - `N::Int64`:
- - `n::Int64`:
- - `Lf::Int64`:
- - `rho::Float64`:
- - `TE::Float64`:
+ - `gamNeg::Int64`: Selection coefficient for deleterious alleles
+ - `gL::Int64`: Selection coefficient for weakly benefical alleles
+ - `gH::Int64`: Selection coefficient for strongly benefical alleles
+ - `alLow::Float64`: Proportion of α due to weak selection
+ - `alTot::Float64`: α
+ - `thetaF::Float64`: Mutation rate defining BGS strength
+ - `thetaMidNeutral::Float64`: Mutation rate on coding region
+ - `al::Float64`: DFE shape parameter 
+ - `be::Float64`: DFE scale parameter
+ - `B::Float64`: BGS strength
+ - `bRange::Array{Float64,1}`: BGS values to simulate
+ - `pposL::Float64`: Fixation probabily of weakly beneficial alleles
+ - `pposH::Float64`: Fixation probabily of strongly beneficial alleles
+ - `N::Int64`: Population size
+ - `n::Int64`: Sample size
+ - `Lf::Int64`: Flanking region length
+ - `rho::Float64`: Recombination rate
+ - `TE::Float64`
 
 """
 @with_kw mutable struct parameters
@@ -77,6 +56,13 @@ Mutable structure containing the variables required to solve the analytical appr
 	#=neut::Dict = Dict{Float64,Array{Float64,1}}()=#
 end
 
+"""
+Mutable structure containing the downsampled SFS. 
+
+# Returns
+ - `bn::Dict`: SparseMatrixCSC containing the binomial convolution
+
+"""
 @with_kw mutable struct binomialDict
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
 end
@@ -172,10 +158,14 @@ function setPpos!(param::parameters)
 """
 	binomOp(param)
 
-Site Frequency Spectrum convolution depeding on background selection values. Pass the sampled SFS into a binomial distribution to sample the allele frequencies probabilites.
+Binomial convolution to sample the allele frequencies probabilites depeding on background selection values, and sample size.
+
+# Arguments
+ - `param::parameters`
+ - `convolutedSamples::binomialDict`
 
 # Returns
- - `Array{Float64,2}`: convoluted SFS given a B value. It will be saved at *adap.bn*.
+ - `Array{Float64,2}`: convoluted SFS given for each B value defined in the model. Results saved at *param.bn*.
 """
 function binomOp!(param::parameters,convolutedBn::Dict)
 
@@ -250,7 +240,7 @@ function phiReduction(param::parameters,gammaValue::Int64)
 end
 
 """
-	analyticalAlpha(gammaL,gammaH,pposL,param.pposH,data,nopos)
+	analyticalAlpha(param, convolutedSamples)
 
 Analytical α(x) estimation. Solve α(x) generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
