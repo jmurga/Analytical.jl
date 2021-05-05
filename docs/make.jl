@@ -12,15 +12,14 @@ makedocs(
 			"Processing data" => "data.md",
 			"MK approaches" => "mk.md"
 		],
-		"Empirical estimation" => "pipeline.md"
-		[
+		"Empirical estimation" => [
 			"Rates" => "rates.md",
 			"Input data" => "input.md",
 			"Summary statistics" => "summstat.md",
 			"ABC inference" => "abc.md",
 			"Maximum-A-Posteriori" => "map.md"
 		],
-		"Notebooks" => "notebooks.md"
+		"Notebooks" => "notebooks.md",
 		"Command line client" => "cli.md",
 		"Reference" => "reference.md"
 	]
