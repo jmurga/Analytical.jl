@@ -4,8 +4,7 @@ ABC-MK is an analytical approximation to $\alpha_{(x)}$. We have explored the im
 
 Our approach directly estimates $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated with random DFE. In conjunction, the associated values to these DFE can be used as summary statistics at ABC methods. Therefore, our method can estimate the rate and strength of adaption in models and non-models organisms. Previous DFE and demography are unknown.
 
-## Installation
-### Docker
+## Docker installation
 We highly recommend using the Docker image to execute the software. The Docker image is based on Debian and includes all the software needed to run the pipeline. You can access to Debian system or Jupyter pulling the image from [Docker Hub](https://hub.docker.com/r/jmurga/abcmk). Remember to link the folder /analysis with any folder at your ```${HOME}``` directory to save the results:
 
 
@@ -13,25 +12,25 @@ We highly recommend using the Docker image to execute the software. The Docker i
 # Pull the image
 docker pull jmurga/abcmk
 # Run docker linking some local volume to export data
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder jmurga/mktest
+docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder jmurga/abcmk
 # Run jupyter notebook from docker image. Change the port if 8888 is already used
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
+docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
 To use our command-line interface, just run
 
 ```bash
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/ jmurga/abcmk julia /analysis/abcmk_cl.jl
+docker run -i -t -v ${HOME}/test/:/analysis/test/ jmurga/abcmk /analysis/abcmk_cli.jl
 ```
 
-### Singularity
+## Singularity installation
 We have created a Singularity container to use the software in HPC systems
 
 ```singularity
 singularity pull --arch amd64 library://jmurga/default/abcmk:latest
 ```
 
-### Scratch installation
+## Scratch installation
 To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/)
 
 ```
@@ -67,7 +66,7 @@ Or from Pkg REPL (by pressing `]` at Julia interpreter):
 add https://github.com/jmurga/Analytical.jl
 ```
 
-### ABC
+### ABCreg
 We have linked [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform *ABC* inference. nonetheless others *ABC* softwares could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other *ABC* software.
 
 ABCreg needs *GSL* and *libz* to work. Please install both libraries before compile the software:
