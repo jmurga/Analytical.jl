@@ -7,9 +7,9 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 
 	try
 		@eval using RCall
-		@eval R"""library(ggplot2);library(abc)"""
+		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
 
-		out          = filter(x -> occursin("post",x), readdir(analysis,join=true))
+		out          = filter(x -> occursin("post",x), readdir(analysisFolder,join=true))
 		out          = filter(x -> !occursin(".1.",x),out)
 
 		open(x)      = Array(CSV.read(GZip.open(x),DataFrame,header=false))

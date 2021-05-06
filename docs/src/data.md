@@ -3,23 +3,23 @@ The module include functions to parse TGP from Uricchio et al. (2019) and DGN fr
 
 
 Please to parse raw data into SFS and divergence counts, first download raw files deposited in our repository:  
- - [TGP]()  
- - [DGN Zambia population]()  
- - [DGN Raleigh population]()  
+ - [TGP](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/tgp.txt)  
+ - [DGN Zambia population](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/dgnRal.txt)  
+ - [DGN Raleigh population](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/dgnZi.txt)  
 
 ## Parsing TGP and DGN data
 Once you have downloaded the files you can use the function ```Analytical.parseSfs``` to convert the data into SFS and divergence counts. Please check [`Analytical.parseSfs`](@ref) to get more info.
 
 ```julia
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "/home/jmurga/tgp.txt")
+alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "/home/jmurga/tgpData/tgp.txt")
 ```
 
 To save the data you can use CSV and DataFrames packages
 
 ```julia
 using CSV, DataFrames
-CSV.write("/home/jmurga/tgpSfs.tsv",DataFrame(sfs),delim='\t')
-CSV.write("/home/jmurga/tgpDiv.tsv",DataFrame(permutedims(divergence)),delim='\t')
+CSV.write("/home/jmurga/tgpData/tgpSfs.tsv",DataFrame(sfs),delim='\t',header=false))
+CSV.write("/home/jmurga/tgpData/tgpDiv.tsv",DataFrame(permutedims(divergence)),delim='\t',header=false))
 ```
 
 It is possible to directly subset genes IDs using Ensembl or Flybase id. Use a variable of type ```Matrix{String,1}``` into the argument *geneList*

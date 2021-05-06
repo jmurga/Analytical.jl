@@ -63,4 +63,4 @@ R"""
 """
 ```
 
-![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/Fig1.svg)
+![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/figure1.svg)

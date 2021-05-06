@@ -1,44 +1,39 @@
 # *ABC* inference from empirical data
 
-## Prior distributions from analytical estimations
+At this point you have a folder containing summary statistics and observed data to perform ABC infernce. As explained in our [home page](@ref), we performed the ABC inference using [ABCreg](https://github.com/molpopgen/ABCreg). However, any other ABC software can be used to perform the inference.
 
-In this example we provide a solution to replicate results at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). We will simulate $3.7 \cdot 10^6$ summary statistics from random *DFE* to use as prior distribution in *ABCreg*. In this case we will need a set of empirical observed values in order to subset the summary statistics.
+We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference. If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](@ref) to install ABCreg.
 
-We need to set the model accounting for the sampling value. The *SFS* is expected to be in raw frequencies. If the model is not properly set up, the *SFS* will not be correctly parsed. In our case, we are going to set up a model with default parameters only to parse the *SFS* and convolute the observed frequencies with a binomial distribution.
-
-```julia
-using Analytical
-adap = Analytical.parameters(n=661)
-```
-
-Once the model account for the number of samples we can open the files. The function `Analytical.parseSfs` will return polymorphic and divergent counts and SFS accounting for the whole spectrum: `collect(1:adap.nn)/adap.nn`. In addition an output file will be created contained the observed values to input in *ABCreg*.
+It is possible to perform the inference through julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
 
 ```julia
-
+Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=1,abcreg="/home/jmurga/ABCreg/src/reg",parallel=false);
 ```
 
-The module include a function to solve *N* times different genetic scenarios. We solve the analytical approximation taking into account random and independent values to draw *DFE* and $\alpha_{(x)}$. Each parameter combination are replicated to 5% frequency bins background selection values (saved at `adap.bRange`).
+If you have installed GNU-parallel in your system it is possible to parallelize the inference
 
 ```julia
-# Execute one to compile the function
+Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=7,abcreg="/home/jmurga/ABCreg/src/reg",parallel=true);
 ```
+We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
-To parallelize the process we created a thread pool inside [`summaryStats`](@ref) using the *Distributed* package. To parallel the process you only need to define the available process and add our model to each thread.
+Please if you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2, data.table, locfit. 
 
 ```julia
-# Load Distributed package and add threads
-
-# Load the pacakgein all the threads
+Analytical.sourcePlotMapR(script="/home/jmurga/tgpData/script.jl")
+tgpmap = Analytical.plotMap(analysisFolder="/home/jmurga/tgpData/");
+describe(tgpmap)
 ```
 
-Alternatively, if you are going to use the command line script, please make the threads available when executing julia
-```bash
+```
+ Row │ variable  mean          min           median        max          nmissing  eltype   
+     │ Symbol    Float64       Float64       Float64       Float64      Int64     DataType 
+─────┼─────────────────────────────────────────────────────────────────────────────────────
+   1 │ aw           0.108927     0.010857       0.108796      0.19754          0  Float64
+   2 │ as           0.0506607   -0.00750128     0.0514826     0.134143         0  Float64
+   3 │ a            0.152842     0.0962341      0.149083      0.233131         0  Float64
+   4 │ gamNeg    1184.81       512.458       1277.47       1903.12             0  Float64
+   5 │ shape        0.142934     0.128369       0.14189       0.167394         0  Float64
 ```
 
-## *ABC* inference
-Generic ABC methods proceed by three main steps: (1) first sampling parameter values from prior distributions, (2) next simulating a model and calculating informative summary statistics, and lastly (3) comparing the simulated summary statistics to observed data. The parameter values that produce summary statistics that best match the observed data form an approximate posterior distribution. We link Julia with *ABCreg*. It will output one file per line in data. The files contain the posterior distributions. We return the posterior distributions, mean and quantiles.
-
-
-You can easily plot the posterior distributions using Julia or just input the files at your favorite plot software.
-
-[![NBViewer](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/jmurga/Analytical.jl/blob/master/scripts/analyticalAlphaAndPriors.ipynb)
+![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/figure2.svg)

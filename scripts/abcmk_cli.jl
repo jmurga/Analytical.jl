@@ -47,15 +47,15 @@ end
 	julia abcmk_cli.jl parseTgpData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
 
 "
-@main function parseTgpData(;analysisFolder::String="<folder>",geneList::String="false",bins::String="false")
+@main function parseData(;analysisFolder::String="<folder>",dataset::String="tgp",geneList::String="false",bins::String="false")
 	
-	@eval using Analytical, DataFrames, CSV, ProgressMeter
+	@eval using Analytical, DataFrames, CSV
 
 	run(`mkdir -p $analysisFolder`)
 
-	tgpData = analysisFolder * "/mk_with_positions_BGS.txt"
+	data = analysisFolder * "/" * dataset * ".txt"
 	
-	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/mk_with_positions_BGS.txt",tgpData)
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/"* dataset * ".txt",data)
 
 	# Check if bins or genelist are defined
 	@eval if $geneList != "false"
@@ -71,7 +71,7 @@ end
 	end
 
 	# Parsing TGP data
-	@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$tgpData,geneList=$gList,bins=$binsSize)
+	@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,geneList=$gList,bins=$binsSize)
 
 	# Writting data to folder
 	@eval sName = $analysisFolder * "/sfs.tsv"
@@ -80,15 +80,6 @@ end
 	@eval CSV.write($sName,DataFrame($sfs),delim='\t',header=false)
 	@eval CSV.write($dName,DataFrame($divergence'),delim='\t',header=false)
 end
-
-"Please provide an analysis folder containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
-@main function parseDgnData(;analysisFolder::String="<analysisFolder>",geneList::String="false",population::String="ZI")
-	
-	@eval using Analytical, DataFrames, CSV, ProgressMeter
-	@eval run(`mkdir -p $analysisFolder`)
-
-end
-
 
 "Estimate summary statistics from analytical rates. You must provide a path containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
 @main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",nthreads::Int64=1)

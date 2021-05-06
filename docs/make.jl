@@ -20,7 +20,6 @@ makedocs(
 			"ABC inference" => "abc.md",
 			"Maximum-A-Posteriori" => "map.md"
 		],	
-		"Notebooks" => "notebooks.md",
 		"Command line client" => "cli.md",
 		"Reference" => "reference.md"
 	]
