@@ -1,6 +1,6 @@
 # Input data
 
-To estimate summary statistics you need to provide empirical SFS and divergence files. As explained in section [Data](@ref), you can directly parse TGP or DGN data using our module. Nonetheless you ca input any other SFS and divergence file.
+To estimate summary statistics you need to provide empirical SFS and divergence files. As explained in section [data](data.md), you can directly parse TGP or DGN data using our module. Nonetheless you ca input any other SFS and divergence file.
 
 You can easly use julia to download the files using Julia or Bash. You also can download the files manually
 

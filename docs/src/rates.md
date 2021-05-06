@@ -25,7 +25,7 @@ The function ```Analytical.rates``` will perform the analytical estimation of *N
 
 Note that ````Analytical.rates`` is the most resources and time-consuming function. In our case, the function will estimate 10^5 independent models. Each model solve the estimation for all posibles BGS values. We used BGS values from 0.1 to 0.999 in 5% increments. In total, the example will produce 3.7 million estimates. We have used a hierarchical data structure (HDF5) to facilitate model parameters and rates storage.
 
-The following example took about 1.5 hours to execute on the hardware described at section ()
+The following example took about 1.5 hours to execute on the hardware described at section [Infering the rate and strength of adaptation](empirical.md)
 
 ```julia
 @time df = Analytical.rates(param = adap,convolutedSamples=convolutedSamples,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="${HOME}/rates.jld2",);

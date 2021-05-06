@@ -30,20 +30,15 @@ julia abcmk_cli.jl parseData --analysisFolder /home/jmurga/tgpData
 
 3. Estimate summary statistics
 ```bash
-julia abcmk_cli.jl summaries --analysisFolder /home/jmurga/tgpData
+julia abcmk_cli.jl summaries --analysisFolder /home/jmurga/tgpData/ --rates /home/jmurga/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925 --nthreads 22
 ```
 
-4. Estimate summary statistics
-```bash
-julia abcmk_cli.jl summaries --analysisFolder /home/jmurga/tgpData/ --rates /home/jmurga/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,200,661,925 --nthreads 22
-```
-
-5. ABC inference
+4. Perform ABC inference
 ```bash
 julia abcmk_cli.jl abcInference --analysisFolder /home/jmurga/tgpData/ --replicas 100 --P 5 --S 9 --tol 0.001 --ABCreg /home/jmurga/ABCreg/src/reg --parallel true --nthreads 22
 ```
 
-6. ABC inference
+5. Estimate Maximum-A-Posteriori and plot using R. Using packages directly, cannot input into *abcmk_cli.jl* (in development)
 ```bash
-julia abcmk_cli.jl abcInference --analysisFolder /home/jmurga/tgpData/ --replicas 100 --P 5 --S 9 --tol 0.001 --ABCreg /home/jmurga/ABCreg/src/reg --parallel true --nthreads 22
+julia -e 'using Analytical, RCall, GZip, DataFrames, CSV;Analytical.sourcePlotMapR(script="/home/jmurga/tgpData/script.jl"); Analytical.plotMap(analysisFolder="/home/jmurga/tgpData");'
 ```

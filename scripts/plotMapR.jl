@@ -48,6 +48,9 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 			ggsave(pal,filename=paste0($analysisFolder,'map.png'),dpi=600)
 			"""
 		CSV.write(analysisFolder * "map.tsv",maxp,delim='\t',header=true)
+
+		RCall.endEmbeddedR();
+
 		return(maxp)
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")

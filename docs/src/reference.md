@@ -46,7 +46,6 @@ Analytical.ratesToSummaries
 ```@docs
 Analytical.parseSfs
 Analytical.ABCreg
-Analytical.meanQ
 ```
 
 ## Raw data tools

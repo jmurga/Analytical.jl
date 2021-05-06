@@ -84,7 +84,6 @@ end
 "Estimate summary statistics from analytical rates. You must provide a path containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
 @main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",nthreads::Int64=1)
 	
-	#=ne=1000;samples=661;rates="/home/jmurga/test.jld2";summstatSize=100000;replicas=100;analysisFolder="/home/jmurga/test/abcmk/dna2/";bootstrap="true";dac="2,4,5,10,20,50,200,661,921"=#
 
 	addprocs(nthreads)
 	
@@ -117,15 +116,16 @@ end
 	end	
 end
 
-"Plot Maximum a posterior distribution"
-@main function plotMap(;analysisFolder::String="<folder>",output::String="<folder>")
-
+#="Plot Maximum a posterior distribution"
+@main function plotMap(;analysisFolder::String="<folder>")
 	try
-		@eval using RCall, GZip, DataFrames, CSV
-		@eval Analytical.sourcePlotMapR(script=$analysisFolder * "/script.jl")
-		@eval plotMap(analysisFolder=$analysisFolder);
+		@eval using Analytical, RCall, GZip, DataFrames, CSV
+		
+		@eval Analytical.sourcePlotMapR(script=$analysisFolder)
+		@eval Analytical.plotMap(analysisFolder=$analysisFolder)
+		@eval RCall.endEmbeddedR()
 	catch
-		println("Please install R, ggplot2 and abc in your system before execute this function")
+		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
 	end
-end
+end=#
 

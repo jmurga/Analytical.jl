@@ -1,8 +1,8 @@
 # *ABC* inference from empirical data
 
-At this point you have a folder containing summary statistics and observed data to perform ABC infernce. As explained in our [home page](@ref), we performed the ABC inference using [ABCreg](https://github.com/molpopgen/ABCreg). However, any other ABC software can be used to perform the inference.
+At this point you have a folder containing summary statistics and observed data to perform ABC infernce. As explained in our [home page](index.md), we performed the ABC inference using [ABCreg](https://github.com/molpopgen/ABCreg). However, any other ABC software can be used to perform the inference.
 
-We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference. If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](@ref) to install ABCreg.
+We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference. If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
 
 It is possible to perform the inference through julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
 
