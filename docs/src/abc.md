@@ -37,4 +37,4 @@ describe(tgpmap)
    5 │ shape        0.142934     0.128369       0.14189       0.167394         0  Float64
 ```
 
-![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/figure2.svg)
+![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/figure2.svg =500x500)
