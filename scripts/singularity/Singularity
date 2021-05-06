@@ -19,11 +19,11 @@ From: julia:latest
 	rm -rf /var/lib/apt/lists/*
 
 	wget https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/precompile_mktest.jl
-	wget https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmk_cli.jl
+	wget https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/abcmk_cli.jl
 
 	R -e 'install.packages(c("abc","ggplot2","data.table","dplyr"), repos = "https://cloud.r-project.org")'
 
-	/usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(["PackageCompiler" ,"Parameters", "NLsolve", "SpecialFunctions", "Distributions", "Roots", "ArbNumerics", "StatsBase", "LsqFit", "PoissonRandom", "SparseArrays", "Distributed", "CSV", "SharedArrays", "JLD2","DataFrames","GZip","Parsers","OrderedCollections","FastaIO","RCall","ClusterManagers"])'
+	/usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler","Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
 	/usr/local/julia/bin/julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
 
 	/usr/local/julia/bin/julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/mktest.so", precompile_execution_file="/precompile_mktest.jl")'

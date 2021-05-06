@@ -1,28 +1,28 @@
 # Infering the rate and strength of adaptation
 
-We develop an extension of the analytical approximations presented in Uricchio, Petrov, and Enard (2019). In the previous paper, analytical calculations were used explore the effect BGS on weakly beneficial alleles, but the estimation procedure employed was based on computationally intensive simulations. While inference procedures based on forward simulations allow for the inclusion of complex demographic histories, they often require high performance computing resources and can be prohibitively slow for some models. Here we extend analytical approximations of Uricchio, Petrov and Enard (2019) and develop a simple and computationally efficient ABC-based inference procedure that accounts for the DFE of deleterious and beneficial alleles and incomplete recombination between selected genomic elements. 
+We develop an extension of the analytical approximation presented in Uricchio, Petrov, and Enard (2019). In the previous paper, analytical calculations were used to explore the effect of BGS on weakly beneficial alleles, but the estimation procedure employed was based on computationally intensive simulations. While inference procedures based on forward simulations allow for the inclusion of complex demographic histories, they often require high-performance computing resources and can be prohibitively slow for some models. Here we extend Uricchio, Petrov and Enard (2019) analytical approximations to develop a simple and computationally efficient ABC-based inference procedure. Our method accounts for the DFE of deleterious and beneficial alleles and incomplete recombination between selected genomic elements. 
 
 
-To perform the empirical estimation of $\alpha_{(x)}$ we followed a generic ABC algorithm (Beaumont et al 2002). ABC proceeds by first sampling parameter values from prior distributions, next simulating model using these parameter values and calculating informative summary statistics, and last, comparing the simulated summary statistics to the observed data. Considering the standard ABC scheme, we (1) considered $N$ random combinations from prior distributions; (2) solved $N$ independent models to generate informative summary statistics; (3) subset the parameter values producing summary statistics that best match the observed data from an approximate posterior distribution. Additionally, a linear model can be imposed to correct for the non-0 distance between the simulated and observed summary statistics.
-
+To perform the empirical estimation of $\alpha_{(x)}$ we followed a generic ABC algorithm (Beaumont et al 2002). ABC proceeds by first sampling parameter values from prior distributions, the next simulating model using these parameter values, calculating informative summary statistics, and comparing the simulated summary statistics to the observed data. Considering the standard ABC scheme, we (1) considered $N$ random combinations from prior distributions; (2) solved $N$ independent models to generate informative summary statistics; (3) subset the parameter values producing summary statistics that best match the observed data from an approximate posterior distribution. Additionally, a linear model can be imposed to correct the non-0 distance between the simulated and observed summary statistics.
 
 ## Extending analytical estimations
-We extended the analytical calculations solving $N$ independents models. We automatize the analytical estimations to input prior values of:
- - $\gamma$: Population-scaled selected coefficient of deleterious alleles 
- - $s_w$: Population-scaled selected coefficient of weakly beneficial alleles 
- - $s_s$: Population-scaled selection coefficient of strong beneficial alleles 
- - $\alpha_w$: Proportion of weakly adaptive substitutions 
- - $\alpha$: Proportion of adaptive substitutions 
- - $\theta_{coding}$: Population-scaled mutation rate at coding locus 
- - $\theta$: Scale parameter 
- - $\beta$: Shape parameter 
- - $B$: $B$ value froms
- - $\rho$: Population-scaled recombination rate 
+We extended the analytical calculations solving $N$ independents models. We automatize the analytical estimations to input prior distributions:
 
-The models will be solved using random combinations from prior distributions. Fixation, polymorphic rates and model information will be used to estimate informative summary statistics needed to perform ABC inference
+ - Population-scaled selected coefficient of deleterious alleles 
+ - Population-scaled selected coefficient of weakly beneficial alleles 
+ - Population-scaled selection coefficient of strong beneficial alleles 
+ - Proportion of weakly adaptive substitutions 
+ - Proportion of adaptive substitutions 
+ - Population-scaled mutation rate at coding locus
+ - Population-scaled recombination rate 
+ - Scale parameter 
+ - Shape parameter 
+ - BGS strength
+
+The models will be solved using random combinations from prior distributions. Fixation, polymorphic rates, and model information will be used to estimate informative summary statistics needed to perform ABC inference. Please see section [rates](rates.md) to check how to input prior distributions.
 
 ## Summary statistics
-\cite{uricchio_exploiting_2019} used the analytical theory to demonstrate the effect of weakly beneficial alleles at $\alpha_{(x)}$. To do that, they solved $\alpha_{(x)}$ through the fixation and polymorphism rates since the locus length ($L$) and the time branch ($T$) estimations at first order $\alpha_{(x)}$ estimation can be cancelled
+\cite{uricchio_exploiting_2019} used the analytical theory to demonstrate the effect of weakly beneficial alleles at $\alpha_{(x)}$. To do that, they solved $\alpha_{(x)}$ through the fixation and polymorphism rates since the locus length ($L$) and the time branch ($T$) estimations at first order $\alpha_{(x)}$ estimation can be canceled
 
 $\mathbb{E}[\alpha_{(x)}] \approx 1 - \frac{LT(\mathbb{E}[d_S])}{LT(\mathbb{E}[d_N])} \frac{LT(\mathbb{E}[p_{S(x)}])}{LT(\mathbb{E}[p_{N(x)}])} \approx 1 - \frac{\mathbb{E}[d_S]}{\mathbb{E}[d_N]} \frac{\mathbb{E}[p_{S(x)}]}{\mathbb{E}[p_{N(x)}]}$
 
@@ -36,7 +36,7 @@ $\mathbb{E}[D] = X \in Poisson\left(\lambda = D_{observed} \times (\mathbb{E}[d_
 
 To estimate $\alpha_{(x)}$ we draw the expected values considering each fixation category. We sampled the values in two categories according to the relative rates. Following the same procedure:
 
-$\mathbb{E}[D_S] = X \in Poisson\left(\lambda = D_{observed} \times \left[\frac{\mathbb{E}[d_0]}{\mathbb{E}[d_+] + \mathbb{E}[d_-] + \mathbb{E}[d_0]}\right]\right)%
+$\mathbb{E}[D_S] = X \in Poisson\left(\lambda = D_{observed} \times \left[\frac{\mathbb{E}[d_0]}{\mathbb{E}[d_+] + \mathbb{E}[d_-] + \mathbb{E}[d_0]}\right]\right)$
 
 $\mathbb{E}[D_N] = X \in Poisson\left(\lambda = D_{observed} \times \left[\frac{\mathbb{E}[d_+] + \mathbb{E}[d_-]}{\mathbb{E}[d_+] + \mathbb{E}[d_-] + \mathbb{E}[d_0]}\right]\right)$
 
@@ -58,10 +58,10 @@ $\mathbb{E}[D_S] = X \in Poisson\left(\lambda = D_{observed} \times \left[\frac{
 In addition, for each model, we retrieve negative selection coefficients and shape parameter to perform ABC inference.
 
 # Computational pipeline
-The next sections describe the whole pipeline to automatize analytical estimations, empirical data parse, summary statistic estimation and ABC inference.
+The following sections describe the whole pipeline to automatize analytical estimations, empirical data parse, summary statistic estimation, and ABC inference.
 
-The software is prepared to parallelize each pipeline step using Julia [Distributed](https://docs.julialang.org/en/v1/manual/distributed-computing/) computing. Distributing the process into threads has a cost in RAM memory, please make some tests in your machine before to execute expensives models. Nonetheless, distributing the estimation into threads highly decrease the pipeline execution time. It is almost mandatory to parallelize at least the rates estimations.
+The software is prepared to parallelize each pipeline step using Julia [Distributed](https://docs.julialang.org/en/v1/manual/distributed-computing/) computing. Distributing the process into threads has a cost in RAM. Please make some tests in your machine before executing expensive models. Nonetheless, distributing the estimation into threads decreases the pipeline execution time. It is almost mandatory to parallelize at least the rate estimations.
 
-The following examples as well as the analysis described at REF were tested using a laptop with the following hardware:
+The following examples, as well as the analysis described at REF, were tested using a laptop with the following hardware:
 - Intel i7-7700HQ (8) @ 3.800GHz 
 - 16GB RAM DDR4 2400MHz

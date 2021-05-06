@@ -1,10 +1,10 @@
 # *ABC* inference from empirical data
 
-At this point you have a folder containing summary statistics and observed data to perform ABC infernce. As explained in our [home page](index.md), we performed the ABC inference using [ABCreg](https://github.com/molpopgen/ABCreg). However, any other ABC software can be used to perform the inference.
+At this point, you have a folder containing summary statistics and observed data to perform ABC inference. As explained in our [home page](index.md), we performed the ABC inference using [ABCreg](https://github.com/molpopgen/ABCreg). However, you can used other ABC software to perform the inference.
 
-We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference. If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
+We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform *ABC* inference. If you are going to use *ABCreg* to make inferences from our software directly, please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
 
-It is possible to perform the inference through julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
+It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
 
 ```julia
 Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=1,abcreg="/home/jmurga/ABCreg/src/reg",parallel=false);
@@ -15,9 +15,10 @@ If you have installed GNU-parallel in your system it is possible to parallelize 
 ```julia
 Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=7,abcreg="/home/jmurga/ABCreg/src/reg",parallel=true);
 ```
+
 We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
-Please if you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2, data.table, locfit. 
+If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
 ```julia
 Analytical.sourcePlotMapR(script="/home/jmurga/tgpData/script.jl")

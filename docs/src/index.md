@@ -1,12 +1,13 @@
 # ABC-MK
 
-ABC-MK is an analytical approximation to $\alpha_{(x)}$. We have explored the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios in order to estimate the strength and rate of adaptation.
+ABC-MK is an analytical approximation to $\alpha_{(x)}$. We have explored the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios to estimate the strength and rate of adaptation.
 
-Our approach estimates directly $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated to random *DFE*. In conjunction, the associated values to these *DFE* can be used as summary statistics at *ABC* methods. Therefore, our method can estimate rate and strength of adaption in models and non-models organisms, for which previous *DFE* and demography are unknown.
+Our approach directly estimates $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated with random DFE. In conjunction, the associated values to these DFE can be used as summary statistics at ABC methods. Therefore, our method can estimate the rate and strength of adaption in models and non-models organisms. Previous DFE and demography are unknown.
 
 ## Installation
 ### Docker
-We highly recommend to use the Docker image to execute the software. The Docker image is based on Debian and include all the software needed to run the pipeline. You can access to Debian system or Jupyter pulling the image from dockerhub. Remember to link the folder `/analysis` with any folder at your ```${HOME}``` directory to save the results:
+We highly recommend using the Docker image to execute the software. The Docker image is based on Debian and includes all the software needed to run the pipeline. You can access to Debian system or Jupyter pulling the image from [Docker Hub](https://hub.docker.com/r/jmurga/abcmk). Remember to link the folder /analysis with any folder at your ```${HOME}``` directory to save the results:
+
 
 ```bash
 # Pull the image
@@ -17,15 +18,21 @@ docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder jmurga/mktest
 docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder -p 8888:8888 jmurga/mktest /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
+To use our command-line interface, just run
+
+```bash
+docker run -i -t -v ${HOME}/<folderPath>:/analysis/ jmurga/abcmk julia /analysis/abcmk_cl.jl
+```
+
 ### Singularity
-We have created a Singularity container to use the software into HPC systems
+We have created a Singularity container to use the software in HPC systems
 
 ```singularity
-singularity pull library://jmurga/default/abcmk
+singularity pull --arch amd64 library://jmurga/default/abcmk:latest
 ```
 
 ### Scratch installation
-To install our module from scratch we highly recommend to use [LTS official Julia binaries](https://julialang.org/downloads/)
+To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/)
 
 ```
 JULIA_VERSION=1.6.1
@@ -33,14 +40,22 @@ curl -o ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz https://julialang-s3.
 tar -zxf ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C ${HOME}
 ``` 
 
-If is your first time using Julia please remember to export Julia binaries to your path. In this way you will execute Julia using the command ```julia```
+If this is your first time using Julia, please remember to export Julia binaries to your path. In this way, you will execute Julia using the command ```julia```
 
 ```bash
 echo 'export PATH="${HOME}/julia-${JULIA_VERSION}/bin:$PATH"' >> ${HOME}/.bashrc
 source ${HOME}/.bashrc
 ```
 
-You can easly install the Julia package executing
+Consider to install some important dependencies to automatize your ABC-MK pipelines. We have prepared a file to install them. Please download [this file](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl) and execute the following command
+
+
+```bash
+wget https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl
+julia julia_dependencies.jl
+```
+
+You can easly install our Julia package executing
 
 ```bash
 julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
@@ -53,7 +68,7 @@ add https://github.com/jmurga/Analytical.jl
 ```
 
 ### ABC
-We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia in order to perform *ABC* inference, although another *ABC* software could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other *ABC* software.
+We have linked [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform *ABC* inference. nonetheless others *ABC* softwares could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other *ABC* software.
 
 ABCreg needs *GSL* and *libz* to work. Please install both libraries before compile the software:
 
@@ -75,9 +90,9 @@ source ${HOME}/.bashrc
 ```
 
 ### R
-We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
+We have used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
-Please if you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2, data.table, locfit. 
+If you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
 ```R
 R -e "install.packages(c('ggplot2','data.table','locfit'))"
@@ -95,8 +110,7 @@ All Julia dependencies are installed within the package. You don't need to insta
 - [`PoissonRandom`](https://github.com/SciML/PoissonRandom.jl) - Poisson random number generator.
 - [`Parameters`](https://github.com/mauro3/Parameters.jl) - custom keyword constructor.
 
-
-#### The following dependencies are required to use all the funcionalities (parse SFS, plots, parse multi-Fasta, etc.)
+### The following dependencies are required to use all the funcionalities (parse SFS, plots, parse multi-Fasta, etc.)
 - [`CSV`](https://github.com/JuliaNLSolvers/Optim.jl)
 - [`Parsers`](https://github.com/JuliaStats/Distributions.jl)
 - [`StatsBase`](https://github.com/JuliaStats/Distances.jl)

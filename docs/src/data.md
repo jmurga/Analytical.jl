@@ -1,20 +1,21 @@
 # Parsing genomic data
-The module include functions to parse TGP from Uricchio et al. (2019) and DGN from Murga-Moreno et al. (2019). In addition we include a function to parse SFS and divergence from multi-FASTA data following Murga-Moreno et al. (2019)
+The module includes functions to parse TGP from Uricchio et al. (2019) and DGN from Murga-Moreno et al. (2019). In addition, the module have a function to parse SFS and divergence from multi-FASTA data following Murga-Moreno et al. (2019)
 
 
 Please to parse raw data into SFS and divergence counts, first download raw files deposited in our repository:  
+ 
  - [TGP](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/tgp.txt)  
  - [DGN Zambia population](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/dgnRal.txt)  
  - [DGN Raleigh population](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/dgnZi.txt)  
 
 ## Parsing TGP and DGN data
-Once you have downloaded the files you can use the function ```Analytical.parseSfs``` to convert the data into SFS and divergence counts. Please check [`Analytical.parseSfs`](@ref) to get more info.
+Once you have downloaded the files, you can use the function ```Analytical.parseSfs``` to convert the data into SFS and divergence counts. Please check [`Analytical.parseSfs`](@ref) to get more info.
 
 ```julia
 alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "/home/jmurga/tgpData/tgp.txt")
 ```
 
-To save the data you can use CSV and DataFrames packages
+To save the data, you can use CSV and DataFrames packages
 
 ```julia
 using CSV, DataFrames
@@ -25,9 +26,9 @@ CSV.write("/home/jmurga/tgpData/tgpDiv.tsv",DataFrame(permutedims(divergence)),d
 It is possible to directly subset genes IDs using Ensembl or Flybase id. Use a variable of type ```Matrix{String,1}``` into the argument *geneList*
 
 ```julia
-ensemblList = CSV.read("/home/jmurga/ensemblList.txt",header=false,DataFrame) |> Array
+ensemblList = CSV.read("/home/jmurga/tgpData/ensemblList.txt",header=false,DataFrame) |> Array
 
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "/home/jmurga/tgp.txt",geneList = ensemblList)
+alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "/home/jmurga/tgpData/tgp.txt",geneList = ensemblList)
 ```
 
 If you are going to parse DGN, you need to change the value of the argument *isoline* to *true*. Following the Murga-Moreno et al. (2019) sample size for each population is:
@@ -40,7 +41,7 @@ alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 160, data = "/home/jmu
 ```
 
 ## Processing muti-FASTA files
-We included some tools to process multi-FASTA files into unfolded SFS and divergence. The function [`Analytical.uSfsFromFasta`](@ref) need three files: a reference file to degenerate the sequence, a multi-FASTA file to process the polymorphism and a outgroup sequence to process the divergence. Consider to download DGN data from [John Pool lab](https://www.johnpool.net/) or [PopFly](https://popfly.uab.cat) to obtain this files.
+We included some tools to process multi-FASTA files into unfolded SFS and divergence. The function [`Analytical.uSfsFromFasta`](@ref) needs three files: a reference file to degenerate the sequence and a multi-FASTA file to process the polymorphism, and an outgroup sequence to process the divergence. Consider downloading DGN data from [John Pool lab](https://www.johnpool.net/) or [PopFly](https://popfly.uab.cat) to obtain these files.
 
 ```julia
 <!-- sfs, div = Analytical.uSfsFromFasta(

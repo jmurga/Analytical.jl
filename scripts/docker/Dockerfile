@@ -26,9 +26,11 @@ RUN conda init bash
 RUN R -e 'install.packages(c("abc","ggplot2","data.table","dplyr","IRkernel"), repos = "https://cloud.r-project.org",dependecies=TRUE)'
 RUN R -e 'IRkernel::installspec()'
 
-ADD data/mk_with_positions_BGS.txt /analysis/mk_with_positions_BGS.txt
+ADD data/tgp.txt /analysis/tgp.txt
+ADD data/dgnRal.txt /analysis/dgnRal.txt
+ADD data/dgnZi.txt /analysis/dgnZi.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler,"Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
+RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler","Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
 
 ADD scripts/precompile_mktest.jl /analysis/precompile_mktest.jl
 ADD scripts/abcmk_cli.jl /analysis/abcmk_cli.jl

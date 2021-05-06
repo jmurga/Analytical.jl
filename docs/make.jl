@@ -18,9 +18,8 @@ makedocs(
 			"Input data" => "input.md",
 			"Summary statistics" => "summstat.md",
 			"ABC inference" => "abc.md",
-			"Maximum-A-Posteriori" => "map.md"
-		],	
-		"Command line client" => "cli.md",
+		],
+		"Command-Line interface" => "cli.md",
 		"Reference" => "reference.md"
 	]
 )
