@@ -26,7 +26,6 @@ Analytical.binomOp!(adap,convolutedSamples.bn)
 #### Solving the model
 Here we solve $\alpha_{(x)}$ generally, using the expected rates. We are not considering any specific mutation process over a locus and branch time.
 
-
 $\alpha_{(x)}$ is solved using the fixation and polymorphic rates since the locus length ($L$) and the time branch ($T$) estimations at first order $\alpha_{(x)}$ estimation can be cancelled
 
 $\mathbb{E}[\alpha_{(x)}] \approx 1 - \frac{LT(\mathbb{E}[d_S])}{LT(\mathbb{E}[d_N])} \frac{LT(\mathbb{E}[p_{S(x)}])}{LT(\mathbb{E}[p_{N(x)}])} \approx 1 - \frac{\mathbb{E}[d_S]}{\mathbb{E}[d_N]} \frac{\mathbb{E}[p_{S(x)}]}{\mathbb{E}[p_{N(x)}]}$
@@ -40,9 +39,9 @@ x,y = Analytical.analyticalAlpha(param = adap, convolutedSamples = convolutedSam
 Internally the function (1) set the mutation rate regarding the BGS strenght and (2) set the probability of fixations given the genetic scenario. Then, it estimates the SFS and fixations rates for neutral and non-neutral alleles. Please check [`analyticalAlpha`](@ref) to check the process.
 
 #### Plotting the results.
-$x$ contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. $y$ contains the value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles. In this example, we do not model BGS (check *B* parameter in *Analytical.parameters* function above)
+The variable *x* contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. *y* contains the value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles. In this example, we do not model BGS (check *B* parameter in *Analytical.parameters* above)
 
-In Julia you can easily use R using the module [RCall](). Please check you have installed R in your system. Nonetheless you can plot using Julia Plots module.
+In Julia you can easily use R using the module [RCall](https://github.com/JuliaInterop/RCall.jl). Please check you have installed R in your system. Nonetheless you can plot using Julia Plots module.
 
 If you are using our Docker or Singularity image, you don't need to install anything. In other case, install RCall just in case you want to plot using R
 
@@ -64,4 +63,4 @@ R"""
 """
 ```
 
-![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/fig1.svg)
+![image](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/docs/src/Fig1.svg)
