@@ -16,7 +16,7 @@ We set a global adaptation rate of 0.4 with a contribution of 0.2 regarding weak
 adap = Analytical.parameters(n=661,alTot=0.4,alLow=0.2,gH=500,gamNeg=-457,al=0.184,be = 0.184/457,B=0.999)
 ```
 
-Before solving the model, you must compute the convoluted binomial distribution to subset the expected SFS
+Before solving the model, you must compute the convoluted binomial distribution to down-sampling the SFS
 
 ```julia
 convolutedSamples = Analytical.binomialDict()
@@ -24,9 +24,7 @@ Analytical.binomOp!(adap,convolutedSamples.bn)
 ```
 
 #### Solving the model
-Here we solve $\alpha_{(x)}$ generally, using the expected rates. We are not considering any specific mutation process over a locus and branch time.
-
-$\alpha_{(x)}$ is solved using the fixation and polymorphic rates since the locus length ($L$) and the time branch ($T$) estimations at first order $\alpha_{(x)}$ estimation can be cancelled
+Here we solve $\alpha_{(x)}$ generally, using the expected rates. We are not considering any specific mutation process over a locus and branch time. We used the fixation and polymorphic rates since the locus length ($L$) and the time branch ($T$) estimations at first order $\alpha_{(x)}$ estimation can be cancelled
 
 $\mathbb{E}[\alpha_{(x)}] \approx 1 - \frac{LT(\mathbb{E}[d_S])}{LT(\mathbb{E}[d_N])} \frac{LT(\mathbb{E}[p_{S(x)}])}{LT(\mathbb{E}[p_{N(x)}])} \approx 1 - \frac{\mathbb{E}[d_S]}{\mathbb{E}[d_N]} \frac{\mathbb{E}[p_{S(x)}]}{\mathbb{E}[p_{N(x)}]}$
 
@@ -36,7 +34,7 @@ where $\frac{LT}{LT}$ with a constant mutation rate tend to $1$.
 x,y = Analytical.analyticalAlpha(param = adap, convolutedSamples = convolutedSamples)
 ```
 
-Internally the function (1) sets the mutation rate regarding the BGS strength and (2) sets the probability of fixations given the genetic scenario. Then, it estimates the SFS and fixations rates for neutral and non-neutral alleles. Please check [`analyticalAlpha`](@ref) to check the process.
+Internally the function (1) sets the mutation rate regarding the BGS strength and (2) sets the probability of fixations given the genetic scenario. Then, it estimates the SFS and fixations rates for neutral and non-neutral alleles. Please check [`Analytical.analyticalAlpha`](@ref) to check the process.
 
 #### Plotting the results.
 The variable *x* contains $\alpha_{(x)}$ accounting for weakly beneficial alleles. *y* contains the value of $\alpha_{(x)}$, not accounting for weakly beneficial alleles. In this example, we do not model BGS (check *B* parameter in *Analytical.parameters* above)

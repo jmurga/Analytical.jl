@@ -181,7 +181,7 @@ function binomOp!(param::parameters,convolutedBn::Dict)
 		replace!(neutralSfs, Inf => 0.0)
 
 
-		f(x) = Binomial(param.nn,x)
+		f(x,y=param.nn) = Binomial(y,x)
 		z    = f.(samplesFreqs)
 
 		out  = pdf.(z,samples)

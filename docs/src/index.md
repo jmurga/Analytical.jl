@@ -2,7 +2,7 @@
 
 ABC-MK is an analytical approximation to $\alpha_{(x)}$. We have explored the impact of linkage and background selection at positive selected alleles sites. The package solves analytical approximations for different genetic scenarios to estimate the strength and rate of adaptation.
 
-Our approach directly estimates $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated with random DFE. In conjunction, the associated values to these DFE can be used as summary statistics at ABC methods. Therefore, our method can estimate the rate and strength of adaption in models and non-models organisms. Previous DFE and demography are unknown.
+Our approach directly estimates $\alpha_{(x)}$ and several statistics ($B$, $\alpha_W$, $\alpha_S$) associated with random DFE. In conjunction, the associated values to these DFE can be used as summary statistics at ABC methods. Therefore, our method can estimate the rate and strength of adaption in models and non-models organisms.
 
 ## Docker installation
 We highly recommend using the Docker image to execute the software. The Docker image is based on Debian and includes all the software needed to run the pipeline. You can access to Debian system or Jupyter pulling the image from [Docker Hub](https://hub.docker.com/r/jmurga/abcmk). Remember to link the folder /analysis with any folder at your ```${HOME}``` directory to save the results:
@@ -33,7 +33,7 @@ singularity pull --arch amd64 library://jmurga/default/abcmk:latest
 ## Scratch installation
 To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/)
 
-```
+```bash
 JULIA_VERSION=1.6.1
 curl -o ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-${JULIA_VERSION}-linux-x86_64.tar.gz
 tar -zxf ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C ${HOME}
@@ -47,7 +47,6 @@ source ${HOME}/.bashrc
 ```
 
 Consider to install some important dependencies to automatize your ABC-MK pipelines. We have prepared a file to install them. Please download [this file](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl) and execute the following command
-
 
 ```bash
 wget https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl
@@ -67,12 +66,11 @@ add https://github.com/jmurga/Analytical.jl
 ```
 
 ### ABCreg
-We have linked [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform *ABC* inference. nonetheless others *ABC* softwares could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use *ABCreg* to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other *ABC* software.
+We have linked [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC inference. Nonetheless others ABC softwares could be used ([abc (R package)](https://doi.org/10.1111/j.2041-210X.2011.00179.x), [ABCToolBox](https://doi.org/10.1186/1471-2105-11-116), etc). If you are going to use ABCreg to directly make inference from our software please [cite the publication](https://doi.org/10.1186/1471-2156-10-35) and compile it in your system. Anyway, once you get the summary statistic files you can use any other ABC software.
 
 ABCreg needs *GSL* and *libz* to work. Please install both libraries before compile the software:
 
 ```bash 
-# Installing make and git just in case they are not available in your system
 sudo apt install libgsl-dev libz-dev build-essential git
 ```
 

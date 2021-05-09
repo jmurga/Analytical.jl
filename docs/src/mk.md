@@ -6,7 +6,7 @@ The standard McDonald & Kreitman test (MKT) (McDonald and Kreitman, 1991) was de
 
 If all mutations are either strongly deleterious or neutral, then $Di/D0$ is expected to roughly equal $Pi/P0$. In contrast, if positive selection is operating in the region, adaptive mutations rapidly reach fixation and contribute more to divergence than polymorphism compared to neutral mutations, and then $Di/D0 > Pi/P0$. Assuming that adaptive mutations contribute little to polymorphism but substantially to divergence, the proportion of non-synonymous substitutions is inferred following Smith and Eyre-Walker (2002)
 
-$\alpha = 1 - (\frac{P_i}{P_0}\cdot\frac{D_0}{D_i}$ 
+$\alpha = 1 - (\frac{P_i}{P_0}\cdot\frac{D_0}{D_i})$
 
 
 ## Fay, Waycoff and Wu MKT

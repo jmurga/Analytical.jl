@@ -10,7 +10,7 @@ addprocs(7)
 @everywhere using Analytical, CSV, DataFrames, JLD2, ProgressMeter
 ```
 
-Load your analytical rates and declare a model specifying a DAC. The selected DAC will be used to subset summary statistics. You only can input DAC values already estimated. To check the selected DAC at rates estimations, you can access the H5 file
+Load your analytical rates and declare a model specifying a DAC. The selected DAC will be used to subset summary statistics. You only can input DAC values already estimated. To check the selected DAC at rates estimations, you can access the HDF5 file
 
 ```julia
 # Opening rates
@@ -24,7 +24,7 @@ adap.dac = [2,4,5,10,20,50,200,661,925]
 
 To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files into an analysis folder. Please be sure that you write the SFS and divergence files using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
 
-We include the argument bootstrap to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE)
+We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE)
 
 ```julia
 @time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="/home/jmurga/tgpData/",summstatSize=10^5,replicas=100,bootstrap=true);

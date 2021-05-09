@@ -70,12 +70,16 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	
 	# Estimations to thread pool. 
 	# Allocate ouput in SharedArray
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
-	@time @sync @distributed for i in 1:iterations
+	#=out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
+	begin
 		# Each iteration solve 1 model accounting all B value in param.bRange
-		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
-	end
+		@sync @distributed for i in 1:iterations
+			@async @inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
+		end
+	end=#
+	out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);
 
+	
 	# Remove the workers to free memory resources
 	# SharedArray is not remove after this process
 	for i in Distributed.workers()
@@ -83,7 +87,8 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	end
 
 	# Reducing array
-	df = vcat(eachslice(out,dims=3)...);
+	#=df = vcat(eachslice(out,dims=3)...);=#
+	df = Array(out)
 	
 	# Saving models and rates
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])

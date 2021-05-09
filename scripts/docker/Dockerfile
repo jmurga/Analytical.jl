@@ -19,7 +19,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     /opt/conda/bin/conda clean -afy
 
 RUN mkdir -p /analysis
-RUN conda install -c conda-forge jupyter -y
+RUN conda install -c conda-forge jupyterlab -y
 
 RUN conda init bash 
 

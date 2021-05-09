@@ -27,8 +27,12 @@ using Fire, Distributed
 		theta = parse(Float64,theta)
 	end
 
-	addprocs(nthreads)
-	
+	if scheduler == "local"
+		addprocs(nthreads)
+	else if scheduler == "slurm"
+		using ClusterManagers
+		addprocs_slurm(nthreads)
+	end
 	@eval @everywhere using Analytical
 	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
 
@@ -36,10 +40,6 @@ using Fire, Distributed
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
 	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
 
-	# remove the workers
-	#for i in Distributed.workers()
-	#	rmprocs(i)
-	#end
 end
 
 "Function to parse polymorphic and divergence data from Uricchio et. al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
