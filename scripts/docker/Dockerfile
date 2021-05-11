@@ -36,7 +36,8 @@ ADD scripts/precompile_mktest.jl /analysis/precompile_mktest.jl
 ADD scripts/abcmk_cli.jl /analysis/abcmk_cli.jl
 
 RUN julia -e 'using Pkg;Pkg.add(PackageSpec(path="https://github.com/jmurga/Analytical.jl"))'
-RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/analysis/mktest.so", precompile_execution_file="/analysis/precompile_mktest.jl")'
+
+# RUN julia -e 'using PackageCompiler;PackageCompiler.create_sysimage(:Analytical, sysimage_path="/analysis/mktest.so", precompile_execution_file="/analysis/precompile_mktest.jl")'
 
 RUN git clone https://github.com/molpopgen/ABCreg.git /analysis/ABCreg
 RUN cd /analysis/ABCreg/src && make
@@ -45,4 +46,4 @@ ENV PATH /analysis/ABCreg/src:$PATH
 
 WORKDIR /analysis
 
-CMD ["julia","--sysimage","/analysis/mktest.so"]
+CMD ["julia"]

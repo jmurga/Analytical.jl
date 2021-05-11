@@ -20,7 +20,7 @@ To reproduce the examples you can easly:
 
  - Estimate rates
 ```bash
-time julia abcmk_cli.jl rates --samples 661 --gamNeg "-2000 -200" --gL "1 10" --gH "200 2000" --rho 0.001 --theta 0.001 --solutions 100000 --output /home/jmurga/rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --nthreads 7
+time julia abcmk_cli.jl rates --samples 661 --gamNeg -2000,-200 --gL 1,10 --gH 200,2000 --rho 0.001 --theta 0.001 --solutions 100000 --output /home/jmurga/rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --nthreads 7
 ```
 
  - Parse data into new folder

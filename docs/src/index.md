@@ -24,100 +24,13 @@ docker run -i -t -v ${HOME}/test/:/analysis/test/ jmurga/abcmk /analysis/abcmk_c
 ```
 
 ## Singularity installation
-We have created a Singularity container to use the software in HPC systems. We have tested the software at HPC working with SLURM and HTCondor scheduler
+We have created a Singularity container to use the software in HPC systems. We have tested the software at HPC working with Slurm and HTCondor scheduler
 
 ```singularity
 singularity pull --arch amd64 library://jmurga/default/abcmk:latest
 ```
 
-We found a [bug](https://github.com/JuliaParallel/ClusterManagers.jl/issues/164) regarding Singularity, ClusterManagers.jl and SLURM in our HPC tests. Please, consider to install the packages manually if your HPC works with SLURM. We provided a [Julia script](https://github.com/jmurga/Analytical.jl/blob/master/scripts/julia_dependencies.jl) to easily install all the required packages. Just run it before to execute our [Command-Line Interface](cli.jl). Here is an example showing the [rates](empirical.md) estimation in SLURM:
-
-```bash
-#!/bin/bash
-
-#SBATCH --partition=XXXX
-#SBATCH --qos=XXXX
-#SBATCH --nodes=4
-#SBATCH --ntasks=40
-#SBATCH --ntasks-per-node=10
-#SBATCH --mem=40GB
-#SBATCH --job-name=pjulia
-#SBATCH --time=01:00:00
-#SBATCH --mail-type=ALL
-#SBATCH --account=XXXX
-#SBATCH --mail-user=XXXX
-
-ml julia
-
-# Delete this line if you have already installed the packages
-julia jl_dependencies.jl
-
-julia abcmk_cli.jl rates --samples 661 --gamNeg -2000,-200 --gL 1,10 --gH 200,2000 --rho 0.001 --theta 0.001 --solutions 100000 --output rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --scheduler slurm --nthreads 40
-
-julia abcmk_cli.jl parseData --analysisFolder tgp/
-
-julia abcmk_cli.jl summaries --analysisFolder tgp/ --rates rates2.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925 --nthreads 8 --scheduler slurm
-
-julia abcmk_cli.jl abcInference --analysisFolder tgp/ --replicas 100 --P 5 --S 9 --tol 0.001 --ABCreg ABCreg/src/reg --parallel false --nthreads 1
-
-```
-
-Here is the same example showing an execution in HTCondor with Singularity:
-
-```bash
-executable=/bin/singularity
-arguments="exec abcmk_latest.sif julia abcmk_cli.jl rates --samples 661 --gamNeg -2000,-200 --gL 1,10 --gH 200,2000 --rho 0.001 --theta 0.001 --solutions 100000 --output rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --nthreads 24 --scheduler htcondor"
-
-request_cpus=24
-request_memory=24G
-
-error = err1.out
-log = log1.out
-
-+flavour="short"
-
-queue 1
-
-##################
-executable=/bin/singularity
-arguments="exec abcmk_latest.sif julia abcmk_cli.jl parseData --analysisFolder tgp"
-
-request_cpus=24
-request_memory=24G
-
-error = err1.out
-log = log1.out
-
-+flavour="short"
-
-##################
-
-executable=/bin/singularity
-arguments="exec abcmk_latest.sif julia abcmk_cli.jl summaries --analysisFolder tgp/ --rates rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925 --nthreads 8 --scheduler htcondor"
-/ABCreg/src/reg
-request_cpus=24
-request_memory=24G
-
-error = err1.out
-log = log1.out
-
-+flavour="short"
-
-
-##################
-
-executable=/bin/singularity
-arguments="exec abcmk_latest.sif julia abcInference --analysisFolder tgp/ --replicas 100 --P 5 --S 9 --tol 0.001 --ABCreg /ABCreg/src/reg --parallel false --nthreads 1
-"
-
-request_cpus=24
-request_memory=24G
-
-error = err1.out
-log = log1.out
-
-+flavour="short"
-```
+We found a [bug](https://github.com/JuliaParallel/ClusterManagers.jl/issues/164) regarding Singularity, ClusterManagers.jl and Slurm in our HPC tests. Please, consider to install the packages manually if your HPC works with Slurm. We provided a [Julia script](https://github.com/jmurga/Analytical.jl/blob/master/scripts/julia_dependencies.jl) to easily install all the required packages. Just run it before to execute our [Command-Line Interface](cli.jl). We provide [Slurm](https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmkSlurm.sh) and [HTCondor](https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmkHtcondor.sub) examples showing the  estimation.
 
 ## Scratch installation
 To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/)
