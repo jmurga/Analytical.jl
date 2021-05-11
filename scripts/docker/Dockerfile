@@ -30,7 +30,7 @@ ADD data/tgp.txt /analysis/tgp.txt
 ADD data/dgnRal.txt /analysis/dgnRal.txt
 ADD data/dgnZi.txt /analysis/dgnZi.txt
 
-RUN julia -e 'using Pkg;Pkg.add(["Fire","IJulia","PackageCompiler","Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
+RUN julia -e 'using Pkg;Pkg.add(["Fire","ParallelUtilities","IJulia","PackageCompiler","Parameters","Quadmath","SparseArrays","Distributed","CSV","SharedArrays","JLD2","DataFrames","ProgressMeter","RCall"])'
 
 ADD scripts/precompile_mktest.jl /analysis/precompile_mktest.jl
 ADD scripts/abcmk_cli.jl /analysis/abcmk_cli.jl

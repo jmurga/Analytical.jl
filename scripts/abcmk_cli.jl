@@ -1,16 +1,16 @@
 using Fire, Distributed
 
 "Function to estimate rates based on prior values. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000 -200", gL::String="5 10", gH::String="400 1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=100000,output::String="/home/jmurga/rates.jld2",nthreads::Int64=1)
+@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000,-200", gL::String="5,10", gH::String="400,1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=100000,output::String="/home/jmurga/rates.jld2",scheduler::String="local",nthreads::Int64=1)
 
-	tmpNeg    = parse.(Int,split(gamNeg," "))
-	tmpStrong = parse.(Int,split(gH," "))
+	tmpNeg    = parse.(Int,split(gamNeg,","))
+	tmpStrong = parse.(Int,split(gH,","))
 	dac       = parse.(Int,split(dac,","))
 
 	if (gL == "nothing")
 		tmpWeak = nothing
 	else
-		tmpWeak = parse.(Int,split(gL," "))
+		tmpWeak = parse.(Int,split(gL,","))
 		tmpWeak = collect(tmpWeak[1]:tmpWeak[2])
 	end
 
@@ -28,24 +28,29 @@ using Fire, Distributed
 	end
 
 	if scheduler == "local"
-		addprocs(nthreads)
-	else if scheduler == "slurm"
-		using ClusterManagers
-		addprocs_slurm(nthreads)
+		@eval addprocs($nthreads)
+	elseif scheduler == "slurm"
+		@eval using ClusterManagers
+		@eval addprocs_slurm($nthreads)
+	elseif scheduler == "htcondor"
+		@eval using ClusterManagers
+		@eval addprocs_htc($nthreads)
 	end
+	
 	@eval @everywhere using Analytical
 	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
 
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@time @eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
-
+	@eval df = Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
+	for i in workers()
+		rmprocs(i)
+	end
 end
 
 "Function to parse polymorphic and divergence data from Uricchio et. al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
 
 	julia abcmk_cli.jl parseTgpData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
-
 "
 @main function parseData(;analysisFolder::String="<folder>",dataset::String="tgp",geneList::String="false",bins::String="false")
 	
@@ -77,18 +82,26 @@ end
 	@eval sName = $analysisFolder * "/sfs.tsv"
 	@eval dName = $analysisFolder * "/div.tsv"
 
-	@eval CSV.write($sName,DataFrame($sfs),delim='\t',header=false)
-	@eval CSV.write($dName,DataFrame($divergence'),delim='\t',header=false)
+	@eval CSV.write($sName,DataFrame($sfs,:auto),delim='\t',header=false)
+	@eval CSV.write($dName,DataFrame($divergence',:auto),delim='\t',header=false)
 end
 
 "Estimate summary statistics from analytical rates. You must provide a path containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
-@main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",nthreads::Int64=1)
+@main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",scheduler::String="local",nthreads::Int64=1)
 	
 
-	addprocs(nthreads)
+	if scheduler == "local"
+		@eval addprocs($nthreads)
+	elseif scheduler == "slurm"
+		@eval using ClusterManagers
+		@eval addprocs_slurm($nthreads)
+	elseif scheduler == "htcondor"
+		@eval using ClusterManagers
+		@eval addprocs_htc($nthreads)
+	end
 	
-	@eval @everywhere using Analytical, DataFrames, CSV, ProgressMeter
-	@eval using JLD2
+	@eval @everywhere using Analytical, ParallelUtilities
+	@eval using JLD2, DataFrames, CSV, ProgressMeter
 	
 	@eval h5file    = jldopen($rates)
 

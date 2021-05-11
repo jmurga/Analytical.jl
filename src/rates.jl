@@ -82,9 +82,9 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	
 	# Remove the workers to free memory resources
 	# SharedArray is not remove after this process
-	for i in Distributed.workers()
+	#=for i in Distributed.workers()
 		rmprocs(i)
-	end
+	end=#
 
 	# Reducing array
 	#=df = vcat(eachslice(out,dims=3)...);=#

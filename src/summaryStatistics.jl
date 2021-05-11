@@ -172,7 +172,7 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	#Making summaries
 	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
 
-	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
+	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	# Controling outlier cases
 	fltInf(e)           = replace!(e, -Inf=>NaN)

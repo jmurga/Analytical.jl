@@ -10,7 +10,8 @@ addprocs(7)
 Then you need to declare the ```Analytical``` module in all the threads using ```@everywhere``` macro. Otherwise, the ```Analytical``` module will perform the estimation just using the main core
 
 ```julia
-@everywhere using Analytical, CSV, DataFrames, JLD2, ProgressMeter
+@everywhere using Analytical, ParallelUtilites
+using CSV, DataFrames, JLD2, ProgressMeter
 ```
 
 Declare a variable containing some basic information about your model. We used a sample size of 661 to perform later analysis over TGP data. The selected Derived Alleles Counts (dac) will be used to compute summary statistics and perform ABC inference
