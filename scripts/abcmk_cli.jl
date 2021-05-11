@@ -124,8 +124,8 @@ end
 	if parallel  == "true"
 		run(`parallel -j$nthreads --link $ABCreg -d "{1}" -p "{2}" -P 5 -S 9 -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`);
 	else
-		@eval r(a,s,o) = run(`reg -d $a -p $s -P 5 -S 9 -t 0.01 -b $o`)
-		@eval r.($aFile,$sumFile,$out);
+        @eval r(a,s,o,r=$ABCreg,nP=$P,nS=$S,t=$tol) = run(`$r -d $a -p $s -P $nP -S $nS -t $t -b $o`)
+        @eval r.($aFile,$sumFile,$out);
 	end	
 end
 
