@@ -78,13 +78,12 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		end
 	end=#
 	out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);
-
 	
 	# Remove the workers to free memory resources
 	# SharedArray is not remove after this process
-	#=for i in Distributed.workers()
+	for i in Distributed.workers()
 		rmprocs(i)
-	end=#
+	end
 
 	# Reducing array
 	#=df = vcat(eachslice(out,dims=3)...);=#
