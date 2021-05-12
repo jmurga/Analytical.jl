@@ -81,7 +81,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	
 	# Remove the workers to free memory resources
 	# SharedArray is not remove after this process
-	for i in 2:workers()
+	for i in 2:Distributed.workers()[end]
 		rmprocs(i)
 	end
 
