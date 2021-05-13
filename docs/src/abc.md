@@ -4,13 +4,13 @@ At this point, you have a folder containing summary statistics and observed data
 
 We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC inference. If you are going to use ABCreg to make inferences from our software directly, please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
 
-It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
+It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$. We set the tolerance value 
 
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,abcreg="/home/jmurga/ABCreg/src/reg",);
+Analytical.ABCreg(analysisFolder="analysis/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
-We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
+The function will output one file per bootstrapped replicas containing the posteriors distributions. We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
 If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 

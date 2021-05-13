@@ -9,7 +9,7 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 		@eval using RCall
 		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
 
-		out          = filter(x -> occursin("post",x), readdir(analysisFolder,join=true))
+		out = filter(x -> occursin("post",x), readdir(analysisFolder,join=true))
 		out          = filter(x -> !occursin(".1.",x),out)
 
 		open(x)      = Array(CSV.read(GZip.open(x),DataFrame,header=false))
@@ -49,7 +49,7 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 			"""
 		CSV.write(analysisFolder * "map.tsv",maxp,delim='\t',header=true)
 
-		RCall.endEmbeddedR();
+		#=RCall.endEmbeddedR();=#
 
 		return(maxp)
 	catch

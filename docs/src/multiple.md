@@ -54,6 +54,7 @@ Once you have the data parsed, you can estimate the summary statistic following 
 h5file   = jldopen("analysis/rates.jld2")
 adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925])
 ```
+
  - Whole-Genome dataset
 ```julia
 @time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/wg/",summstatSize=10^5,replicas=100,bootstrap=true);
@@ -67,4 +68,42 @@ adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925])
  - Non-VIPs dataset
 ```julia
 @time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/nonvips/",summstatSize=10^5,replicas=100,bootstrap=true);
+```
+
+Now you can perform the ABC inference using ABCreg or another ABC software using the files *alphas.txt* and *summaries.txt* deposited in each folder. We will perform the inference using ABCreg. Please compile ABCreg before to perform the execution as described in the [Installation](index.md)
+
+ - Whole-Genome dataset
+```julia
+Analytical.ABCreg(analysisFolder="analysis/wg/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
+```
+
+ - VIPs dataset
+```julia
+Analytical.ABCreg(analysisFolder="analysis/vips/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
+```
+
+ - Non-VIPs dataset
+```julia
+Analytical.ABCreg(analysisFolder="analysis/nonvips/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
+```
+
+Once the posterior distributions are estimated you can perform the Maximum-A-Posterior (MAP) estimates. We performed the MAP estimates following ABCreg examples. Please be sure you have installed R and the packages(ggplot2, locfit and data.table). This packages are already installed in Docker and Singularity images. Load the R functions to estimate and plot MAP executing the following command
+
+```julia
+Analytical.sourcePlotMapR(script="analysis/script.jl")
+```
+
+ - Whole-Genome dataset
+```julia
+tgpmap = Analytical.plotMap(analysisFolder="analysis/wg/")
+```
+
+ - VIPs dataset
+```julia
+vipsmap = Analytical.plotMap(analysisFolder="analysis/vips/")
+```
+
+ - Non-VIPs dataset
+```julia
+nonvipsmap = Analytical.plotMap(analysisFolder="analysis/nonvips/")
 ```

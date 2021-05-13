@@ -75,9 +75,20 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
 end
 
 """
-	ABCreg(analysis, replicas, P, S, tol, workers, abcreg, parallel)
+	ABCreg(analysisFolder, replicas, P, S, tol, abcreg)
 
-Could be parallelize if GNU parallel is available in your system
+Performing ABC inference using ABCreg. Please, be sure your analysisFolder contain the files alphas.txt and summaries.txt produced by Analytical.summaryStatsFromRates()
+
+# Arguments
+ - `analysisFolder::String`
+ - `P::Int64`
+ - `S::Int64`
+ - `tol::Float64`
+ - `abcreg::String`
+
+# Output
+Files containing posterior distributions from ABCreg
+
 """
 function ABCreg(;analysisFolder::String,P::Int64,S::Int64,tol::Float64,abcreg::String)
 	
