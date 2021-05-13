@@ -33,22 +33,7 @@ singularity pull --arch amd64 library://jmurga/default/abcmk:latest
 We found a [bug](https://github.com/JuliaParallel/ClusterManagers.jl/issues/164) regarding Singularity, ClusterManagers.jl and Slurm in our HPC tests. Please, consider to install the packages manually if your HPC works with Slurm. We provided a [Julia script](https://github.com/jmurga/Analytical.jl/blob/master/scripts/julia_dependencies.jl) to easily install all the required packages. Just run it before to execute our [Command-Line Interface](cli.jl). We provide [Slurm](https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmkSlurm.sh) and [HTCondor](https://github.com/jmurga/Analytical.jl/blob/master/scripts/abcmkHtcondor.sub) examples showing the  estimation.
 
 ## Scratch installation
-To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/)
-
-```bash
-JULIA_VERSION=1.6.1
-curl -o ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-${JULIA_VERSION}-linux-x86_64.tar.gz
-tar -zxf ${HOME}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C ${HOME}
-``` 
-
-If this is your first time using Julia, please remember to export Julia binaries to your path. In this way, you will execute Julia using the command ```julia```
-
-```bash
-echo 'export PATH="${HOME}/julia-${JULIA_VERSION}/bin:$PATH"' >> ${HOME}/.bashrc
-source ${HOME}/.bashrc
-```
-
-Consider to install some important dependencies to automatize your ABC-MK pipelines. We have prepared a file to install them. Please download [this file](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl) and execute the following command
+To install our module from scratch, we highly recommend using [LTS official Julia binaries](https://julialang.org/downloads/). Once you have installed Julia in your system, consider to install some important dependencies to automatize your ABC-MK pipelines. We have prepared a file to install them. Please download [this file](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl) and execute the following command
 
 ```bash
 curl -o julia_dependencies.jl https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl
