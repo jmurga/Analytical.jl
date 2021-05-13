@@ -79,21 +79,19 @@ end
 
 Could be parallelize if GNU parallel is available in your system
 """
-function ABCreg(;analysis::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,workers::Int64,abcreg::String,parallel::Bool=false)
+function ABCreg(;analysisFolder::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,abcreg::String)
 	
 	# List alphas and summstat files
-	aFile = @. analysis * "/alpha_" * string(1:replicas) * ".tsv"
-	sumFile = @. analysis * "/summstat_" * string(1:replicas) * ".tsv"
+	aFile = @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv"
+	sumFile = @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv"
 
 	# Creating output names
-	out = @. analysis * "/out_" * string(1:replicas)
+	out = @. analysisFolder * "/out_" * string(1:replicas)
 
-	# Check if GNU parallel installed
-	if parallel
-		run(`parallel -j$workers --link $abcreg -d "{1}" -p "{2}" -P $P -S $S -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`)
-	else
-		r(a,s,o) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
-		r.(aFile,sumFile,out)
+	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
+
+	progress_pmap(r,aFile,sumFile,out);
+
 	end	
 end
 
