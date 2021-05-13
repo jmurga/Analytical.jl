@@ -48,9 +48,9 @@ using Fire, Distributed
 	end
 end
 
-"Function to parse polymorphic and divergence data from Uricchio et. al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
+"Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
 
-	julia abcmk_cli.jl parseTgpData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
+	julia abcmk_cli.jl parseData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
 "
 @main function parseData(;analysisFolder::String="<folder>",dataset::String="tgp",geneList::String="false",bins::String="false")
 	
@@ -58,13 +58,14 @@ end
 
 	run(`mkdir -p $analysisFolder`)
 
-	data = analysisFolder * "/" * dataset * ".txt"
+	dataset = lowercase(dataset)
+	data    = analysisFolder * "/" * dataset * ".txt"
 	
 	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/"* dataset * ".txt",data)
 
 	# Check if bins or genelist are defined
 	@eval if $geneList != "false"
-		@eval gList = CSV.read($geneList,DataFrame,header=false)[:,1]
+		@eval gList = CSV.read($geneList,DataFrame,header=false) |> Array
 	else
 		gList = nothing
 	end
@@ -76,8 +77,13 @@ end
 	end
 
 	# Parsing TGP data
-	@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,geneList=$gList,bins=$binsSize)
-
+	if dataset == "tgp"
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,geneList=$gList,bins=$binsSize)
+	elseif occursin("zi",dataset)
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=154,data=$data,geneList=$gList,bins=$binsSize,isolines=true)
+	elseif occursin("ral",dataset)
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=160,data=$data,geneList=$gList,bins=$binsSize,isolines=true)
+	end
 	# Writting data to folder
 	@eval sName = $analysisFolder * "/sfs.tsv"
 	@eval dName = $analysisFolder * "/div.tsv"

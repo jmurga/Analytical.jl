@@ -10,24 +10,32 @@ addprocs(7)
 @everywhere using Analytical, CSV, DataFrames, JLD2, ProgressMeter
 ```
 
-Load your analytical rates and declare a model specifying a DAC. The selected DAC will be used to subset summary statistics. You only can input DAC values already estimated. To check the selected DAC at rates estimations, you can access the HDF5 file
+Before to compute the summary statistic, load your analytical rates and declare a model specifying the samples size and a DAC.
 
 ```julia
 # Opening rates
-h5file   = jldopen("/home/jmurga/rates.jld2")
-# Checking estimated dac
-adap = Analytical.parameters(n=661)
-h5file["1000/" * string(adap.n) * "/dac"]
-# Selecting dac to perform summary statistics
-adap.dac = [2,4,5,10,20,50,200,661,925]
+h5file   = jldopen("analysis/rates.jld2")
+adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925]
 ```
 
-To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files into an analysis folder. Please be sure that you write the SFS and divergence files using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
+Note you can only input DAC already estimated, nonetheles you can perform any subset from the estimated DAC. To check the estimated DAC you can follow the hierarchy of the ```h5file``` variable.
 
-We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE)
+```julia 
+# Check hierarchy
+h5file
+```
 
 ```julia
-@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="/home/jmurga/tgpData/",summstatSize=10^5,replicas=100,bootstrap=true);
+# Checking estimated dac, string pattern inside the HDF5 variable
+h5file["1000/" * string(adap.n) * "/dac"]
 ```
 
-The function will create summary statistics files and empirical data input at ABC inference
+To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](data.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
+
+We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE). In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
+
+```julia
+@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/",summstatSize=10^5,replicas=100,bootstrap=true);
+```
+
+The function will create a summary statistic file and the observed data file (*summaries.txt* and *alphas.txt* respectively). Both files will be used to perform the ABC inference. Each line in *alphas.txt* contains the $\alpha_(x)$ estimations from the bootstrapped SFS.

@@ -79,18 +79,18 @@ end
 
 Could be parallelize if GNU parallel is available in your system
 """
-function ABCreg(;analysisFolder::String,replicas::Int64,P::Int64,S::Int64,tol::Float64,abcreg::String)
+function ABCreg(;analysisFolder::String,P::Int64,S::Int64,tol::Float64,abcreg::String)
 	
 	# List alphas and summstat files
-	aFile = @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv"
-	sumFile = @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv"
+    aFile   = analysisFolder * "/alphas.txt"
+    sumFile = analysisFolder * "/summstat.txt"
 
 	# Creating output names
-	out = @. analysisFolder * "/out_" * string(1:replicas)
+	out = analysisFolder * "/out"
 
 	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
 
-	progress_pmap(r,aFile,sumFile,out;progress= Progress(replicas,desc="ABC inference "));
+	r(aFile,sumFile,out);
 
 end
 
@@ -132,7 +132,7 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	end
 
 
-	scumu = Analytical.cumulativeSfs.(sfs)
+	scumu = cumulativeSfs.(sfs)
 	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
 	s = f.(scumu)
 

@@ -133,9 +133,9 @@ function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arr
 end
 
 """
-	param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
+	summaryStatsFromRates(param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 
-Estimate summary statistics using observed data and analytical rates. *analysisFolder* will check for the SFS and divergence file and will be used to output summary statistics.
+Estimate summary statistics using observed data and analytical rates. *analysisFolder* will check for the SFS and divergence file and will be used to output summary statistics
 
 # Arguments
  - `param::parameters`
@@ -175,16 +175,18 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	# Controling outlier cases
-	fltInf(e)           = replace!(e, -Inf=>NaN)
+	@everywhere fltInf(e) = replace!(e, -Inf=>NaN)
 	expectedValues = fltInf.(expectedValues)
-	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
+	@everywhere fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
 	expectedValues = pmap(fltNan,expectedValues)
-
+	expectedValues = vcat(expectedValues...)
 	# Writting ABCreg input
-	#=progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));=#
-	progress_pmap(w,α, @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
-	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));
+	w(vcat(α...), analysisFolder * "/alphas.txt");
+	w(expectedValues, analysisFolder * "/summstat.txt");
 
+	#=progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));=#
+	#=progress_pmap(w,α, @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
+	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));=#
 
 	return(expectedValues)
 end

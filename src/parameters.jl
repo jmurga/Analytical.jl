@@ -4,7 +4,7 @@
 import Parameters: @with_kw
 
 """
-Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. For this reason, *adap* is the only exported variable. Adap should be change before the perform the analytical approach, in other case, ```\$\\alpha_{(x)}\$``` will be solve with the default values.
+Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. You should declare a mutable structure to the perform the analytical estimations.
 
 # Parameters
  - `gamNeg::Int64`: Selection coefficient for deleterious alleles
@@ -158,14 +158,14 @@ function setPpos!(param::parameters)
 """
 	binomOp(param)
 
-Binomial convolution to sample the allele frequencies probabilites depeding on background selection values, and sample size.
+Binomial convolution to sample the allele frequencies probabilites depending on background selection values and sample size.
 
 # Arguments
  - `param::parameters`
  - `convolutedSamples::binomialDict`
 
 # Returns
- - `Array{Float64,2}`: convoluted SFS given for each B value defined in the model. Results saved at *param.bn*.
+ - `Array{Float64,2}`: convoluted SFS for each B value defined in the model (param.bRange). The estimations are saved at *convolutedBn.bn*.
 """
 function binomOp!(param::parameters,convolutedBn::Dict)
 

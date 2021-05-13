@@ -6,18 +6,7 @@ We develop an extension of the analytical approximation presented in Uricchio, P
 To perform the empirical estimation of $\alpha_{(x)}$ we followed a generic ABC algorithm (Beaumont et al 2002). ABC proceeds by first sampling parameter values from prior distributions, the next simulating model using these parameter values, calculating informative summary statistics, and comparing the simulated summary statistics to the observed data. Considering the standard ABC scheme, we (1) considered $N$ random combinations from prior distributions; (2) solved $N$ independent models to generate informative summary statistics; (3) subset the parameter values producing summary statistics that best match the observed data from an approximate posterior distribution. Additionally, a linear model can be imposed to correct the non-0 distance between the simulated and observed summary statistics.
 
 ## Extending analytical estimations
-We extended the analytical calculations solving $N$ independents models. We automatize the analytical estimations to input prior distributions:
-
- - Population-scaled selected coefficient of deleterious alleles 
- - Population-scaled selected coefficient of weakly beneficial alleles 
- - Population-scaled selection coefficient of strong beneficial alleles 
- - Proportion of weakly adaptive substitutions 
- - Proportion of adaptive substitutions 
- - Population-scaled mutation rate at coding locus
- - Population-scaled recombination rate 
- - Scale parameter 
- - Shape parameter 
- - BGS strength
+We extended the analytical calculations solving $N$ independents models. We automatize the analytical estimations to input prior distributions. 
 
 The models will be solved using random combinations from prior distributions. Fixation, polymorphic rates, and model information will be used to estimate informative summary statistics needed to perform ABC inference. Please see section [rates](rates.md) to check how to input prior distributions.
 
@@ -58,7 +47,14 @@ $\mathbb{E}[D_S] = X \in Poisson\left(\lambda = D_{observed} \times \left[\frac{
 In addition, for each model, we retrieve negative selection coefficients and shape parameter to perform ABC inference.
 
 # Computational pipeline
-The following sections describe the whole pipeline to automatize analytical estimations, empirical data parse, summary statistic estimation, and ABC inference.
+The following sections describe a pipeline to estimate the empirical adaptation rate ($\alpha$) using whole-genome protein, Viral Interacting Proteins and Non-Viral Interacting Protein data from the TGP. This analysis is similar to the one performed at Uricchio et. al (2019). We divided the pipeline into the following step:
+
+ - Analytical estimations
+ - Empirical data parse
+ - Summary statistic estimation
+ - ABC inference
+
+Please note that we use a relative path called *analysis/* to execute the whole pipeline. This path will be relative to the where Julia or the Command-Line Interface is executed.
 
 The software is prepared to parallelize each pipeline step using Julia [Distributed](https://docs.julialang.org/en/v1/manual/distributed-computing/) computing. Distributing the process into threads has a cost in RAM. Please make some tests in your machine before executing expensive models. Nonetheless, distributing the estimation into threads decreases the pipeline execution time. It is almost mandatory to parallelize at least the rate estimations.
 

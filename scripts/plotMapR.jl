@@ -45,7 +45,7 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 
 			dal = data.table::melt(al)
 			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
-			ggsave(pal,filename=paste0($analysisFolder,'map.png'),dpi=600)
+			ggsave(pal,filename=paste0($analysisFolder,'/map.png'),dpi=600)
 			"""
 		CSV.write(analysisFolder * "map.tsv",maxp,delim='\t',header=true)
 

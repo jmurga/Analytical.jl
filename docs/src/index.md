@@ -51,7 +51,7 @@ source ${HOME}/.bashrc
 Consider to install some important dependencies to automatize your ABC-MK pipelines. We have prepared a file to install them. Please download [this file](https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl) and execute the following command
 
 ```bash
-wget https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl
+curl -o julia_dependencies.jl https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/julia_dependencies.jl
 julia julia_dependencies.jl
 ```
 
@@ -77,15 +77,8 @@ sudo apt install libgsl-dev libz-dev build-essential git
 ```
 
 ```bash
-git clone https://github.com/molpopgen/ABCreg.git ${HOME}/ABCreg
-cd ${HOME}/ABCreg/src && make
-```
-
-Once ABCreg is installed you can add the binary to your PATH:
-
-```bash 
-echo 'export PATH="${HOME}/ABCreg/src/:$PATH"' >> ${HOME}/.bashrc
-source ${HOME}/.bashrc
+git clone https://github.com/molpopgen/ABCreg.git ABCreg
+cd ABCreg/src && make
 ```
 
 ### R
@@ -96,28 +89,6 @@ If you are going to perform MAP estimates and plot using our module, be sure you
 ```R
 R -e "install.packages(c('ggplot2','data.table','locfit'))"
 ```
-
-## Dependencies
-All Julia dependencies are installed within the package. You don't need to install them manually.
-
-### Mandatory dependencies to solve the analytical equations
-- [`Roots`](https://github.com/JuliaMath/Roots.jl) - root finding.
-- [`NLsolve`](https://github.com/JuliaStats/Distributions.jl) - non-linear systems of equations solver.
-- [`Distributions`](https://github.com/JuliaStats/Distributions.jl) - probability distributions.
-- [`SpecialFunctions`](https://github.com/JuliaMath/SpecialFunctions.jl) - special mathematical functions in Julia.
-- [`Quadmath`](https://github.com/JuliaMath/Quadmath.jl) - multiprecision numerical computing.
-- [`PoissonRandom`](https://github.com/SciML/PoissonRandom.jl) - Poisson random number generator.
-- [`Parameters`](https://github.com/mauro3/Parameters.jl) - custom keyword constructor.
-
-### The following dependencies are required to use all the funcionalities (parse SFS, plots, parse multi-Fasta, etc.)
-- [`CSV`](https://github.com/JuliaNLSolvers/Optim.jl)
-- [`Parsers`](https://github.com/JuliaStats/Distributions.jl)
-- [`StatsBase`](https://github.com/JuliaStats/Distances.jl)
-- [`DataFrames`](https://github.com/JuliaStats/Distances.jl)
-- [`GZip`](https://github.com/JuliaIO/GZip.jl)
-- [`OrderedCollections`](https://github.com/JuliaCollections/OrderedCollections.jl)
-- [`Plots`](https://github.com/JuliaPlots/Plots.jl)
-- [`FastaIO`](https://github.com/carlobaldassi/FastaIO.jl)
 
 ## References
 - Uricchio, L.H., Petrov, D.A. & Enard, D. Exploiting selection at linked sites to infer the rate and strength of adaptation. Nat Ecol Evol 3, 977–984 (2019). [https://doi.org/10.1038/s41559-019-0890-6](https://doi.org/10.1038/s41559-019-0890-6)

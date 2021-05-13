@@ -7,13 +7,7 @@ We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC 
 It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$
 
 ```julia
-Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=1,abcreg="/home/jmurga/ABCreg/src/reg",parallel=false);
-```
-
-If you have installed GNU-parallel in your system it is possible to parallelize the inference
-
-```julia
-Analytical.ABCreg(analysisFolder="/home/jmurga/tgpData/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,workers=7,abcreg="/home/jmurga/ABCreg/src/reg",parallel=true);
+Analytical.ABCreg(analysisFolder="analysis/",replicas=100,P=5,S=size(adap.dac,1),tol=0.002,abcreg="/home/jmurga/ABCreg/src/reg",);
 ```
 
 We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
@@ -21,8 +15,8 @@ We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distribution
 If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
 ```julia
-Analytical.sourcePlotMapR(script="/home/jmurga/tgpData/script.jl")
-tgpmap = Analytical.plotMap(analysisFolder="/home/jmurga/tgpData/");
+Analytical.sourcePlotMapR(script="analysis/script.jl")
+tgpmap = Analytical.plotMap(analysisFolder="analysis/");
 describe(tgpmap)
 ```
 

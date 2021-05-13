@@ -1,7 +1,11 @@
 """
 	rates(param::parameters,iterations::Int64,divergence::Array,sfs::Array)
 
-Function to solve randomly *N* scenarios. N = iterations ⋅ param.bRange
+Function to solve randomly *N* scenarios. The function will create *N* models, defined by ```Analytical.parameters()```, to estimate analytically fixation and polymorphic rates for each model. The rates will be used to compute summary statistics required at ABC. The function output a HDF5 file containing the solved models, the selected DAC and the analytical rates. 
+
+If rho and/or theta are set to ```nothing```, the function will input random values given the range 0.0005:0.0005:0.01. Otherwise you can fix the values.
+
+If gL is set to ```nothing```, the function will not account the role of the weakly selected alleles in the estimation.
 
 # Arguments
  - `param::parameters`
@@ -9,11 +13,13 @@ Function to solve randomly *N* scenarios. N = iterations ⋅ param.bRange
  - `gH::Array{Int64,1}`
  - `gL::Union{Array{Int64,1},Nothing}`
  - `gamNeg::Array{Int64,1}`
+ - `theta::Union{Float64,Nothing}`
+ - `rho::Union{Float64,Nothing}`
  - `shape::Float64=0.184`
  - `iterations::Int64`
  - `output::String`
 # Returns
- - `Array`: summary statistics.
+ - `Array`: summary statistics
  - `Output`: HDF5 file containing models solved and rates.
 """
 function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},theta::Union{Float64,Nothing}=nothing,rho::Union{Float64,Nothing}=nothing,shape::Float64=0.184,iterations::Int64,output::String)
