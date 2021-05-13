@@ -90,9 +90,8 @@ function ABCreg(;analysisFolder::String,replicas::Int64,P::Int64,S::Int64,tol::F
 
 	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
 
-	progress_pmap(r,aFile,sumFile,out);
+	progress_pmap(r,aFile,sumFile,out;progress= Progress(replicas,desc="ABC inference "));
 
-	end	
 end
 
 
