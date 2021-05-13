@@ -30,7 +30,7 @@ h5file
 h5file["1000/" * string(adap.n) * "/dac"]
 ```
 
-To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](data.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
+To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](input.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
 
 We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE). In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
 

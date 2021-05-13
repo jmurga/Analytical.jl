@@ -72,8 +72,13 @@ We have linked [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perfo
 
 ABCreg needs *GSL* and *libz* to work. Please install both libraries before compile the software:
 
-```bash 
+
+```bash
+# Linux debian-based installation
 sudo apt install libgsl-dev libz-dev build-essential git
+# MacOS installation
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install GSL zlib git r
 ```
 
 ```bash
@@ -83,6 +88,13 @@ cd ABCreg/src && make
 
 ### R
 We have used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
+
+```bash
+# Linux debian-based installation
+sudo apt install r-base
+# MacOS installation
+brew install r
+```
 
 If you are going to perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
