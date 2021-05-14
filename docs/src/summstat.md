@@ -15,7 +15,7 @@ Before to compute the summary statistic, load your analytical rates and declare 
 ```julia
 # Opening rates
 h5file   = jldopen("analysis/rates.jld2")
-adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925]
+adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925])
 ```
 
 Note you can only input DAC already estimated, nonetheles you can perform any subset from the estimated DAC. To check the estimated DAC you can follow the hierarchy of the ```h5file``` variable.

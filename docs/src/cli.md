@@ -56,7 +56,7 @@ Optional Arguments:
 If you are going to perform the estimation in a HPC, please set the variable ```scheduler``` using the name of the HPC task manager. By default the value is set to ```local```
 
 ```bash
-time julia abcmk_cli.jl rates --samples 661 --gamNeg -2000,-200 --gL 1,10 --gH 200,2000 --rho 0.001 --theta 0.001 --solutions 100000 --output /home/jmurga/rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --nthreads 7 --scheduler local
+time julia abcmk_cli.jl rates --samples 661 --gamNeg -2000,-200 --gL 1,10 --gH 200,2000 --rho 0.001 --theta 0.001 --solutions 100000 --output analysis/rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000 --nthreads 7 --scheduler local
 ```
 
 ## Parse data into new folder
@@ -100,7 +100,7 @@ julia abcmk_cli summaries --help
 ```
 
 ```bash
-julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000 --nthreads 7
+julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000
 
 
 Estimate summary statistics from analytical rates. You must provide a path containing the parsed SFS and divergence file.
@@ -125,7 +125,7 @@ Optional Arguments:
 The function will output observed data bootstraped (*alphas.txt*) and summary statistics (*summaries.txt*) in the analysisFolder. These file will be used at ABC inference to generate posterior distributions.
 
 ```bash
-julia abcmk_cli.jl summaries --analysisFolder /home/jmurga/tgpData/ --rates /home/jmurga/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925 --nthreads 7
+julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates  analysis/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925
 ```
 
 ## Perform ABC inference
@@ -142,7 +142,7 @@ It is possible to perform the inference through Julia. The number of parameters 
 
 
 ```bash
-julia abcmk_cli.jl abcInference --analysisFolder /home/jmurga/tgpData/ --replicas 100 --P 5 --S 9 --tol 0.001 --ABCreg /home/jmurga/ABCreg/src/reg --parallel true --nthreads 7
+julia abcmk_cli.jl abcInference --analysisFolder analysis/ --S 9 --tol 0.01 --ABCreg /home/jmurga/ABCreg/src/reg
 ```
 
 ## Estimate Maximum-A-Posteriori and plot using R. Using julia expression, cannot input into *abcmk_cli.jl* (in development)
@@ -153,5 +153,5 @@ If you will perform MAP estimates and plot using our module, be sure you have in
 
 
 ```bash
-julia -e 'using Analytical, RCall, GZip, DataFrames, CSV;Analytical.sourcePlotMapR(script="/home/jmurga/tgpData/script.jl"); Analytical.plotMap(analysisFolder="/home/jmurga/tgpData");'
-```
+julia -e 'using Analytical, RCall, GZip, DataFrames, CSV;Analytical.sourcePlotMapR(script="analysis/script.jl"); Analytical.plotMap(analysisFolder="analysis/");'
+``` 

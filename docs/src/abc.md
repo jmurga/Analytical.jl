@@ -11,10 +11,11 @@ Analytical.ABCreg(analysisFolder="analysis/",P=5,S=size(adap.dac,1),tol=0.0001,a
 ```
 
 The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to:
- - $\alpha_w$: Contribution of weak selecction to $\alpha$
- - $\alpha_s$: Contribution of strong selecction to $\alpha$
- - $\alpha$: Adaptation rate
- - $\gamma$: Negative selection coefficient
+ - α weak: Contribution of weak selecction to $\alpha$
+ - α strong: Contribution of strong selecction to $\alpha$
+ - α: Adaptation rate
+ - γ: Negative selection coefficient
+ - β: DFE shape parameter
 
 We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
@@ -23,7 +24,7 @@ If you will perform MAP estimates and plot using our module, be sure you have in
 ```julia
 Analytical.sourcePlotMapR(script="analysis/script.jl")
 tgpmap = Analytical.plotMap(analysisFolder="analysis/");
-describe(tgpmap)
+DataFrames.describe(tgpmap)
 ```
 
 ```

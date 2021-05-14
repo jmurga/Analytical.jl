@@ -116,10 +116,10 @@ Estimate summary statistics from analytical rates. You must provide a path conta
 The function returns files containing bootstrapped datasets (alphas.txt) and summary statistics (summstat.txt)
 
 Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
-@main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",scheduler::String="local",nthreads::Int64=1)
+@main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true")
 	
 
-	if scheduler == "local"
+	#=if scheduler == "local"
 		@eval addprocs($nthreads)
 	elseif scheduler == "slurm"
 		@eval using ClusterManagers
@@ -127,10 +127,9 @@ Check the documentation to get more info https://jmurga.github.io/Analytical.jl/
 	elseif scheduler == "htcondor"
 		@eval using ClusterManagers
 		@eval addprocs_htc($nthreads)
-	end
+	end=#
 	
-	@eval @everywhere using Analytical, ParallelUtilities
-	@eval using JLD2, DataFrames, CSV, ProgressMeter
+	@eval  using Analytical, JLD2, DataFrames, CSV, ProgressMeter
 	
 	@eval h5file    = jldopen($rates)
 
@@ -151,6 +150,7 @@ Check the documentation to get more info https://jmurga.github.io/Analytical.jl/
 "
 @main function abcInference(;analysisFolder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg")
 	
+	@eval using Analytical
 	@eval Analytical.ABCreg(analysisFolder=$analysisFolder,P=5,S=$S,tol=$tol,abcreg=$ABCreg)
 
 end

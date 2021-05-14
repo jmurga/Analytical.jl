@@ -103,7 +103,7 @@ Ouput the expected values from the Poisson sampling process. Please check [`pois
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array)
+function sampledAlpha(d::Array,afs::Array,λdiv::Array,λpol::Array)
 
 	## Outputs
 	alphas, expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],λweak=λdiv[3],λstrong=λdiv[4])

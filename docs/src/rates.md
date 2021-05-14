@@ -17,7 +17,7 @@ using CSV, DataFrames, JLD2, ProgressMeter
 Declare a variable containing some basic information about your model. We used a sample size of 661 to perform later analysis over TGP data. The selected Derived Alleles Counts (DAC) will be used to compute summary statistics and perform ABC inference. It is possible to subset any of the selected DAC values when computing summary statistics.
 
 ```julia
-adap = Analytical.parameters( =661,dac=[1,2,4,5,10,20,50,100,200,400,500,661,925,1000])
+adap = Analytical.parameters(n=661,dac=[1,2,4,5,10,20,50,100,200,400,500,661,925,1000])
 ```
 
 Note that ```adap``` contains about mutation rate, recombination rates, DFE, BGS and probabilities of fixations. To check all the arguments you can access to the function documentation using ```@doc Analytical.parameter```
@@ -112,7 +112,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 ```
 
 ```julia
-@time df = Analytical.rates(param = adap,convolutedSamples=convolutedSamples,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="analysis/rates.jld2",);
+@time df = Analytical.rates(param = adap,convolutedSamples=convolutedSamples,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="analysis/rates.jld2");
 ```
 
 The function will create a HDF5 file containing the solved models, fixation rates, polymorphic rates, and the selected DAC. This information will be used later to estimate summary statistics.

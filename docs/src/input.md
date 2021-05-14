@@ -15,6 +15,8 @@ alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/
 ```
 
 ```julia
+using CSV, DataFrames
+
 CSV.write("analysis/sfsTgp.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
 CSV.write("analysis/divTgp.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
 ```
