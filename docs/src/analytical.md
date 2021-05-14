@@ -53,10 +53,10 @@ using RCall
 
 R"""
 	library(ggplot2)
-	library(reshape2)
-	df = data.frame(f=seq(1,length($x)),x=$x,y=$y)
+	library(data.table)
+	df = data.table(f=seq(1,length($x)),x=$x,y=$y)
 	d  = melt(df,id.vars='f')
-	p = ggplot(df,aes(x=f,y=value,color=variable)) + geom_line() + geom_point() + scale_colour_manual(values=c('#30504f', '#e2bd9a'),labels = c("Nuetral + deleterious alleles", "All alleles")) + theme_bw()
+	p = ggplot(d,aes(x=f,y=value,color=variable)) + geom_line() + geom_point() + scale_colour_manual(values=c('#30504f', '#ab2710'),labels = c("Neutral + deleterious alleles", "All alleles")) + theme_bw()
 	p
 """
 ```

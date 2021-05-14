@@ -4,13 +4,13 @@ At this point, you have a folder containing summary statistics and observed data
 
 We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC inference. If you are going to use ABCreg to make inferences from our software directly, please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
 
-It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$. We set the tolerance value 
+It is possible to perform the inference through Julia. We set the tolerance value such that 1000 acceptances were recorded for the inference
 
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
+Analytical.ABCreg(analysisFolder="analysis/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
-The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to:
+The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to :
  - α weak: Contribution of weak selecction to $\alpha$
  - α strong: Contribution of strong selecction to $\alpha$
  - α: Adaptation rate

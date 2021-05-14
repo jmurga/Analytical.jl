@@ -90,7 +90,7 @@ Performing ABC inference using ABCreg. Please, be sure your analysisFolder conta
 Files containing posterior distributions from ABCreg
 
 """
-function ABCreg(;analysisFolder::String,P::Int64,S::Int64,tol::Float64,abcreg::String)
+function ABCreg(;analysisFolder::String,S::Int64,tol::Float64,abcreg::String)
 	
 	# List alphas and summstat files
     aFile   = analysisFolder * "/alphas.txt"
@@ -99,7 +99,7 @@ function ABCreg(;analysisFolder::String,P::Int64,S::Int64,tol::Float64,abcreg::S
 	# Creating output names
 	out = analysisFolder * "/out"
 
-	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
+	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
 
 	r(aFile,sumFile,out);
 end

@@ -9,18 +9,20 @@ We highly recommend using the Docker image to execute the software. The Docker i
 
 
 ```bash
+
+RNDPATH="/home/jmurga/analysis/"
 # Pull the image
 docker pull jmurga/abcmk
 # Run docker linking some local volume to export data
-docker run -i -t -v analysis/:/analysis/folder jmurga/abcmk
+docker run -i -t -v ${RNDPATH}:/analysis/folder jmurga/abcmk
 # Run jupyter notebook from docker image. Change the port if 8888 is already used
-docker run -i -t -v analysis/:/analysis/folder -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
+docker run -i -t -v ${RNDPATH}:/analysis/folder -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
 To use our command-line interface, just run
 
 ```bash
-docker run -i -t -v ${HOME}/test/:/analysis/test/ jmurga/abcmk /analysis/abcmk_cli.jl
+docker run -i -t -v ${RNDPATH}:/analysis/test/ jmurga/abcmk julia /analysis/abcmk_cli.jl
 ```
 
 ## Singularity installation

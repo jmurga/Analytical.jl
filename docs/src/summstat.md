@@ -37,11 +37,27 @@ JLDFile /home/jmurga/analysis/rates.jld2 (read-only)
 ```julia
 # Checking estimated dac, string pattern inside the HDF5 variable
 h5file["1000/661/dac"]
+
+14-element Vector{Int64}:
+    1
+    2
+    4
+    5
+   10
+   20
+   50
+  100
+  200
+  400
+  500
+  661
+  925
+ 1000
 ```
 
 To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](input.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
 
-We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE). In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
+We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE) manual. In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
 
 ```julia
 @time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/",summstatSize=10^5,replicas=100,bootstrap=true);
