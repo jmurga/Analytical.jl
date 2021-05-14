@@ -133,19 +133,22 @@ At this point, you have a folder containing summary statistics and observed data
 
 We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC inference. If you are going to use ABCreg to make inferences from our software directly, please [cite the publication](https://doi.org/10.1186/1471-2156-10-35). Remember you need to install ABCreg before continue. Please check [home page](index.md) to install ABCreg.
 
-It is possible to perform the inference through Julia. The number of parameters to infer will always be 5: $\alpha_w$, $\alpha_s$, $\alpha$, $\gamma$ and $\beta$. We set the tolerance value 
- The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to:
- - $\alpha_w$: Contribution of weak selecction to $\alpha$
- - $\alpha_s$: Contribution of strong selecction to $\alpha$
- - $\alpha$: Adaptation rate
- - $\gamma$: Negative selection coefficient
+It is possible to perform the inference through Julia. The function will output one file per bootstrapped replicas containing the posteriors distributions. We set the tolerance value uch that 1000 acceptances were recorded for the regression.  The posterior distributions contains five columns corresponding to:
+
+ - α weak: Contribution of weak selecction to $\alpha$
+ - α strong: Contribution of strong selecction to $\alpha$
+ - α weak: Adaptation rate
+ - γ: Negative selection coefficient
+ - β: Negative selection coefficient
 
 
 ```bash
 julia abcmk_cli.jl abcInference --analysisFolder analysis/ --S 9 --tol 0.01 --ABCreg /home/jmurga/ABCreg/src/reg
 ```
 
-## Estimate Maximum-A-Posteriori and plot using R. Using julia expression, cannot input into *abcmk_cli.jl* (in development)
+## Estimate Maximum-A-Posteriori and plot using R. 
+
+Using julia expression, cannot input into *abcmk_cli.jl* (in development)
 
 We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
