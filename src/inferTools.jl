@@ -75,13 +75,12 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
 end
 
 """
-	ABCreg(analysisFolder, replicas, P, S, tol, abcreg)
+	ABCreg(analysisFolder, replicas, S, tol, abcreg)
 
 Performing ABC inference using ABCreg. Please, be sure your analysisFolder contain the files alphas.txt and summaries.txt produced by Analytical.summaryStatsFromRates()
 
 # Arguments
  - `analysisFolder::String` : Folder containing the observed data and summary estatistics. It will be used to output the posterior distributions
- - `P::Int64` : Number of parameters to inference
  - `S::Int64` : Number of summary stastitics to perform the inference.
  - `tol::Float64` : Tolerance value. It define the number of accepted value at ABC inference
  - `abcreg::String` : Path to ABCreg binary
@@ -99,7 +98,7 @@ function ABCreg(;analysisFolder::String,S::Int64,tol::Float64,abcreg::String)
 	# Creating output names
 	out = analysisFolder * "/out"
 
-	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
+	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
 
 	r(aFile,sumFile,out);
 end
