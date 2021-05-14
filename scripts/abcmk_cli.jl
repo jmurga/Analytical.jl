@@ -151,7 +151,7 @@ Check the documentation to get more info https://jmurga.github.io/Analytical.jl/
 @main function abcInference(;analysisFolder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg")
 	
 	@eval using Analytical
-	@eval Analytical.ABCreg(analysisFolder=$analysisFolder,P=5,S=$S,tol=$tol,abcreg=$ABCreg)
+	@eval Analytical.ABCreg(analysisFolder=$analysisFolder,S=$S,tol=$tol,abcreg=$ABCreg)
 
 end
 
