@@ -80,11 +80,11 @@ end
 Performing ABC inference using ABCreg. Please, be sure your analysisFolder contain the files alphas.txt and summaries.txt produced by Analytical.summaryStatsFromRates()
 
 # Arguments
- - `analysisFolder::String`
- - `P::Int64`
- - `S::Int64`
- - `tol::Float64`
- - `abcreg::String`
+ - `analysisFolder::String` : Folder containing the observed data and summary estatistics. It will be used to output the posterior distributions
+ - `P::Int64` : Number of parameters to inference
+ - `S::Int64` : Number of summary stastitics to perform the inference.
+ - `tol::Float64` : Tolerance value. It define the number of accepted value at ABC inference
+ - `abcreg::String` : Path to ABCreg binary
 
 # Output
 Files containing posterior distributions from ABCreg
@@ -102,9 +102,7 @@ function ABCreg(;analysisFolder::String,P::Int64,S::Int64,tol::Float64,abcreg::S
 	r(a,s,o,abcreg=abcreg,P=P,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P $P -S $S -t $tol -b $o`)
 
 	r(aFile,sumFile,out);
-
 end
-
 
 """
 	Bootstrap data following polyDFE manual
@@ -139,9 +137,8 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 		sfs = repeat(sfs,replicas)
 		divergence = repeat(divergence,replicas)
 		pr(x) = hcat(x[:,1],pois_rand.(x[:,2:end]))
-		sfs = pr.(sfs)
+		sfs[2:end] .= pr.(sfs[2:end])
 	end
-
 
 	scumu = cumulativeSfs.(sfs)
 	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
@@ -150,7 +147,7 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	d = [[sum(divergence[i])] for i in eachindex(divergence)]
 	al(a,b,c=dac) = @. round(1 - (b[2]/b[1] * a[:,2]/a[:,3])[c],digits=5)
 	α = permutedims.(al.(scumu,divergence))
-	return(s,d,α)	
+	return(s,d,α)
 end
 
 """

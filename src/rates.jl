@@ -8,16 +8,16 @@ If rho and/or theta are set to ```nothing```, the function will input random val
 If gL is set to ```nothing```, the function will not account the role of the weakly selected alleles in the estimation.
 
 # Arguments
- - `param::parameters`
- - `convolutedSamples::binomialDict`
- - `gH::Array{Int64,1}`
- - `gL::Union{Array{Int64,1},Nothing}`
- - `gamNeg::Array{Int64,1}`
- - `theta::Union{Float64,Nothing}`
- - `rho::Union{Float64,Nothing}`
- - `shape::Float64=0.184`
- - `iterations::Int64`
- - `output::String`
+ - `param::parameters`: mutable structure containing the model
+ - `convolutedSamples::binomialDict` : structure containing the binomial convolution
+ - `gH::Array{Int64,1}` : Range of strong selection coefficients
+ - `gL::Union{Array{Int64,1},Nothing}`: Range of weak selection coefficients
+ - `gamNeg::Array{Int64,1}` : Range of deleterious selection coefficients
+ - `theta::Union{Float64,Nothing}` : Population-scaled mutation rate on coding region
+ - `rho::Union{Float64,Nothing}` : Population-scaled recombination rate
+ - `shape::Float64=0.184` : DFE shape parameter
+ - `iterations::Int64` : Number of solutions
+ - `output::String` : File to output HDF5 file
 # Returns
  - `Array`: summary statistics
  - `Output`: HDF5 file containing models solved and rates.

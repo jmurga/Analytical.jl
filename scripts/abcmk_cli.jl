@@ -1,6 +1,17 @@
 using Fire, Distributed
 
-"Function to estimate rates based on prior values. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
+"
+	julia abcmk_cli.jl rates --samples 661 --gamNeg -1000,-200 --gL 1,10 --gH 400,1000 --rho 0.001 --theta 0.001 --solutions 1000000 --output rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000  --nthreads 7
+
+Function to solve fixation and polymorphic rates analitically. The function will create N random models from prior values. Use the arguments to defined the input range for each parameter.
+
+If rho and/or theta are set to nothing, the function will input random values given the range 0.0005:0.0005:0.01. Otherwise you can fix the values.
+If gL is set to nothing, the function will not account the role of the weakly selected alleles in the estimation.
+
+The function returns a HDF5 file containing models solved and rates. The rates will be used to compute summary statistics required at ABC.
+
+Please check the documentation to get more info about models parameters or detailed arguments description https://jmurga.github.io/Analytical.jl/dev/cli/ to check model
+"
 @main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000,-200", gL::String="5,10", gH::String="400,1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=100000,output::String="/home/jmurga/rates.jld2",scheduler::String="local",nthreads::Int64=1)
 
 	tmpNeg    = parse.(Int,split(gamNeg,","))
@@ -48,9 +59,14 @@ using Fire, Distributed
 	end
 end
 
-"Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/
+"
+	julia abcmk_cli.jl parseData --analysisFolder analysis/ --geneList analysis/dnaVipsList.txt
 
-	julia abcmk_cli.jl parseData --analysisFolder /home/jmurga/test/abcmk/dna2/ --geneList /home/jmurga/test/abcmk/dnaVipsList.txt
+Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. 
+
+The function returns files containing raw polymorphic and divergence data, parsed SFS and parsed divegence required to estimate summary statistics.	
+
+Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli/
 "
 @main function parseData(;analysisFolder::String="<folder>",dataset::String="tgp",geneList::String="false",bins::String="false")
 	
@@ -92,7 +108,14 @@ end
 	@eval CSV.write($dName,DataFrame($divergence',:auto),delim='\t',header=false)
 end
 
-"Estimate summary statistics from analytical rates. You must provide a path containing the SFS and divergence file. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/"
+"
+	julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000 --nthreads 7
+
+Estimate summary statistics from analytical rates. You must provide a path containing the parsed SFS and divergence file.
+
+The function returns files containing bootstrapped datasets (alphas.txt) and summary statistics (summstat.txt)
+
+Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
 @main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",scheduler::String="local",nthreads::Int64=1)
 	
 
@@ -120,19 +143,16 @@ end
 	end
 end
 
-"ABCreg inference"
-@main function abcInference(;analysisFolder::String="<folder>",replicas::Int64=100,P::Int64=5,S::Int64=9,tol::Float64=0.01,nthreads::Int64=1,ABCreg::String="/home/jmurga/ABCreg/src/reg",parallel::String="false")
-	
-	@eval aFile   = @. $analysisFolder * "/alpha_" * string(1:$replicas) * ".tsv"
-	@eval sumFile = @. $analysisFolder * "/summstat_" * string(1:$replicas) * ".tsv"
-	@eval out     = @. $analysisFolder * "/out_" * string(1:$replicas)
+"ABCreg inference.
 
-	if parallel  == "true"
-		run(`parallel -j$nthreads --link $ABCreg -d "{1}" -p "{2}" -P 5 -S 9 -t $tol -b "{3}" ::: $aFile ::: $sumFile ::: $out`);
-	else
-        @eval r(a,s,o,r=$ABCreg,nP=$P,nS=$S,t=$tol) = run(`$r -d $a -p $s -P $nP -S $nS -t $t -b $o`)
-        @eval r.($aFile,$sumFile,$out);
-	end	
+The function returns posterior distributions from ABC inference. Each posterior file contains information about alpha_w, alpha_s, alpha, gamNeg and shape parameter. The number of posterior distributions will depend on the number of bootstrap replicas.
+
+Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli
+"
+@main function abcInference(;analysisFolder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg")
+	
+	@eval Analytical.ABCreg(analysisFolder=$analysisFolder,P=5,S=$S,tol=$tol,abcreg=$ABCreg)
+
 end
 
 #="Plot Maximum a posterior distribution"

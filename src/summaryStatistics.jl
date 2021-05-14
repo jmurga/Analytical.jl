@@ -138,27 +138,38 @@ end
 Estimate summary statistics using observed data and analytical rates. *analysisFolder* will check for the SFS and divergence file and will be used to output summary statistics
 
 # Arguments
- - `param::parameters`
- - `rates::JLD2.JLDFile`
- - `analysisFolder::String`
- - `summstatSize::Int64`
- - `replicas::Int64`
- - `bootstrap::Bool`
+ - `param::parameters` : Mutable structure containing the models
+ - `rates::JLD2.JLDFile` : HDF5 containing solved models, fixation and polymorphic rates
+ - `analysisFolder::String` : Folder containing the SFS and divergence files. It will be used to output the observed data and summary estatistics.
+ - `summstatSize::Int64` : Number of summary statistics
+ - `replicas::Int64` : Number of bootstrap replicas
+ - `bootstrap::Bool` : Boolean to perform or not bootstrapping
 # Output
  - Obserded data and summary statistics to ABC inference
 """
 function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 
 	#Opening files
-    sFile   = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
-    dFile   = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
+	sFile   = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
+	dFile   = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
 
-    sfs,d,α = openSfsDiv(sFile,dFile,param.dac,replicas,bootstrap);
+	sfs,d,α = openSfsDiv(sFile,dFile,param.dac,replicas,bootstrap);
 
 	#Open rates
 	tmp    = rates[string(param.N) * "/" * string(param.n)]
 
 	#Subset index
+	idx    = sample(1:size(tmp["models"],1),summstatSize,replace=false)
+	models = Array(view(tmp["models"],idx,:));
+	dsdn   = Array(view(tmp["dsdn"],idx,:));
+
+	# Filtering polymorphic rate by dac
+	n    = hcat(map(x -> view(tmp["neut"][x],:),param.dac)...);
+	s    = hcat(map(x -> view(tmp["sel"][x],:),param.dac)...);
+	neut = Array(view(n,idx,:));
+	sel  = Array(view(s,idx,:));
+
+	#=#Subset index
 	idx    = sample.(fill(1:size(tmp["models"],1),replicas),fill(summstatSize,replicas),replace=false)
 	models = Array.(map(x -> view(tmp["models"],x,:), idx));
 	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx));
@@ -167,20 +178,25 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	n    = hcat(map(x -> view(tmp["neut"][x],:),param.dac)...)
 	s    = hcat(map(x -> view(tmp["sel"][x],:),param.dac)...)
 	neut = Array.(map(x -> view(n,x,:), idx));
-	sel  = Array.(map(x -> view(s,x,:), idx));
+	selected  = Array.(map(x -> view(s,x,:), idx));=#
 
 	#Making summaries
-	expectedValues =  progress_pmap(samplingFromRates,models,sfs,d,neut,sel,dsdn;progress=Progress(replicas,desc="Estimating summaries "));
+	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn);
 
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	# Controling outlier cases
-	fltInf(e) = replace!(e, -Inf=>NaN)
+	#=fltInf(e) = replace!(e, -Inf=>NaN)
 	expectedValues = fltInf.(expectedValues)
 	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
-	expectedValues = pmap(fltNan,expectedValues)
-	
+	fltInf(e) = replace!(e, -Inf=>NaN)
+	expectedValues = fltInf(expectedValues)
+	fltNan(e) = e[vec(!any(isnan(e),dims=2)),:]
+	expectedValues = fltNan(expectedValues)
 	expectedValues = vcat(expectedValues...)
+	=#
+	
+	
 	# Writting ABCreg input
 	w(vcat(α...), analysisFolder * "/alphas.txt");
 	w(expectedValues, analysisFolder * "/summstat.txt");

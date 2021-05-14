@@ -10,7 +10,13 @@ It is possible to perform the inference through Julia. The number of parameters 
 Analytical.ABCreg(analysisFolder="analysis/",P=5,S=size(adap.dac,1),tol=0.0001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
-The function will output one file per bootstrapped replicas containing the posteriors distributions. We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
+The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to:
+ - $\alpha_w$: Contribution of weak selecction to $\alpha$
+ - $\alpha_s$: Contribution of strong selecction to $\alpha$
+ - $\alpha$: Adaptation rate
+ - $\gamma$: Negative selection coefficient
+
+We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distributions following ABCreg examples. We linked Julia and R internally. The module contains functions to perform the estimations without quit the Julia session.
 
 If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 

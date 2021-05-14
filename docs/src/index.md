@@ -12,9 +12,9 @@ We highly recommend using the Docker image to execute the software. The Docker i
 # Pull the image
 docker pull jmurga/abcmk
 # Run docker linking some local volume to export data
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder jmurga/abcmk
+docker run -i -t -v analysis/:/analysis/folder jmurga/abcmk
 # Run jupyter notebook from docker image. Change the port if 8888 is already used
-docker run -i -t -v ${HOME}/<folderPath>:/analysis/folder -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
+docker run -i -t -v analysis/:/analysis/folder -p 8888:8888 jmurga/abcmk /bin/bash -c "jupyter-lab --ip='*' --port=8888 --no-browser --allow-root"
 ```
 
 To use our command-line interface, just run
@@ -63,7 +63,7 @@ ABCreg needs *GSL* and *libz* to work. Please install both libraries before comp
 sudo apt install libgsl-dev libz-dev build-essential git
 # MacOS installation
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install GSL zlib git r
+brew install GSL zlib git
 ```
 
 ```bash

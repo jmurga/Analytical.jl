@@ -23,11 +23,20 @@ Note you can only input DAC already estimated, nonetheles you can perform any su
 ```julia 
 # Check hierarchy
 h5file
+
+JLDFile /home/jmurga/analysis/rates.jld2 (read-only)
+ └─📂 1000
+    └─📂 661
+       ├─🔢 models
+       ├─🔢 neut
+       ├─🔢 sel
+       ├─🔢 dsdn
+       └─🔢 dac
 ```
 
 ```julia
 # Checking estimated dac, string pattern inside the HDF5 variable
-h5file["1000/" * string(adap.n) * "/dac"]
+h5file["1000/661/dac"]
 ```
 
 To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](input.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
