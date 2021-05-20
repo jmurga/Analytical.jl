@@ -10,7 +10,7 @@ addprocs(7)
 Then you need to declare the ```Analytical``` module in all the threads using ```@everywhere``` macro. Otherwise, the ```Analytical``` module will perform the estimation just using the main core
 
 ```julia
-@everywhere using Analytical, ParallelUtilites
+@everywhere using Analytical, ParallelUtilities
 using CSV, DataFrames, JLD2, ProgressMeter
 ```
 

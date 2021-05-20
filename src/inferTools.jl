@@ -64,6 +64,7 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
         sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),bins)[:,2]
 
         sfs   = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
+        scumu = cumulativeSfs(sfs)
 	else
         sfs   = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
         scumu = cumulativeSfs(sfs)
@@ -143,7 +144,7 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
 	s = f.(scumu)
 
-	d = [[sum(divergence[i])] for i in eachindex(divergence)]
+	d = [[sum(divergence[i][1:2])] for i in eachindex(divergence)]
 	al(a,b,c=dac) = @. round(1 - (b[2]/b[1] * a[:,2]/a[:,3])[c],digits=5)
 	α = permutedims.(al.(scumu,divergence))
 	return(s,d,α)

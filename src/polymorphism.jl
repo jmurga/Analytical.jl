@@ -245,7 +245,7 @@ Function to reduce the SFS into N bins.
 function reduceSfs(sfsTemp::Array,bins::Int64)
 
 	freq  = collect(0:(size(sfsTemp,1)-1))/size(sfsTemp,1)
-	h1    = fit(Histogram,freq,0:(1/(bins-1)):1)
+	h1    = StatsBase.fit(StatsBase.Histogram,freq,0:(1/(bins-1)):1)
 	xmap1 = StatsBase.binindex.(Ref(h1), freq)
 
 	tmp = hcat(sfsTemp,xmap1)

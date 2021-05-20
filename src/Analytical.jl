@@ -1,6 +1,6 @@
 module Analytical
 
-	using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, GZip, ParallelUtilities
+	using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, GZip, ParallelUtilities, StatsBase
 
 	# Analytical solutions
 	import Roots: find_zero
@@ -8,7 +8,6 @@ module Analytical
 	import SpecialFunctions: polygamma, zeta
 	import PoissonRandom: pois_rand
 	import Distributions: Binomial, pdf
-	import StatsBase: sample, countmap
 
 	# Parse data
 	import GZip: open

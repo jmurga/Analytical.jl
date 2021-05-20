@@ -186,15 +186,12 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	# Controling outlier cases
-	#=fltInf(e) = replace!(e, -Inf=>NaN)
-	expectedValues = fltInf.(expectedValues)
-	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
 	fltInf(e) = replace!(e, -Inf=>NaN)
 	expectedValues = fltInf(expectedValues)
-	fltNan(e) = e[vec(!any(isnan(e),dims=2)),:]
+	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
+	expectedValues = fltInf(expectedValues)
 	expectedValues = fltNan(expectedValues)
-	expectedValues = vcat(expectedValues...)
-	=#
+	expectedValues = expectedValues[(expectedValues[:,3] .> 0 ) .& (expectedValues[:,3] .<1 ),:]
 	
 	
 	# Writting ABCreg input
