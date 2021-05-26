@@ -83,7 +83,9 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 			@async @inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
 		end
 	end=#
-	out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);
+	@time out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);
+	
+	#=@time out = progress_pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
 	
 	# Remove the workers to free memory resources
 	# SharedArray is not remove after this process
@@ -93,13 +95,13 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 
 	# Reducing array
 	#=df = vcat(eachslice(out,dims=3)...);=#
-	df = Array(out)
+	#=df = Array(out)=#
 	
 	# Saving models and rates
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
 	neut   = df[:,9:(8+size(param.dac,1))]
 	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = df[:,(end-3):end]
+	dsdn   = Array(df[:,(end-3):end])
 
 	# Saving multiple summary statistics
 	n = OrderedDict{Int,Array}()
@@ -118,7 +120,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
 	end
 
-	return df
+	#=return df=#
 end
 
 """
@@ -164,7 +166,12 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 		# Solve θ non-coding for the B value.
 		setThetaF!(param)
 		# Solve model for the B value
-		@inbounds r[j,:] = gettingRates(param,convolutedSamples.bn[param.B])
+		tmp = try
+			gettingRates(param,convolutedSamples.bn[param.B])
+		catch e
+			zeros(size(param.dac,1) *2+ 12)'
+		end
+		@inbounds r[j,:] = tmp
 	end
 	return r
 end
