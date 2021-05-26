@@ -96,12 +96,13 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Reducing array
 	#=df = vcat(eachslice(out,dims=3)...);=#
 	#=df = Array(out)=#
+	#=df = Array(out)=#
 	
 	# Saving models and rates
-	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
-	neut   = df[:,9:(8+size(param.dac,1))]
-	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = Array(df[:,(end-3):end])
+	models = DataFrame(out[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
+	neut   = out[:,9:(8+size(param.dac,1))]
+	sel    = out[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
+	dsdn   = Array(out[:,(end-3):end])
 
 	# Saving multiple summary statistics
 	n = OrderedDict{Int,Array}()
