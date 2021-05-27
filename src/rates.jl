@@ -22,7 +22,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
  - `Array`: summary statistics
  - `Output`: HDF5 file containing models solved and rates.
 """
-function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},theta::Union{Float64,Nothing}=nothing,rho::Union{Float64,Nothing}=nothing,shape::Float64=0.184,iterations::Int64,output::String)
+function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},theta::Union{Float64,Nothing}=nothing,rho::Union{Float64,Nothing}=nothing,shape::Float64=0.184,iterations::Int64,output::String,scheduler::String="local")
 
 	# Iterations = models to solve
 	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
@@ -74,29 +74,21 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		ρ = rand(0.0005:0.0005:0.05,iterations)
 	end
 	
-	# Estimations to thread pool. 
-	# Allocate ouput in SharedArray
-	#=out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)
-	begin
-		# Each iteration solve 1 model accounting all B value in param.bRange
-		@sync @distributed for i in 1:iterations
-			@async @inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
-		end
-	end=#
-
-	# Splitting distributed process to avoid expensive large reduction over workers. I guess the problem is related to data transfer over workers, not enough RAM in laptop.
-	#=@time out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);=#
-	@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
-
-	#=@time out = progress_pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
-	
-	# Remove the workers to free memory resources
-	for i in workers()
-		rmprocs(i)
+	# Estimations to distributed workers
+	if scheduler == "local"
+		println(scheduler)
+		@time out = Distributed.pmap( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+	else
+		println(scheduler)
+		@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
 	end
 
+	# Remove the workers to free memory resources
+	#=for i in workers()
+		rmprocs(i)
+	end=#
+
 	# Reducing output array
-	#=df = vcat(eachslice(out,dims=3)...);=#
 	df = vcat(out...)
 	
 	# Saving models and rates
@@ -115,14 +107,13 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 
 	# Writting HDF5 file
 	JLD2.jldopen(output, "a+") do file
-		file[string(param.N)* "/" * string(param.n) * "/models"] = models
-		file[string(param.N)* "/" * string(param.n) * "/neut"]   = n
-		file[string(param.N)* "/" * string(param.n) * "/sel"]    = s
-		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn
-		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac
-	end
+		file[string(param.N)* "/" * string(param.n) * "/models"] = models;
+		file[string(param.N)* "/" * string(param.n) * "/neut"]   = n;
+		file[string(param.N)* "/" * string(param.n) * "/sel"]    = s;
+		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn;
+		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac;
+	end;
 
-	#=return df=#
 end
 
 """
@@ -161,7 +152,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	r = spzeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
+	r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
 	for j in eachindex(param.bRange)
 		# Set B value
 		param.B = param.bRange[j]

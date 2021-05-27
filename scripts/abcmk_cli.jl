@@ -38,14 +38,14 @@ Please check the documentation to get more info about models parameters or detai
 		theta = parse(Float64,theta)
 	end
 
-	if scheduler == "local"
-		@eval addprocs($nthreads)
-	elseif scheduler == "slurm"
+	if scheduler == "slurm"
 		@eval using ClusterManagers
 		@eval addprocs_slurm($nthreads)
 	elseif scheduler == "htcondor"
 		@eval using ClusterManagers
 		@eval addprocs_htc($nthreads)
+	else
+		@eval addprocs($nthreads)
 	end
 	
 	@eval @everywhere using Analytical, ParallelUtilities
@@ -53,7 +53,8 @@ Please check the documentation to get more info about models parameters or detai
 
 	@eval convolutedSamples = Analytical.binomialDict()
 	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@eval Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output);
+	@eval Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output,scheduler=$scheduler);
+
 	for i in workers()
 		rmprocs(i)
 	end
@@ -117,17 +118,6 @@ The function returns files containing bootstrapped datasets (alphas.txt) and sum
 
 Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
 @main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true")
-	
-
-	#=if scheduler == "local"
-		@eval addprocs($nthreads)
-	elseif scheduler == "slurm"
-		@eval using ClusterManagers
-		@eval addprocs_slurm($nthreads)
-	elseif scheduler == "htcondor"
-		@eval using ClusterManagers
-		@eval addprocs_htc($nthreads)
-	end=#
 	
 	@eval  using Analytical, JLD2, DataFrames, CSV, ProgressMeter
 	
