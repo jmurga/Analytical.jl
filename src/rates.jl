@@ -83,26 +83,27 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 			@async @inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
 		end
 	end=#
-	@time out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);
-	
+
+	# Splitting distributed process to avoid expensive large reduction over workers. I guess the problem is related to data transfer over workers, not enough RAM in laptop.
+	#=@time out = ParallelUtilities.pmapreduce(i -> iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]), vcat, 1:iterations);=#
+	@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+
 	#=@time out = progress_pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
 	
 	# Remove the workers to free memory resources
-	# SharedArray is not remove after this process
-	for i in 2:Distributed.workers()[end]
+	for i in workers()
 		rmprocs(i)
 	end
 
-	# Reducing array
+	# Reducing output array
 	#=df = vcat(eachslice(out,dims=3)...);=#
-	#=df = Array(out)=#
-	#=df = Array(out)=#
+	df = vcat(out...)
 	
 	# Saving models and rates
-	models = DataFrame(out[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
-	neut   = out[:,9:(8+size(param.dac,1))]
-	sel    = out[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = Array(out[:,(end-3):end])
+	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
+	neut   = df[:,9:(8+size(param.dac,1))]
+	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
+	dsdn   = Array(df[:,(end-3):end])
 
 	# Saving multiple summary statistics
 	n = OrderedDict{Int,Array}()
