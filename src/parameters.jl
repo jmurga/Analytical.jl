@@ -290,9 +290,12 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	## Polymorphism
 	neut = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
 
-	selH = DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
-	selL = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])
-	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
+		DiscSFSSelPosDownArb(param,param.gH,param.pposH,cnvBinom)
+	else
+		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
+	end
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 
