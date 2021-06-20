@@ -295,7 +295,10 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	else
 		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
 	end
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)	
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
 
