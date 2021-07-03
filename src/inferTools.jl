@@ -36,7 +36,7 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
 	df   = CSV.read(data,header=false,delim='\t',DataFrame)
 
 	if(!isnothing(geneList))
-		df = df[∈(geneList).(df[:,1]), :]
+		df =  vcat([ df[df[:,1] .==i,:]  for i in geneList]...);
 	end
 
 	#=if(!isnothing(B))
