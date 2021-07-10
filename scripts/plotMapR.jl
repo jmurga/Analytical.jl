@@ -23,8 +23,9 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 				d <-locfit(~temp[,1],temp);
 				map<-temp[,1][which.max(predict(d,newdata=temp))]
 			}"""
-		getmap(x)    = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
-
+		#getmap(x)    = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
+		getmap(x)    = rcopy(R"""suppressWarnings(matrix(apply($x,2,getmap),nrow=1))""")
+		
 		if !weak
 			posteriors = [posteriors[i][:,3:end] for i in eachindex(posteriors)]
 			tmp          = getmap.(posteriors)
