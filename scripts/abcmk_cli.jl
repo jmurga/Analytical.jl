@@ -60,6 +60,59 @@ Please check the documentation to get more info about models parameters or detai
 	end
 end
 
+
+"
+	julia abcmk_cli.jl joinRates --analysisFolder --output
+"
+@main function joinRates(;analysisFolder::String="<folder>",samples::Int64=661,output::String="<name>")
+
+	@eval using JLD2, CSV ,DataFrames, OrderedCollections
+
+	searchdir(path) = filter(x->occursin("jld2",x), readdir(path))
+	files = analysisFolder .* "/" .* searchdir(analysisFolder)
+
+	j = jldopen.(files)
+	
+	models = []
+	n = []
+	s = []
+	dsdn = []
+	dac = j[1]["1000/" * string(samples)]["dac"]
+
+
+	for i in eachindex(files)
+		tmp = j[i]["1000/" * string(samples)]
+
+		push!(models,tmp["models"])
+		push!(n,tmp["neut"])
+		push!(s,tmp["sel"])
+		push!(dsdn,tmp["dsdn"])
+
+	end
+
+	neut = OrderedDict{Int,Array}()
+	sel = OrderedDict{Int,Array}()
+	o(x,k) = x[k]
+	for x in keys(n[1])
+		neut[x] = vcat(o.(n,x)...)
+		sel[x] = vcat(o.(s,x)...)
+	end
+	models = vcat(models...)
+	dsdn = vcat(dsdn...)
+
+	# Writting HDF5 file
+	JLD2.jldopen(output, "a+") do file
+		file[string(1000)* "/" * string(samples) * "/models"] = models;
+		file[string(1000)* "/" * string(samples) * "/neut"]   = neut;
+		file[string(1000)* "/" * string(samples) * "/sel"]    = sel;
+		file[string(1000)* "/" * string(samples) * "/dsdn"]   = dsdn;
+		file[string(1000)* "/" * string(samples) * "/dac"]    = dac;
+	end;
+
+	rm.(files)
+end
+
+
 "
 	julia abcmk_cli.jl parseData --analysisFolder analysis/ --geneList analysis/dnaVipsList.txt
 
