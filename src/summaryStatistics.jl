@@ -183,8 +183,8 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	#Making summaries
 	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn);
 
-	#w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
-	w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);
+	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
+	#=w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);=#
 
 	# Controling outlier cases
 	fltInf(e) = replace!(e, -Inf=>NaN)

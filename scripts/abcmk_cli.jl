@@ -79,7 +79,6 @@ end
 	dsdn = []
 	dac = j[1]["1000/" * string(samples)]["dac"]
 
-
 	for i in eachindex(files)
 		tmp = j[i]["1000/" * string(samples)]
 
