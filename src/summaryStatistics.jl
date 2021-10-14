@@ -144,7 +144,7 @@ end
 """
 	samplingFromRates(gammaL,gammaH,pposL,pposH,observedData,nopos)
 """
-function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array,observed::Matrix)
+function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array,observed::Matrix,dac::Array)
 
 	ds             = x[:,1]
 	dn             = x[:,2]
@@ -153,7 +153,7 @@ function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arr
 	gn             = abs.(m[:,4])
 	sh             = round.(m[:,end-1],digits=5)
 
-	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,observed=observed,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
+	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,observed=observed,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)],dac=dac)
 	expectedValues = hcat(round.(alphasDiv,digits=5),gn,sh,alxSummStat)
 	
 	return(expectedValues)
@@ -197,7 +197,7 @@ function summaryStatsFromRates(;param::parameters,h5file::JLD2.JLDFile,analysisF
 	sel  = Array(view(s,idx,:));
 
 	#Making summaries
-	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn,observed);
+	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn,observed[1],param.dac);
 
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
