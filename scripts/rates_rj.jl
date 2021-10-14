@@ -10,7 +10,7 @@ import Parameters: @with_kw
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
 	B::Float64                 = 0.999 
-	bRange::Array{Float64,2}   = permutedims(push!(collect(0.1:0.025:0.975),0.999))
+	B_bins::Array{Float64,2}   = permutedims(push!(collect(0.1:0.025:0.975),0.999))
 	pposL::Float64             = 0
 	pposH::Float64             = 0.001
 	N::Int64                   = 1000
@@ -68,10 +68,9 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
 	
 	# Random θ on coding regions
-    obsNeut        = [(sfs[:,3]./sum(sfs[:,3]) for i in 1:iterations]
+    obsNeut        = sfs.p0./sum(sfs.p0) 
     n              = 1 ./collect(1:(param.nn-1))
     expNeut        = n ./ sum(n)
-
 
 	if !isnothing(theta)
 		θ = fill(param.thetaMidNeutral .* obsNeut ./ expNeut,iterations)
@@ -80,6 +79,7 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		θrng = fill.(θrng,param.nn-1)
 		θ = map(x -> x .* obsNeut ./ expNeut,θrng)
 	end
+	
 	# Random ρ on coding regions
 	if !isnothing(rho)
 		ρ = fill(rho,iterations)
@@ -89,10 +89,10 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	
 	# Estimations to thread pool. 
 	# Allocate ouput Array
-	#=out    = SharedArray{Float64,3}(size(param.bRange,2),(size(param.dac,1) *2) + 12,iterations)=#
-	out    = SharedArray{Float64,3}(size(param.bRange,2),(param.nn * 2 - 2) + 12,iterations)
+	#=out    = SharedArray{Float64,3}(size(param.B_bins,2),(size(param.dac,1) *2) + 12,iterations)=#
+	out    = SharedArray{Float64,3}(size(param.B_bins,2),(param.nn * 2 - 2) + 12,iterations)
 	@time for i in 1:iterations
-		# Each iteration solve 1 model accounting all B value in param.bRange
+		# Each iteration solve 1 model accounting all B value in param.B_bins
 		@inbounds out[:,:,i] = iterRates(nParam[i], nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i]);
 	end
 	#=param = nParam[i]; convolutedSamples=nBinom[i];alTot= nTot[i];alLow= nLow[i];gH= ngh[i];gL= ngl[i];gamNeg= ngamNeg[i];afac= afac[i];θ= θ[i]; ρ= ρ[i];obsNeut = sNeut[i]=#
@@ -164,11 +164,11 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	#=r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)=#
-	r = spzeros(size(param.bRange,2),(param.nn * 2 - 2) + 12)
-	for j in eachindex(param.bRange)
+	#=r = zeros(size(param.B_bins,2),(size(param.dac,1) * 2) + 12)=#
+	r = spzeros(size(param.B_bins,2),(param.nn * 2 - 2) + 12)
+	for j in eachindex(param.B_bins)
 		# Set B value
-		param.B = param.bRange[j]
+		param.B = param.B_bins[j]
 		# Solve θ non-coding for the B value.
 		setThetaF!(param)
 		# Solve model for the B value

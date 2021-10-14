@@ -33,10 +33,8 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 
 	# subsetDict = get(param.bn,param.B,1)
 	# subsetDict = binom
-	out::Array{Float64,1} = param.B*(param.thetaMidNeutral)*0.25*(binom*solvedNeutralSfs)
-	# out = @view out[2:end-1]
-	# out = out[2:end-1]
-
+	out::Array{Float64,1} = param.B * (param.thetaMidNeutral) * 0.25 * (binom*solvedNeutralSfs)
+	#=out::Array{Float64,1} = param.B .* (param.θᵣ) .*0.25 .* (binom*solvedNeutralSfs)=#
 	return out
 end
 
@@ -85,8 +83,8 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 
 		# subsetDict = get(param.bn,param.B,1)
 		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solvedPositiveSfs)
-		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.75*(binom*solvedPositiveSfs)
-		# out = out[2:end-1]
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (binom*solvedPositiveSfs)
+		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solvedPositiveSfs)=#
 
 	end
 
@@ -115,8 +113,8 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
-		out::Array{Float64,1} = (param.thetaMidNeutral)*redPlus*0.75*(binom*solvedPositiveSfs)
-		# out = out[2:end-1]
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (binom*solvedPositiveSfs)
+		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solvedPositiveSfs)=#
 
 	end
 
@@ -171,11 +169,9 @@ Expected rate of positive selected allele frequency reduce by background selecti
 function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
 	# subsetDict = get(param.bn,param.B,1)
 	solvedNegative = DiscSFSSelNeg(param,ppos)
-	# out::Array = param.B*(param.thetaMidNeutral)*0.75*(subsetDict*solvedNegative)
-	out = param.B*(param.thetaMidNeutral)*0.75*(binom*solvedNegative)
-	# out = @view out[2:end-1]
+	out = param.B .* (param.thetaMidNeutral) .* 0.75 .* (binom*solvedNegative)
+	#=out = param.B .* (param.θᵣ) .* 0.75 .* (binom*solvedNegative)=#
 
-	# return out[2:end-1]
 	return out
 end
 

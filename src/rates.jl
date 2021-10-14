@@ -22,8 +22,18 @@ If gL is set to ```nothing```, the function will not account the role of the wea
  - `Array`: summary statistics
  - `Output`: HDF5 file containing models solved and rates.
 """
-function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int64,1},gL::Union{Array{Int64,1},Nothing},gamNeg::Array{Int64,1},theta::Union{Float64,Nothing}=nothing,rho::Union{Float64,Nothing}=nothing,shape::Float64=0.184,iterations::Int64,output::String,scheduler::String="local")
-
+function rates(;param::parameters,
+				convolutedSamples::binomialDict,
+				gH::S,
+				gL::S,
+				gamNeg::S,
+				theta::Union{Float64,Nothing}=0.001,
+				rho::Union{Float64,Nothing}=0.001,
+				shape::Float64=0.184,
+				iterations::Int64,
+				output::String,
+				scheduler::String="local") where S <: Union{Array{Int64,1},UnitRange{Int64},Nothing}
+	
 	# Iterations = models to solve
 	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
 	fac     = rand(-2:0.05:2,iterations)
@@ -60,13 +70,20 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	ngh     = rand(repeat(gH,iterations),iterations);
 	# Random negative selection coefficients
 	ngamNeg = rand(repeat(gamNeg,iterations),iterations);
-	
+
 	# Random θ on coding regions
+    #=obsNeut        = sfs.p0./sum(sfs.p0) 
+    n              = 1 ./collect(1:(param.nn-1))
+    expNeut        = n ./ sum(n)=#
+
 	if !isnothing(theta)
 		θ = fill(theta,iterations)
+		#=θᵣ= fill(theta .* obsNeut ./ expNeut,iterations)=#
 	else
 		θ = rand(0.0005:0.0005:0.01,iterations)
+		#=θᵣ= map(x -> x .* obsNeut ./ expNeut,θ)=#
 	end
+
 	# Random ρ on coding regions
 	if !isnothing(rho)
 		ρ = fill(rho,iterations)
@@ -77,10 +94,12 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 	# Estimations to distributed workers
 	if scheduler == "local"
 		println(scheduler)
-		@time out = Distributed.pmap( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+		@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+		#=@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, θᵣ, ρ);=#
 	else
 		println(scheduler)
 		@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+		#=@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, θᵣ, ρ);=#
 	end
 
 	# Remove the workers to free memory resources
@@ -113,7 +132,6 @@ function rates(;param::parameters,convolutedSamples::binomialDict,gH::Array{Int6
 		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn;
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac;
 	end;
-
 end
 
 """
@@ -146,16 +164,17 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	param.gH    = gH;param.gL = gL
 	# Mutation rate and recomb
 	param.thetaMidNeutral = θ; param.rho = ρ
+	#=param.thetaMidNeutral = θ; param.θᵣ .= θᵣ; param.rho = ρ=#
 	# Solving θ on non-coding region and probabilites to get α value without BGS
 	param.B = 0.999
 	setThetaF!(param)
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	r = zeros(size(param.bRange,2),(size(param.dac,1) * 2) + 12)
-	for j in eachindex(param.bRange)
+	r = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 12)
+	for j in eachindex(param.B_bins)
 		# Set B value
-		param.B = param.bRange[j]
+		param.B = param.B_bins[j]
 		# Solve θ non-coding for the B value.
 		setThetaF!(param)
 		# Solve model for the B value
@@ -166,6 +185,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 		end
 		@inbounds r[j,:] = tmp
 	end
+
 	return r
 end
 
@@ -210,36 +230,9 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
 
-	## Outputs
-	#=α = @. 1 - (ds/dn) * (sel/neut)=#
-
-	##################################################################
-	# Accounting for for neutral and deleterious alleles segregating #
-	##################################################################
-	## Fixation
-	#=fN_nopos       = fN*(param.thetaMidNeutral/2.)*param.TE*param.NN
-	fNeg_nopos     = fNeg*(param.thetaMidNeutral/2.)*param.TE*param.NN
-	fPosL_nopos    = fPosL*(param.thetaMidNeutral/2.)*param.TE*param.NN
-	fPosH_nopos    = fPosH*(param.thetaMidNeutral/2.)*param.TE*param.NN
-
-	ds_nopos       = fN_nopos
-	dn_nopos       = fNeg_nopos + fPosL_nopos + fPosH_nopos
-	dnS_nopos      = dn_nopos - fPosL_nopos
-
-	## Polymorphism
-	sel_nopos = selN
-
-	## Outputs
-	αW         = param.alLow/param.alTot
-	α_nopos    = @. 1 - (ds_nopos/dn_nopos) * (sel_nopos/neut)=#
-
-
-	#=alphas = round.(vcat(α_nopos[param.dac[end]] * αW , α_nopos[param.dac[end]] * (1 - αW), α_nopos[param.dac[end]]), digits=5)=#
-
 	##########
 	# Output #
 	##########
-	#=analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'=#
 	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
 
 	return (analyticalValues)

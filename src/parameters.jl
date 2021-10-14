@@ -17,7 +17,7 @@ Mutable structure containing the variables required to solve the analytical appr
  - `al::Float64`: DFE shape parameter 
  - `be::Float64`: DFE scale parameter
  - `B::Float64`: BGS strength
- - `bRange::Array{Float64,1}`: BGS values to simulate
+ - `B_bins::Array{Float64,1}`: BGS values to simulate
  - `pposL::Float64`: Fixation probabily of weakly beneficial alleles
  - `pposH::Float64`: Fixation probabily of strongly beneficial alleles
  - `N::Int64`: Population size
@@ -38,7 +38,7 @@ Mutable structure containing the variables required to solve the analytical appr
 	al::Float64                = 0.184
 	be::Float64                = 0.000402
 	B::Float64                 = 0.999 
-	bRange::Array{Float64,2}   = permutedims(push!(collect(0.1:0.025:0.975),0.999))
+	B_bins::Array{Float64,1}   = push!(collect(0.1:0.025:0.975),0.999)
 	pposL::Float64             = 0
 	pposH::Float64             = 0.001
 	N::Int64                   = 1000
@@ -50,10 +50,8 @@ Mutable structure containing the variables required to solve the analytical appr
 
 	NN::Int64 = 2*N
 	nn::Int64 = 2*n
+	θᵣ::Array{Float64,1} = fill(thetaMidNeutral,nn-1)
 	dac::Array{Int64,1} = [2,4,5,10,20,50,200,500,700]
-
-	#=bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
-	#=neut::Dict = Dict{Float64,Array{Float64,1}}()=#
 end
 
 """
@@ -165,13 +163,13 @@ Binomial convolution to sample the allele frequencies probabilites depending on 
  - `convolutedSamples::binomialDict`
 
 # Returns
- - `Array{Float64,2}`: convoluted SFS for each B value defined in the model (param.bRange). The estimations are saved at *convolutedBn.bn*.
+ - `Array{Float64,2}`: convoluted SFS for each B value defined in the model (param.B_bins). The estimations are saved at *convolutedBn.bn*.
 """
 function binomOp!(param::parameters,convolutedBn::Dict)
 
-	#=bn = Dict(param.bRange[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.bRange))=#
+	#=bn = Dict(param.B_bins[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.B_bins))=#
 
-	for bVal in param.bRange
+	for bVal in param.B_bins
 
 		NN2          = convert(Int64,ceil(param.NN*bVal))
 		samples      = collect(1:(param.nn-1))
@@ -291,12 +289,12 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
 	neut = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
 
 	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
-		DiscSFSSelPosDownArb(param,param.gH,param.pposH,cnvBinom)
+		DiscSFSSelPosDownArb(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
 	else
-		DiscSFSSelPosDown(param,param.gH,param.pposH,cnvBinom)
+		DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
 	end
 
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)	
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])	
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));

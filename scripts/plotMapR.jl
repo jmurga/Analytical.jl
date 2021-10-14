@@ -1,4 +1,9 @@
-using RCall, CSV, DataFrames, GZip
+try
+	using RCall, CSV, DataFrames, GZip
+catch
+	using Pkg
+	Pkg.add.(["RCall", "CSV", "DataFrames", "GZip"]);
+end
 
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
@@ -12,7 +17,7 @@ function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posterio
 		out = filter(x -> occursin("post",x), readdir(analysisFolder,join=true))
 		out          = filter(x -> !occursin(".1.",x),out)
 
-		open(x)      = Array(CSV.read(GZip.open(x),DataFrame,header=false))
+		open(x)      = Array(CSV.read(x,DataFrame,header=false))
 
 		# Control outlier inference. 2Nes non negative values
 		flt(x)       = x[x[:,4] .> 0,:]

@@ -147,7 +147,8 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 	d = [[sum(divergence[i][1:2])] for i in eachindex(divergence)]
 	al(a,b,c=dac) = @. round(1 - (b[2]/b[1] * a[:,2]/a[:,3])[c],digits=5)
 	α = permutedims.(al.(scumu,divergence))
-	return(s,d,α)
+
+	return(s,d,α,map(x -> x[:,2:end],scumu))
 end
 
 """

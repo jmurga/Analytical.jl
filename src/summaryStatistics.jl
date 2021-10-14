@@ -103,23 +103,48 @@ Ouput the expected values from the Poisson sampling process. Please check [`pois
  - `Array{Int64,2}` containing α(x) binned values.
 
 """
-function sampledAlpha(;d::Array,afs::Array,λdiv::Array,λpol::Array)
+function sampledAlpha(;d::Array,afs::Array,observed::Matrix,λdiv::Array,λpol::Array)
 
 	## Outputs
 	alphas, expDn, expDs = poissonFixation(observedValues=d,λds=λdiv[1],λdn=λdiv[2],λweak=λdiv[3],λstrong=λdiv[4])
 	expPn, expPs         = poissonPolymorphism(observedValues=afs,λps=λpol[1],λpn=λpol[2])
+	
+	θ_pn = @. observed[1,1] / (expPn[1,:]);
+	θ_ps = @. observed[1,2] / (expPs[1,:]);
+
+	r_pn = ones(size(expPn));
+	r_ps = ones(size(expPs));
+	for j = 2:size(param.dac,1)
+		r_pn[j,:] .= @. (observed[j,1]) / (expPn[j,:]);
+		r_pn[j,:] = @. r_pn[j,:] / θ_pn;
+		
+		r_ps[j,:] .= @. (observed[j,2]) / (expPs[j,:]);
+		r_ps[j,:] .= @. r_ps[j,:] / θ_ps;
+
+
+	end
+
+	expPn_rj = zeros(size(expPn))
+	expPs_rj = zeros(size(expPs))
+
+	expPn_rj[1,:] = @. expPn[1,:] * θ_pn;
+	expPs_rj[1,:] = @. expPs[1,:] * θ_ps;
+	for j = 2:size(param.dac,1)
+		expPn_rj[j,:] = @. expPn[j,:] * θ_pn * r_pn[j,:];
+		expPs_rj[j,:] = @. expPs[j,:] * θ_ps * r_ps[j,:];
+	end
 
 	## Alpha from expected values. Used as summary statistics
 	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)'),digits=5)
+	αS_v2 = @. round(1 - ((expDs/expDn) * (expPn_rj/expPs_rj)'),digits=5)
 
 	return αS,alphas,expDn,expDs,expPn,expPs
 end
 
-
 """
 	samplingFromRates(gammaL,gammaH,pposL,pposH,observedData,nopos)
 """
-function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array)
+function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Array,observed::Matrix)
 
 	ds             = x[:,1]
 	dn             = x[:,2]
@@ -128,8 +153,10 @@ function samplingFromRates(m::Array,s::Array,d::Array,nt::Array,sl::Array,x::Arr
 	gn             = abs.(m[:,4])
 	sh             = round.(m[:,end-1],digits=5)
 
-	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
+	alxSummStat, alphasDiv, expectedDn, expectedDs, expectedPn, expectedPs = sampledAlpha(d=d,afs=s,observed=observed,λdiv=[ds,dn,dweak,dstrong],λpol=[permutedims(nt),permutedims(sl)])
 	expectedValues = hcat(round.(alphasDiv,digits=5),gn,sh,alxSummStat)
+	
+	return(expectedValues)
 end
 
 """
@@ -147,16 +174,16 @@ Estimate summary statistics using observed data and analytical rates. *analysisF
 # Output
  - Obserded data and summary statistics to ABC inference
 """
-function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
+function summaryStatsFromRates(;param::parameters,h5file::JLD2.JLDFile,analysisFolder::String,summstatSize::Int64,replicas::Int64,bootstrap::Bool)
 
 	#Opening files
 	sFile   = filter(x -> occursin("sfs",x), readdir(analysisFolder,join=true));
 	dFile   = filter(x -> occursin("div",x), readdir(analysisFolder,join=true));
 
-	sfs,d,α = openSfsDiv(sFile,dFile,param.dac,replicas,bootstrap);
+	sfs,d,α,observed = openSfsDiv(sFile,dFile,param.dac,replicas,bootstrap);
 
 	#Open rates
-	tmp    = rates[string(param.N) * "/" * string(param.n)]
+	tmp    = h5file[string(param.N) * "/" * string(param.n)]
 
 	#Subset index
 	idx    = sample(1:size(tmp["models"],1),summstatSize,replace=false)
@@ -169,22 +196,10 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	neut = Array(view(n,idx,:));
 	sel  = Array(view(s,idx,:));
 
-	#=#Subset index
-	idx    = sample.(fill(1:size(tmp["models"],1),replicas),fill(summstatSize,replicas),replace=false)
-	models = Array.(map(x -> view(tmp["models"],x,:), idx));
-	dsdn   = Array.(map(x -> view(tmp["dsdn"],x,:), idx));
-
-	# Filtering polymorphic rate by dac
-	n    = hcat(map(x -> view(tmp["neut"][x],:),param.dac)...)
-	s    = hcat(map(x -> view(tmp["sel"][x],:),param.dac)...)
-	neut = Array.(map(x -> view(n,x,:), idx));
-	selected  = Array.(map(x -> view(s,x,:), idx));=#
-
 	#Making summaries
-	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn);
+	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn,observed);
 
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
-	#=w(x,name) = CSV.write(name,DataFrame(x),delim='\t',header=false);=#
 
 	# Controling outlier cases
 	fltInf(e) = replace!(e, -Inf=>NaN)
@@ -193,7 +208,6 @@ function summaryStatsFromRates(;param::parameters,rates::JLD2.JLDFile,analysisFo
 	expectedValues = fltInf(expectedValues)
 	expectedValues = fltNan(expectedValues)
 	expectedValues = expectedValues[(expectedValues[:,3] .> 0 ) .& (expectedValues[:,3] .<1 ),:]
-	
 	
 	# Writting ABCreg input
 	w(vcat(α...), analysisFolder * "/alphas.txt");
