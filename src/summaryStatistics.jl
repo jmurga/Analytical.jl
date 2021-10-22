@@ -129,7 +129,7 @@ function sampledAlpha(;d::Array,afs::Array,observed::Matrix,λdiv::Array,λpol::
 
 	expPn_rj[1,:] = @. expPn[1,:] * θ_pn;
 	expPs_rj[1,:] = @. expPs[1,:] * θ_ps;
-	for j = 2:size(param.dac,1)
+	for j = 2:size(dac,1)
 		expPn_rj[j,:] = @. expPn[j,:] * θ_pn * r_pn[j,:];
 		expPs_rj[j,:] = @. expPs[j,:] * θ_ps * r_ps[j,:];
 	end
@@ -197,25 +197,24 @@ function summaryStatsFromRates(;param::parameters,h5file::JLD2.JLDFile,analysisF
 	sel  = Array(view(s,idx,:));
 
 	#Making summaries
-	expectedValues = samplingFromRates(models,sfs[1],d[1],neut,sel,dsdn,observed[1],param.dac);
+	f(x,y,o,m=models,nt=neut,sl=sel,d=dsdn,dac=param.dac) = samplingFromRates(m,x,y,nt,sl,d,o,dac);
+	expectedValues = f.(sfs,d,observed);
 
 	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	# Controling outlier cases
 	fltInf(e) = replace!(e, -Inf=>NaN)
-	expectedValues = fltInf(expectedValues)
+	expectedValues = fltInf.(expectedValues)
 	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
-	expectedValues = fltInf(expectedValues)
-	expectedValues = fltNan(expectedValues)
-	expectedValues = expectedValues[(expectedValues[:,3] .> 0 ) .& (expectedValues[:,3] .<1 ),:]
+	expectedValues = fltInf.(expectedValues)
+	expectedValues = fltNan.(expectedValues)
+	expectedValues = map(x -> x[(x[:,3] .> 0 ) .& (x[:,3] .<1 ),:],expectedValues)
 	
 	# Writting ABCreg input
-	w(vcat(α...), analysisFolder * "/alphas.txt");
-	w(expectedValues, analysisFolder * "/summstat.txt");
-
-	#=progress_pmap(w,repeat.(α,2), @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));=#
-	#=progress_pmap(w,α, @. analysisFolder * "/alpha_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting alphas "));
-	progress_pmap(w, expectedValues, @. analysisFolder * "/summstat_" * string(1:replicas) * ".tsv";progress= Progress(replicas,desc="Writting summaries "));=#
+	#=w(vcat(α...), analysisFolder * "/alphas.txt");
+	w(expectedValues, analysisFolder * "/summstat.txt");=#
+	progress_map(w,α, analysisFolder * "/alphas_" .* string.(1:size(sFile,1)) .* ".txt";progress= Progress(size(sFile,1),desc="Writting α "));
+	progress_pmap(w,expectedValues,  analysisFolder * "/summstat_" .* string.(1:size(sFile,1)) .* ".txt";progress= Progress(size(sFile,1),desc="Writting summaries "));
 
 	return(expectedValues)
 end

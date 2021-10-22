@@ -102,6 +102,17 @@ function ABCreg(;analysisFolder::String,S::Int64,tol::Float64,abcreg::String)
 	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
 
 	r(aFile,sumFile,out);
+
+# List alphas and summstat files
+aFile   = filter(x -> occursin("alphas",x), readdir(analysisFolder,join=true));
+sumFile   = filter(x -> occursin("summstat",x), readdir(analysisFolder,join=true));
+
+# Creating output names
+out = analysisFolder .* "/out_" .* string.(1:size(aFile,1))
+
+r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
+
+progress_pmap(r,aFile,sumFile,out);	
 end
 
 """
