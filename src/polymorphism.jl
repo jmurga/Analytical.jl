@@ -97,10 +97,11 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,
 		out = zeros(Float64,param.nn + 1)
 		out = out[2:end-1]
 	else
+
 		redPlus = phiReduction(param,gammaValue)
 
 		# Solving sfs
-		NN2 = convert(Int64,ceil(param.NN*param.B))
+		NN2  = convert(Int64,ceil(param.NN*param.B))
 		xa1  = collect(0:NN2)
 		xa2  = xa1/(NN2)
 
@@ -198,11 +199,11 @@ function DiscSFSSelNeg(param::parameters,ppos::Float64)
 end
 
 """
-	cumulativeSfs(sfsTemp)
+	cumulative_sfs(sfsTemp)
 
 Changing SFS considering all values above a frequency *x*. The original asymptotic-MK approach takes Pn(x) and Ps(x) as the number of polymorphic sites at frequency *x* rather than above *x*, but this approach scales poorly as sample size increases. We define the polymorphic spectrum as stated above since these quantities trivially have the same asymptote but are less affected by changing sample size.
 """
-function cumulativeSfs(sfsTemp::Array,freqs::Bool=true)
+function cumulative_sfs(sfsTemp::Array,freqs::Bool=true)
 
 	out      = Array{Float64}(undef, size(sfsTemp,1),size(sfsTemp,2))
 
@@ -234,11 +235,11 @@ function cumulativeSfs(sfsTemp::Array,freqs::Bool=true)
 end
 
 """
-	reduceSfs(sfsTemp,bins)
+	reduce_sfs(sfsTemp,bins)
 
 Function to reduce the SFS into N bins.
 """
-function reduceSfs(sfsTemp::Array,bins::Int64)
+function reduce_sfs(sfsTemp::Array,bins::Int64)
 
 	freq  = collect(0:(size(sfsTemp,1)-1))/size(sfsTemp,1)
 	h1    = StatsBase.fit(StatsBase.Histogram,freq,0:(1/(bins-1)):1)

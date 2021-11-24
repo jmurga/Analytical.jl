@@ -9,7 +9,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
 
 # Arguments
  - `param::parameters`: mutable structure containing the model
- - `convolutedSamples::binomialDict` : structure containing the binomial convolution
+ - `convoluted_samples::binomialDict` : structure containing the binomial convolution
  - `gH::Array{Int64,1}` : Range of strong selection coefficients
  - `gL::Union{Array{Int64,1},Nothing}`: Range of weak selection coefficients
  - `gamNeg::Array{Int64,1}` : Range of deleterious selection coefficients
@@ -23,7 +23,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
  - `Output`: HDF5 file containing models solved and rates.
 """
 function rates(;param::parameters,
-				convolutedSamples::binomialDict,
+				convoluted_samples::binomialDict,
 				gH::S,
 				gL::S,
 				gamNeg::S,
@@ -64,7 +64,7 @@ function rates(;param::parameters,
 
 	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomialDict)
 	nParam  = [param for i in 1:iterations];
-	nBinom  = [convolutedSamples for i in 1:iterations];
+	nBinom  = [convoluted_samples for i in 1:iterations];
 	
 	# Random strong selection coefficients
 	ngh     = rand(repeat(gH,iterations),iterations);
@@ -114,7 +114,9 @@ function rates(;param::parameters,
 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
 	neut   = df[:,9:(8+size(param.dac,1))]
 	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = Array(df[:,(end-3):end])
+	dsdn   = Array(df[:,(end-5):end-2])
+
+	sum_pol = df[:,end-1:end]
 
 	# Saving multiple summary statistics
 	n = OrderedDict{Int,Array}()
@@ -130,6 +132,7 @@ function rates(;param::parameters,
 		file[string(param.N)* "/" * string(param.n) * "/neut"]   = n;
 		file[string(param.N)* "/" * string(param.n) * "/sel"]    = s;
 		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn;
+		file[string(param.N)* "/" * string(param.n) * "/pol"]   = sum_pol;
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac;
 	end;
 end
@@ -141,7 +144,7 @@ Estimating rates given a model for all B range.
 
 # Arguments
  - `param::parameters`
- - `convolutedSamples::binomialDict`
+ - `convoluted_samples::binomialDict`
  - `alTot::Float64`
  - `alLow::Float64`
  - `gH::Int64`
@@ -153,7 +156,7 @@ Estimating rates given a model for all B range.
 # Output
  - `Array{Float64,2}`
 """
-function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
+function iterRates(param::parameters,convoluted_samples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
 
 	# Creating model to solve
 	# Γ distribution
@@ -171,7 +174,7 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	r = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 12)
+	r = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14)
 	for j in eachindex(param.B_bins)
 		# Set B value
 		param.B = param.B_bins[j]
@@ -179,9 +182,9 @@ function iterRates(param::parameters,convolutedSamples::binomialDict,alTot::Floa
 		setThetaF!(param)
 		# Solve model for the B value
 		tmp = try
-			gettingRates(param,convolutedSamples.bn[param.B])
+			gettingRates(param,convoluted_samples.bn[param.B])
 		catch e
-			zeros(size(param.dac,1) *2+ 12)'
+			zeros(size(param.dac,1) * 2 + 14)'
 		end
 		@inbounds r[j,:] = tmp
 	end
@@ -224,8 +227,9 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	end
 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,cnvBinom)
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,cnvBinom)
+	
 	# Cumulative rates
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
+	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false)
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
@@ -233,7 +237,7 @@ function gettingRates(param::parameters,cnvBinom::SparseMatrixCSC{Float64,Int64}
 	##########
 	# Output #
 	##########
-	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH)'
+	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,neut[1],sel[1])'
 
 	return (analyticalValues)
 end

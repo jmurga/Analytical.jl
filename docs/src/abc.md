@@ -7,7 +7,7 @@ We link [ABCreg](https://github.com/molpopgen/ABCreg) with Julia to perform ABC 
 It is possible to perform the inference through Julia. We set the tolerance value such that 1000 acceptances were recorded for the inference
 
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
+Analytical.ABCreg(analysis_folder="analysis/",S=size(adap.dac,1),tol=0.025,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
 The function will output one file per bootstrapped replicas containing the posteriors distributions. The posterior distributions contains five columns corresponding to :
@@ -22,8 +22,8 @@ We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distribution
 If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
 ```julia
-Analytical.sourcePlotMapR(script="analysis/script.jl")
-tgpmap = Analytical.plotMap(analysisFolder="analysis/");
+Analytical.source_plot_map_R(script="analysis/script.jl")
+tgpmap = Analytical.plot_map(analysis_folder="analysis/");
 DataFrames.describe(tgpmap)
 ```
 

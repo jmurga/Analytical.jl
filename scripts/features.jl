@@ -104,3 +104,40 @@ function plotMap(;analysis::String,output::String)
 		println("Please install R, ggplot2 and abc in your system before execute this function")
 	end
 end
+
+#=function sampledAlpha(;divergence::Array,afs::Array,observed::Matrix,λdiv::Array,λpol::Array,pol::Array,dac::Array)
+
+	## Outputs
+	alphas, expDn, expDs = poisson_fixation(observedValues=divergence,λds=λdiv[1],λdn=λdiv[2],λweak=λdiv[3],λstrong=λdiv[4])
+	expPn, expPs         = poisson_polymorphism(observedValues=afs,λps=λpol[1],λpn=λpol[2],pol=pol)
+	
+	θ_pn = @. observed[1,1] / (expPn[1,:]);
+	θ_ps = @. observed[1,2] / (expPs[1,:]);
+
+	r_pn = ones(size(expPn));
+	r_ps = ones(size(expPs));
+	for j = 2:size(dac,1)
+		r_pn[j,:] .= @. (observed[j,1]) / (expPn[j,:]);
+		r_pn[j,:] = @. r_pn[j,:] / θ_pn;
+		
+		r_ps[j,:] .= @. (observed[j,2]) / (expPs[j,:]);
+		r_ps[j,:] .= @. r_ps[j,:] / θ_ps;
+	end
+
+	expPn_rj = zeros(size(expPn))
+	expPs_rj = zeros(size(expPs))
+
+	expPn_rj[1,:] = @. expPn[1,:] * θ_pn;
+	expPs_rj[1,:] = @. expPs[1,:] * θ_ps;
+	for j = 2:size(dac,1)
+		expPn_rj[j,:] = @. expPn[j,:] * θ_pn * r_pn[j,:];
+		expPs_rj[j,:] = @. expPs[j,:] * θ_ps * r_ps[j,:];
+	end
+
+	## Alpha from expected values. Used as summary statistics
+	αS = @. round(1 - ((expDs/expDn) * (expPn/expPs)'),digits=5)
+	αS_v2 = @. round(1 - ((expDs/expDn) * (expPn_rj/expPs_rj)'),digits=5)
+
+	return αS,alphas,expDn,expDs,expPn,expPs
+end
+=#

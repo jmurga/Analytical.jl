@@ -1,5 +1,5 @@
 """
-	parseSfs(;data,output,sfsColumns,divColumns)
+	parse_sfs(;data,output,sfs_columns,div_columns)
 
 Function to parse polymorphism and divergence by subset of genes. The input data is based on supplementary material described at [Uricchio et al. 2019](https://doi.org/10.1038/s41559-019-0890-6). Please be sure the file is tabulated.
 
@@ -12,8 +12,8 @@ Function to parse polymorphism and divergence by subset of genes. The input data
 # Arguments
  - `data`: String or Array of strings containing files names with full path.
  - `output::String`: path to save file. Containing one file per input file.
- - `sfsColumns::Array{Int64,1}`: non-synonymous and synonymous daf columns. Please introduce first the non-synonymous number.
- - `divColumns::Array{Int64,1}`: non-synonymous and synonymous divergence columns. Please introduce first the non-synonymous number.
+ - `sfs_columns::Array{Int64,1}`: non-synonymous and synonymous daf columns. Please introduce first the non-synonymous number.
+ - `div_columns::Array{Int64,1}`: non-synonymous and synonymous divergence columns. Please introduce first the non-synonymous number.
 
 # Returns
  - `Array{Float64,1}`: α values
@@ -21,53 +21,53 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Float64,1}`: Synonymous and non-synonymous divergence counts
  - 
 """
-function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{String,2}}=nothing,sfsColumns::Array{Int64,1}=[3,5],divColumns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
+function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Matrix{String15}}=nothing,sfs_columns::Array{Int64,1}=[3,5],div_columns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
 
 	g(x) = parse.(Float64,x[2:end-1])
 	
 	if isolines
-		s = sampleSize
+		s = sample_size
 	else
-		s = (sampleSize*2)
+		s = (sample_size*2)
 	end
 	
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
 	df   = CSV.read(data,header=false,delim='\t',DataFrame)
 
-	if(!isnothing(geneList))
-		df =  vcat([ df[df[:,1] .==i,:]  for i in geneList]...);
+	if(!isnothing(gene_list))
+		df =  vcat([ df[df[:,1] .==i,:]  for i in gene_list]...);
 	end
 
 	#=if(!isnothing(B))
 		df = df[df[:,end] .== B,:]
 		println(nrow(df))
-		tmp  = split.(df[:,sfsColumns], ",")
+		tmp  = split.(df[:,sfs_columns], ",")
 	else
 	end=#
 	
-	tmp  = split.(df[:,sfsColumns], ",")
+	tmp  = split.(df[:,sfs_columns], ",")
 
 	pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> countmap))
 	ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> countmap))
 
 	# Dn, Ds, Pn, Ps, sfs
-	Dn           = sum(df[:,divColumns[1]])
-	Ds           = sum(df[:,divColumns[2]])
+	Dn           = sum(df[:,div_columns[1]])
+	Ds           = sum(df[:,div_columns[2]])
 	Pn           = sum(values(pn))
 	Ps           = sum(values(ps))
 	sfsPn        = reduce(vcat,values(merge(+,freq,pn)))
 	sfsPs        = reduce(vcat,values(merge(+,freq,ps)))
 
 	if(!isnothing(bins))
-        sfsPn = reduceSfs(hcat(collect(1:(s-1)),sfsPn),bins)[:,2]
-        sfsPs = reduceSfs(hcat(collect(1:(s-1)),sfsPs),bins)[:,2]
+        sfsPn = reduce_sfs(hcat(collect(1:(s-1)),sfsPn),bins)[:,2]
+        sfsPs = reduce_sfs(hcat(collect(1:(s-1)),sfsPs),bins)[:,2]
 
-        sfs   = reduceSfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
-        scumu = cumulativeSfs(sfs)
+        sfs   = reduce_sfs(hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals),bins)
+        scumu = cumulative_sfs(sfs)
 	else
         sfs   = hcat(freq.keys,merge(+,freq,pn).vals,merge(+,freq,ps).vals)
-        scumu = cumulativeSfs(sfs)
+        scumu = cumulative_sfs(sfs)
 	end
 
     α    = round.(1 .- (Ds/Dn .*  scumu[:,2] ./scumu[:,3]),digits=5)
@@ -76,12 +76,12 @@ function parseSfs(;sampleSize::Int64,data::String,geneList::Union{Nothing,Array{
 end
 
 """
-	ABCreg(analysisFolder, replicas, S, tol, abcreg)
+	ABCreg(analysis_folder, replicas, S, tol, abcreg)
 
-Performing ABC inference using ABCreg. Please, be sure your analysisFolder contain the files alphas.txt and summaries.txt produced by Analytical.summaryStatsFromRates()
+Performing ABC inference using ABCreg. Please, be sure your analysis_folder contain the files alphas.txt and summaries.txt produced by Analytical.summaryStatsFromRates()
 
 # Arguments
- - `analysisFolder::String` : Folder containing the observed data and summary estatistics. It will be used to output the posterior distributions
+ - `analysis_folder::String` : Folder containing the observed data and summary estatistics. It will be used to output the posterior distributions
  - `S::Int64` : Number of summary stastitics to perform the inference.
  - `tol::Float64` : Tolerance value. It define the number of accepted value at ABC inference
  - `abcreg::String` : Path to ABCreg binary
@@ -90,40 +90,40 @@ Performing ABC inference using ABCreg. Please, be sure your analysisFolder conta
 Files containing posterior distributions from ABCreg
 
 """
-function ABCreg(;analysisFolder::String,S::Int64,tol::Float64,abcreg::String)
+function ABCreg(;analysis_folder::String,S::Int64,tol::Float64,abcreg::String)
 	
-	# List alphas and summstat files
-    aFile   = analysisFolder * "/alphas.txt"
-    sumFile = analysisFolder * "/summstat.txt"
+	#=# List alphas and summstat files
+    aFile   = analysis_folder * "/alphas.txt"
+    sumFile = analysis_folder * "/summstat.txt"
 
 	# Creating output names
-	out = analysisFolder * "/out"
+	out = analysis_folder * "/out"
 
 	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
 
-	r(aFile,sumFile,out);
+	r(aFile,sumFile,out);=#
 
-# List alphas and summstat files
-aFile   = filter(x -> occursin("alphas",x), readdir(analysisFolder,join=true));
-sumFile   = filter(x -> occursin("summstat",x), readdir(analysisFolder,join=true));
+	# List alphas and summstat files
+	aFile   = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
+	sumFile   = filter(x -> occursin("summstat",x), readdir(analysis_folder,join=true));
 
-# Creating output names
-out = analysisFolder .* "/out_" .* string.(1:size(aFile,1))
+	# Creating output names
+	out = analysis_folder .* "/out_" .* string.(1:size(aFile,1))
 
-r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
+	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
 
-progress_pmap(r,aFile,sumFile,out);	
+	progress_pmap(r,aFile,sumFile,out);	
 end
 
 """
 	Bootstrap data following polyDFE manual
 """
-function bootstrapData(sFile::Array{Float64,2},dFile::Array{Float64,2},replicas::Int64,outputFolder::String)
+function bootstrap_data(sfs_files::Array{Float64,2},divergence_files::Array{Float64,2},replicas::Int64,output_folder::String)
 	
 	# Open Data
-	sfs        = Array(CSV.read(sFile,DataFrame))
-	divergence = fill(Array(CSV.read(dFile,DataFrame)),replicas)
-	scumu      = fill(cumulativeSfs(sfs[:,2:end]),replicas)
+	sfs        = Array(CSV.read(sfs_files,DataFrame))
+	divergence = fill(Array(CSV.read(divergence_files,DataFrame)),replicas)
+	scumu      = fill(cumulative_sfs(sfs[:,2:end]),replicas)
 
 	# Bootstraping
 	b(x)       = pois_rand.(x)
@@ -139,7 +139,7 @@ function bootstrapData(sFile::Array{Float64,2},dFile::Array{Float64,2},replicas:
 	end
 end
 
-function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
+function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
 
 	sfs = Array.(CSV.read.(x,DataFrame,header=false))
 	divergence = Array.(CSV.read.(y,DataFrame,header=false))
@@ -151,7 +151,7 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 		sfs[2:end] .= pr.(sfs[2:end])
 	end
 
-	scumu = cumulativeSfs.(sfs)
+	scumu = cumulative_sfs.(sfs)
 	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
 	s = f.(scumu)
 
@@ -163,12 +163,12 @@ function openSfsDiv(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},re
 end
 
 """
-	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called *plotMap which used R to 
+	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called *plot_map which used R to 
 		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
-function sourcePlotMapR(;script::String)
+function source_plot_map_R(;script::String)
 
-	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",script)
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plot_map_r.jl",script)
 
 	try
 		include(script)

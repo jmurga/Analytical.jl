@@ -10,11 +10,9 @@ addprocs(7)
 @everywhere using Analytical, CSV, DataFrames, JLD2, ProgressMeter
 ```
 
-Before to compute the summary statistic, load your analytical rates and declare a model specifying the samples size and a DAC.
+Before to compute the summary statistic, declare a model specifying the sample size and a DAC.
 
 ```julia
-# Opening rates
-h5file   = jldopen("analysis/rates.jld2")
 adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925])
 ```
 
@@ -22,7 +20,7 @@ Note you can only input DAC already estimated, nonetheles you can perform any su
 
 ```julia 
 # Check hierarchy
-h5file
+h5 = jldopen("analysis/rates.jld2")
 
 JLDFile /home/jmurga/analysis/rates.jld2 (read-only)
  └─📂 1000
@@ -36,7 +34,7 @@ JLDFile /home/jmurga/analysis/rates.jld2 (read-only)
 
 ```julia
 # Checking estimated dac, string pattern inside the HDF5 variable
-h5file["1000/661/dac"]
+h5["1000/661/dac"]
 
 14-element Vector{Int64}:
     1
@@ -55,12 +53,12 @@ h5file["1000/661/dac"]
  1000
 ```
 
-To standardize the summary statistic estimation, the function ```Analytical.summaryStatsFromRates``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](input.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
+To standardize the summary statistic estimation, the function ```Analytical.summary_statistics``` will search and read the SFS and divergence files given a folder. Please be sure that you write the SFS and divergence files (check [Parsing genomic data](input.md)) using the prefix *sfs* and *div* to read the files correctly. Otherwise, the function will not read the files correctly.
 
 We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE) manual. In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
 
 ```julia
-@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/",summstatSize=10^5,replicas=100,bootstrap=true);
+@time summstat = Analytical.summary_statistics(param=adap,rates="analysis/rates.jld2",analysis_folder="analysis/",summstat_size=10^5,replicas=100,bootstrap=true);
 ```
 
 The function will create a summary statistic file and the observed data file (*summaries.txt* and *alphas.txt* respectively). Both files will be used to perform the ABC inference. Each line in *alphas.txt* contains the $\alpha_(x)$ estimations from the bootstrapped SFS.

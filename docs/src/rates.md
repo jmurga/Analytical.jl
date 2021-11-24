@@ -77,11 +77,11 @@ adap.be = abs(0.184/-457)
 Before to automatize the fixation and polimorphic rates estimation, you must to convolute the binomial distribution to obtain the downsampled SFS
 
 ```julia
-convolutedSamples = Analytical.binomialDict()
-Analytical.binomOp!(adap,convolutedSamples.bn)
+convoluted_samples = Analytical.binomial_dict()
+Analytical.binomOp!(adap,convoluted_samples.bn)
 ```
 
-Note the ```Analytical.binomOp!``` make inplace estimation at ```convolutedSamples```given the BGS range defined at ```adap.bRange```
+Note the ```Analytical.binomOp!``` make inplace estimation at ```convoluted_samples```given the BGS range defined at ```adap.bRange```
 
 ```julia
 @docs Analytical.binomOp!
@@ -95,7 +95,7 @@ Note the ```Analytical.binomOp!``` make inplace estimation at ```convolutedSampl
 
     •  param::parameters
 
-    •  convolutedSamples::binomialDict
+    •  convoluted_samples::binomialDict
 
   Returns
   ≡≡≡≡≡≡≡≡≡
@@ -124,7 +124,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 
     •  param::parameters: mutable structure containing the model
 
-    •  convolutedSamples::binomialDict : structure containing the binomial convolution
+    •  convoluted_samples::binomialDict : structure containing the binomial convolution
 
     •  gH::Array{Int64,1} : Range of strong selection coefficients
 
@@ -151,7 +151,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 ```
 
 ```julia
-@time df = Analytical.rates(param = adap,convolutedSamples=convolutedSamples,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="analysis/rates.jld2");
+@time df = Analytical.rates(param = adap,convoluted_samples=convoluted_samples,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="analysis/rates.jld2");
 ```
 
 The function will create a HDF5 file containing the solved models, fixation rates, polymorphic rates, and the selected DAC. This information will be used later to estimate summary statistics.

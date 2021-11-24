@@ -8,7 +8,7 @@ end
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
-function plotMap(;analysisFolder::String,weak::Bool=true,title::String="Posteriors")
+function plot_map(;analysisFolder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
 		@eval using RCall

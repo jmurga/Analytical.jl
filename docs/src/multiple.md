@@ -17,85 +17,84 @@ run(`mkdir -p analysis/wg/ analysis/vips/ analysis/nonvips/`)
 Once you have the folder please download from our repository the files containing the VIPs and Non-VIPs ids.
 
 ```julia
-run(`curl -o analysis/vips/vipList.txt https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/vipList.txt`)
-run(`curl -o analysis/nonvips/nonvipList.txt https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/nonvipList.txt`)
+run(`curl -o analysis/vips/vip_list.txt https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/vip_list.txt`)
+run(`curl -o analysis/nonvips/nonvip_list.txt https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/nonvip_list.txt`)
 ```
 
 Now we are going to parse our three dataset to output the SFS and divergence files into each analysis folder. We we follow the example provided at [Input Data](input.data) section. 
 
  - Whole-Genome dataset
 ```julia
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/tgp.txt")
-CSV.write("analysis/wg/sfsTgp.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
-CSV.write("analysis/wg/divTgp.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt")
+CSV.write("analysis/wg/sfs_tgp.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
+CSV.write("analysis/wg/div_tgp.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
 ```
 
  - VIPs dataset
 ```julia
-vipsList = CSV.read("analysis/vips/vipList.txt",DataFrame) |> Array
+vips_list = CSV.read("analysis/vips/vip_list.txt",DataFrame) |> Array
 
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/tgp.txt",geneList=vipsList)
-CSV.write("analysis/vips/sfsTgp.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
-CSV.write("analysis/vips/divTgp.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt",gene_list=vips_list)
+CSV.write("analysis/vips/sfs.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
+CSV.write("analysis/vips/div.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
 ```
 
  - Non-VIPs dataset
 ```julia
-nonvipsList = CSV.read("analysis/nonvips/nonvipList.txt",DataFrame) |> Array
+nonvips_list = CSV.read("analysis/nonvips/nonvip_list.txt",DataFrame) |> Array
 
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/tgp.txt",geneList=nonvipsList)
-CSV.write("analysis/nonvips/sfsTgp.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
-CSV.write("analysis/nonvips/divTgp.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt",gene_list=nonvips_list)
+CSV.write("analysis/nonvips/sfs.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
+CSV.write("analysis/nonvips/div.tsv",DataFrame(permutedims(divergence),:auto),delim='\t',header=false)
 ```
 
 Once you have the data parsed, you can estimate the summary statistic following [Summary statistic](summstat.md) section. Load the rates and select a DAC before to continue the analysis
 
 ```julia
-h5file   = jldopen("analysis/rates.jld2")
 adap = Analytical.parameters(n=661,dac=[2,4,5,10,20,50,200,661,925])
 ```
 
  - Whole-Genome dataset
 ```julia
-@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/wg/",summstatSize=10^6,replicas=100,bootstrap=true);
+@time summstat = Analytical.summary_statistics(param=adap,h5_file="analysis/rates.jld2",analysis_folder="analysis/wg/",summstat_size=10^6,replicas=100,bootstrap=true);
 ```
 
  - VIPs dataset
 ```julia
-@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/vips/",summstatSize=10^6,replicas=100,bootstrap=true);
+@time summstat = Analytical.summary_statistics(param=adap,h5_file="analysis/rates.jld2",analysis_folder="analysis/vips/",summstat_size=10^6,replicas=100,bootstrap=true);
 ```
 
  - Non-VIPs dataset
 ```julia
-@time summstat = Analytical.summaryStatsFromRates(param=adap,rates=h5file,analysisFolder="analysis/nonvips/",summstatSize=10^6,replicas=100,bootstrap=true);
+@time summstat = Analytical.summary_statistics(param=adap,h5_file="analysis/rates.jld2",analysis_folder="analysis/nonvips/",summstat_size=10^6,replicas=100,bootstrap=true);
 ```
 
 Now you can perform the ABC inference using ABCreg or another ABC software using the files *alphas.txt* and *summaries.txt* deposited in each folder. We will perform the inference using ABCreg. Please compile ABCreg before to perform the execution as described in the [Installation](index.md)
 
  - Whole-Genome dataset
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/wg/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
+Analytical.ABCreg(analysis_folder="analysis/wg/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
  - VIPs dataset
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/vips/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
+Analytical.ABCreg(analysis_folder="analysis/vips/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
  - Non-VIPs dataset
 ```julia
-Analytical.ABCreg(analysisFolder="analysis/nonvips/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
+Analytical.ABCreg(analysis_folder="analysis/nonvips/",S=size(adap.dac,1),tol=0.001,abcreg="/home/jmurga/ABCreg/src/reg");
 ```
 
 Once the posterior distributions are estimated you can perform the Maximum-A-Posterior (MAP) estimates. We performed the MAP estimates following ABCreg examples. Please be sure you have installed R and the packages(ggplot2, locfit and data.table). This packages are already installed in Docker and Singularity images. Load the R functions to estimate and plot MAP executing the following command
 
 ```julia
-Analytical.sourcePlotMapR(script="analysis/script.jl")
+Analytical.source_plot_map_R(script="analysis/script.jl")
 ```
 
  - Whole-Genome dataset
 ```julia
-tgpmap = Analytical.plotMap(analysisFolder="analysis/wg/")
+tgpmap = Analytical.plotMap(analysis_folder="analysis/wg/")
 DataFrames.describe(tgpmap)
 
 5×7 DataFrame
@@ -113,7 +112,7 @@ DataFrames.describe(tgpmap)
 
  - VIPs dataset
 ```julia
-vipsmap = Analytical.plotMap(analysisFolder="analysis/vips/")
+vipsmap = Analytical.plotMap(analysis_folder="analysis/vips/")
 DataFrames.describe(vipsmap)
 
 5×7 DataFrame
@@ -129,7 +128,7 @@ DataFrames.describe(vipsmap)
 
  - Non-VIPs dataset
 ```julia
-nonvipsmap = Analytical.plotMap(analysisFolder="analysis/nonvips/")
+nonvipsmap = Analytical.plotMap(analysis_folder="analysis/nonvips/")
 DataFrames.describe(nonvipsmap)
 
 5×7 DataFrame

@@ -16,7 +16,7 @@ curl -o analysis/dgnRal.txt https://raw.githubusercontent.com/jmurga/Analytical.
 Once you have downloaded the files, you can use the function ```Analytical.parseSfs``` to convert the data into SFS and divergence counts. Please check [`Analytical.parseSfs`](@ref) to get more info o execute:
 
 ```julia
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/tgp.txt")
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt")
 ```
 
 To save the data, you can use CSV and DataFrames packages
@@ -30,10 +30,10 @@ CSV.write("analysis/tgpDiv.tsv",DataFrame(permutedims(divergence),:auto),delim='
 It is possible to directly subset genes IDs using Ensembl or Flybase id. Use a variable of type ```Matrix{String}``` into the argument *geneList*
 
 ```julia
-download('https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/ensemblList.txt','analysis/ensemblList.txt')
-ensemblList = CSV.read("analysis/ensemblList.txt",header=false,DataFrame) |> Array
+download('https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/ensembl_list.txt','analysis/ensembl_list.txt')
+ensembl_list = CSV.read("analysis/ensembl_list.txt",header=false,DataFrame) |> Array
 
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 661, data = "analysis/tgp.txt",geneList = ensemblList)
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt",gene_list = ensembl_list)
 ```
 
 If you are going to parse DGN, you need to change the value of the argument *isoline* to *true*. Following the Murga-Moreno et al. (2019) sample size for each population is:
@@ -42,5 +42,5 @@ If you are going to parse DGN, you need to change the value of the argument *iso
  - RAL population: 160
 
 ```julia
-alpha, sfs, divergence = Analytical.parseSfs(sampleSize = 160, data = "analysis/dgnRal.txt",isolines=true)
+alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 160, data = "analysis/dgnRal.txt",isolines=true)
 ```

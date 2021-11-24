@@ -61,10 +61,10 @@ Mutable structure containing the downsampled SFS.
  - `bn::Dict`: SparseMatrixCSC containing the binomial convolution
 
 """
-@with_kw mutable struct binomialDict
+@with_kw mutable struct binomial_dict
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
 end
-#=const binomialDict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
+#=const binomial_dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
 
 ################################
 ###### Solving parameters ######
@@ -106,7 +106,7 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 """
 function setThetaF!(param::parameters)
 
-	i(θ,p=param) = Br(p,θ)-p.B
+	i(θ,p=param) = Br(p,θ) - p.B
 	thetaF       = find_zero(i,0.0)
 	param.thetaF = thetaF
 end
@@ -160,7 +160,7 @@ Binomial convolution to sample the allele frequencies probabilites depending on 
 
 # Arguments
  - `param::parameters`
- - `convolutedSamples::binomialDict`
+ - `convolutedSamples::binomial_dict`
 
 # Returns
  - `Array{Float64,2}`: convoluted SFS for each B value defined in the model (param.B_bins). The estimations are saved at *convolutedBn.bn*.
@@ -248,11 +248,11 @@ Analytical α(x) estimation. Solve α(x) generally. We used the expected rates o
 
 # Arguments
  - `param::parameters`
- - `convolutedSamples::binomialDict`
+ - `convolutedSamples::binomial_dict`
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;param::parameters,convolutedSamples::binomialDict)
+function analyticalAlpha(;param::parameters,convolutedSamples::binomial_dict)
 
 	################################################################
 		# Solve the model similarly to original python mktest  #	
