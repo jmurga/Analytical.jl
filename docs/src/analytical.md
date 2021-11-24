@@ -19,7 +19,7 @@ adap = Analytical.parameters(n=661,alTot=0.4,alLow=0.2,gH=500,gamNeg=-457,al=0.1
 Before solving the model, you must compute the convoluted binomial distribution to down-sampling the SFS
 
 ```julia
-convolutedSamples = Analytical.binomialDict()
+convolutedSamples = Analytical.binomial_dict()
 Analytical.binomOp!(adap,convolutedSamples.bn)
 ```
 

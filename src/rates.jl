@@ -9,7 +9,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
 
 # Arguments
  - `param::parameters`: mutable structure containing the model
- - `convoluted_samples::binomialDict` : structure containing the binomial convolution
+ - `convoluted_samples::binomial_dict` : structure containing the binomial convolution
  - `gH::Array{Int64,1}` : Range of strong selection coefficients
  - `gL::Union{Array{Int64,1},Nothing}`: Range of weak selection coefficients
  - `gamNeg::Array{Int64,1}` : Range of deleterious selection coefficients
@@ -23,7 +23,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
  - `Output`: HDF5 file containing models solved and rates.
 """
 function rates(;param::parameters,
-				convoluted_samples::binomialDict,
+				convoluted_samples::binomial_dict,
 				gH::S,
 				gL::S,
 				gamNeg::S,
@@ -62,7 +62,7 @@ function rates(;param::parameters,
 		ngl     = rand(repeat(gL,iterations),iterations);
 	end
 
-	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomialDict)
+	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
 	nParam  = [param for i in 1:iterations];
 	nBinom  = [convoluted_samples for i in 1:iterations];
 	
@@ -144,7 +144,7 @@ Estimating rates given a model for all B range.
 
 # Arguments
  - `param::parameters`
- - `convoluted_samples::binomialDict`
+ - `convoluted_samples::binomial_dict`
  - `alTot::Float64`
  - `alLow::Float64`
  - `gH::Int64`
@@ -156,7 +156,7 @@ Estimating rates given a model for all B range.
 # Output
  - `Array{Float64,2}`
 """
-function iterRates(param::parameters,convoluted_samples::binomialDict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
+function iterRates(param::parameters,convoluted_samples::binomial_dict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
 
 	# Creating model to solve
 	# Γ distribution

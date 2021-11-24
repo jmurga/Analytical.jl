@@ -95,7 +95,7 @@ Note the ```Analytical.binomOp!``` make inplace estimation at ```convoluted_samp
 
     •  param::parameters
 
-    •  convoluted_samples::binomialDict
+    •  convoluted_samples::binomial_dict
 
   Returns
   ≡≡≡≡≡≡≡≡≡
@@ -124,7 +124,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 
     •  param::parameters: mutable structure containing the model
 
-    •  convoluted_samples::binomialDict : structure containing the binomial convolution
+    •  convoluted_samples::binomial_dict : structure containing the binomial convolution
 
     •  gH::Array{Int64,1} : Range of strong selection coefficients
 

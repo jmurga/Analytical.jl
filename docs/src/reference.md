@@ -4,7 +4,7 @@
 
 ```@docs
 Analytical.parameters
-Analytical.binomialDict
+Analytical.binomial_dict
 Analytical.Br
 Analytical.setThetaF!
 Analytical.setPpos!
