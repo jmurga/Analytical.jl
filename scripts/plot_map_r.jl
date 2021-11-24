@@ -8,13 +8,13 @@ end
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
 """
-function plot_map(;analysisFolder::String,weak::Bool=true,title::String="Posteriors")
+function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
 		@eval using RCall
 		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
 
-		out = filter(x -> occursin("post",x), readdir(analysisFolder,join=true))
+		out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
 		out          = filter(x -> !occursin(".1.",x),out)
 
 		open(x)      = Array(CSV.read(x,DataFrame,header=false))
@@ -51,9 +51,9 @@ function plot_map(;analysisFolder::String,weak::Bool=true,title::String="Posteri
 
 			dal = suppressWarnings(data.table::melt(al))
 			pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
-			suppressWarnings(ggsave(pal,filename=paste0($analysisFolder,'/map.png'),dpi=600))
+			suppressWarnings(ggsave(pal,filename=paste0($analysis_folder,'/map.png'),dpi=600))
 			"""
-		CSV.write(analysisFolder * "/map.tsv",maxp,delim='\t',header=true)
+		CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
 
 		#=RCall.endEmbeddedR();=#
 

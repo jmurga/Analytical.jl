@@ -22,7 +22,6 @@ Please check the documentation to get more info about models parameters or detai
 		tmpWeak = nothing
 	else
 		tmpWeak = parse.(Int,split(gL,","))
-		tmpWeak = collect(tmpWeak[1]:tmpWeak[2])
 	end
 
 
@@ -51,9 +50,9 @@ Please check the documentation to get more info about models parameters or detai
 	@eval @everywhere using Analytical, ParallelUtilities
 	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
 
-	@eval convolutedSamples = Analytical.binomialDict()
-	@eval Analytical.binomOp!($adap,$convolutedSamples.bn);
-	@eval Analytical.rates(param = $adap,convolutedSamples=$convolutedSamples,gH=collect($tmpStrong[1]:$tmpStrong[2]),gL=$tmpWeak,gamNeg=collect($tmpNeg[1]:$tmpNeg[2]),iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output,scheduler=$scheduler);
+	@eval convoluted_samples = Analytical.binomial_dict()
+	@eval Analytical.binomOp!($adap,$convoluted_samples.bn);
+	@eval Analytical.rates(param = $adap,convoluted_samples=$convoluted_samples,gH=$tmpStrong[1]:$tmpStrong[2],gL=$tmpWeak[1]:$tmpWeak[2],gamNeg=$tmpNeg[1]:$tmpNeg[2],iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output,scheduler=$scheduler);
 
 	for i in workers()
 		rmprocs(i)
@@ -62,14 +61,14 @@ end
 
 
 "
-	julia abcmk_cli.jl joinRates --analysisFolder --output
+	julia abcmk_cli.jl joinRates --analysis_folder --output
 "
-@main function joinRates(;analysisFolder::String="<folder>",samples::Int64=661,output::String="<name>")
+@main function joinRates(;analysis_folder::String="<folder>",samples::Int64=661,output::String="<name>")
 
 	@eval using JLD2, CSV ,DataFrames, OrderedCollections
 
 	searchdir(path) = filter(x->occursin("jld2",x), readdir(path))
-	files = analysisFolder .* "/" .* searchdir(analysisFolder)
+	files = analysis_folder .* "/" .* searchdir(analysis_folder)
 
 	j = jldopen.(files)
 	
@@ -113,7 +112,7 @@ end
 
 
 "
-	julia abcmk_cli.jl parseData --analysisFolder analysis/ --geneList analysis/dnaVipsList.txt
+	julia abcmk_cli.jl parseData --analysis_folder analysis/ --gene_list analysis/dnaVipsList.txt
 
 Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. 
 
@@ -121,20 +120,20 @@ The function returns files containing raw polymorphic and divergence data, parse
 
 Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli/
 "
-@main function parseData(;analysisFolder::String="<folder>",dataset::String="tgp",geneList::String="false",bins::String="false")
+@main function parseData(;analysis_folder::String="<folder>",dataset::String="tgp",gene_list::String="false",bins::String="false")
 	
 	@eval using Analytical, DataFrames, CSV
 
-	run(`mkdir -p $analysisFolder`)
+	run(`mkdir -p $analysis_folder`)
 
 	dataset = lowercase(dataset)
-	data    = analysisFolder * "/" * dataset * ".txt"
+	data    = analysis_folder * "/" * dataset * ".txt"
 	
 	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/"* dataset * ".txt",data)
 
 	# Check if bins or genelist are defined
-	@eval if $geneList != "false"
-		@eval gList = CSV.read($geneList,DataFrame,header=false) |> Array
+	@eval if $gene_list != "false"
+		@eval gList = CSV.read($gene_list,DataFrame,header=false) |> Array
 	else
 		gList = nothing
 	end
@@ -147,40 +146,53 @@ Please check the documentation to get more info https://jmurga.github.io/Analyti
 
 	# Parsing TGP data
 	if dataset == "tgp"
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,geneList=$gList,bins=$binsSize)
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,gene_list=$gList,bins=$binsSize)
 	elseif occursin("zi",dataset)
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=154,data=$data,geneList=$gList,bins=$binsSize,isolines=true)
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=154,data=$data,gene_list=$gList,bins=$binsSize,isolines=true)
 	elseif occursin("ral",dataset)
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=160,data=$data,geneList=$gList,bins=$binsSize,isolines=true)
+		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=160,data=$data,gene_list=$gList,bins=$binsSize,isolines=true)
 	end
 	# Writting data to folder
-	@eval sName = $analysisFolder * "/sfs.tsv"
-	@eval dName = $analysisFolder * "/div.tsv"
+	@eval sName = $analysis_folder * "/sfs.tsv"
+	@eval dName = $analysis_folder * "/div.tsv"
 
 	@eval CSV.write($sName,DataFrame($sfs,:auto),delim='\t',header=false)
 	@eval CSV.write($dName,DataFrame($divergence',:auto),delim='\t',header=false)
 end
 
 "
-	julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000 --nthreads 7
+	julia abcmk_cli.jl summaries --analysis_folder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000 --nthreads 7
 
 Estimate summary statistics from analytical rates. You must provide a path containing the parsed SFS and divergence file.
 
 The function returns files containing bootstrapped datasets (alphas.txt) and summary statistics (summstat.txt)
 
 Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
-@main function summaries(;analysisFolder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true")
+@main function summaries(;analysis_folder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",scheduler::String="local")
+	
+
+	if scheduler == "slurm"
+		@eval using ClusterManagers
+		@eval addprocs_slurm($nthreads)
+	elseif scheduler == "htcondor"
+		@eval using ClusterManagers
+		@eval addprocs_htc($nthreads)
+	else
+		@eval addprocs($nthreads)
+	end
 	
 	@eval  using Analytical, JLD2, DataFrames, CSV, ProgressMeter
 	
-	@eval h5file    = jldopen($rates)
-
 	@eval adap      = Analytical.parameters(N=$ne,n=$samples,dac =parse.(Int,split($dac,",")))
 
 	@eval if $bootstrap == "true"
-		@eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,analysisFolder=$analysisFolder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
+		@eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$analysis_folder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
 	else
-		@eval summstat  = Analytical.summaryStatsFromRates(param=$adap,rates=$h5file,analysisFolder=$analysisFolder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
+		@eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$analysis_folder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
+	end
+
+	for i in workers()
+		rmprocs(i)
 	end
 end
 
@@ -190,20 +202,34 @@ The function returns posterior distributions from ABC inference. Each posterior 
 
 Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli
 "
-@main function abcInference(;analysisFolder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg")
+@main function abcInference(;folder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg",nthreads::Int64=8,scheduler::String="local")
+	
+
+	if scheduler == "slurm"
+		@eval using ClusterManagers
+		@eval addprocs_slurm($nthreads)
+	elseif scheduler == "htcondor"
+		@eval using ClusterManagers
+		@eval addprocs_htc($nthreads)
+	else
+		@eval addprocs($nthreads)
+	end
 	
 	@eval using Analytical
-	@eval Analytical.ABCreg(analysisFolder=$analysisFolder,S=$S,tol=$tol,abcreg=$ABCreg)
+	@eval Analytical.ABCreg(analysis_folder=$folder,S=$S,tol=$tol,abcreg=$ABCreg)
 
+	for i in workers()
+		rmprocs(i)
+	end
 end
 
 #="Plot Maximum a posterior distribution"
-@main function plotMap(;analysisFolder::String="<folder>")
+@main function plotMap(;analysis_folder::String="<folder>")
 	try
 		@eval using Analytical, RCall, GZip, DataFrames, CSV
 		
-		@eval Analytical.sourcePlotMapR(script=$analysisFolder)
-		@eval Analytical.plotMap(analysisFolder=$analysisFolder)
+		@eval Analytical.sourcePlotMapR(script=$analysis_folder)
+		@eval Analytical.plotMap(analysis_folder=$analysis_folder)
 		@eval RCall.endEmbeddedR()
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")

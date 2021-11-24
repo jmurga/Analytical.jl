@@ -100,8 +100,7 @@ julia abcmk_cli summaries --help
 ```
 
 ```bash
-julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000
-
+summaries --folder analysis/ --rates  analysis/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925
 
 Estimate summary statistics from analytical rates. You must provide a path containing the parsed SFS and divergence file.
 
@@ -125,7 +124,7 @@ Optional Arguments:
 The function will output observed data bootstraped (*alphas.txt*) and summary statistics (*summaries.txt*) in the analysisFolder. These file will be used at ABC inference to generate posterior distributions.
 
 ```bash
-julia abcmk_cli.jl summaries --analysisFolder analysis/ --rates  analysis/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925
+julia abcmk_cli.jl summaries --folder analysis/ --rates  analysis/rates.jld2 --samples 661 --replicas 100 --summstatSize 100000 --dac 2,4,5,10,20,50,200,661,925
 ```
 
 ## Perform ABC inference
@@ -143,7 +142,7 @@ It is possible to perform the inference through Julia. The function will output 
 
 
 ```bash
-julia abcmk_cli.jl abcInference --analysisFolder analysis/ --S 9 --tol 0.01 --ABCreg /home/jmurga/ABCreg/src/reg
+julia abcmk_cli.jl abcInference --folder analysis/ --S 9 --tol 0.01 --ABCreg /home/jmurga/ABCreg/src/reg
 ```
 
 ## Estimate Maximum-A-Posteriori and plot using R. 
@@ -156,5 +155,5 @@ If you will perform MAP estimates and plot using our module, be sure you have in
 
 
 ```bash
-julia -e 'using Analytical, RCall, GZip, DataFrames, CSV;Analytical.sourcePlotMapR(script="analysis/script.jl"); Analytical.plotMap(analysisFolder="analysis/");'
+julia -e 'using Analytical, RCall, GZip, DataFrames, CSV;Analytical.source_plot_map_R(script="analysis/script.jl"); Analytical.plot_map(analysisFolder="analysis/");'
 ``` 

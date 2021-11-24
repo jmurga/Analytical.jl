@@ -58,7 +58,7 @@ To standardize the summary statistic estimation, the function ```Analytical.summ
 We include the argument ```bootstrap``` to perform bootstrap analysis following [polyDFE](https://github.com/paula-tataru/polyDFE) manual. In the following example we boostrap the SFS and divegence file 100 times subseting 10^5 summary statistic for each dataset:
 
 ```julia
-@time summstat = Analytical.summary_statistics(param=adap,rates="analysis/rates.jld2",analysis_folder="analysis/",summstat_size=10^5,replicas=100,bootstrap=true);
+@time summstat = Analytical.summary_statistics(param=adap,h5_file ="analysis/rates.jld2",analysis_folder="analysis/",summstat_size=10^5,replicas=100,bootstrap=true);
 ```
 
 The function will create a summary statistic file and the observed data file (*summaries.txt* and *alphas.txt* respectively). Both files will be used to perform the ABC inference. Each line in *alphas.txt* contains the $\alpha_(x)$ estimations from the bootstrapped SFS.
