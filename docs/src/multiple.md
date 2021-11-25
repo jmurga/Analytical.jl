@@ -32,7 +32,7 @@ CSV.write("analysis/wg/div_tgp.tsv",DataFrame(permutedims(divergence),:auto),del
 
  - VIPs dataset
 ```julia
-vips_list = CSV.read("analysis/vips/vip_list.txt",DataFrame) |> Array
+vips_list = CSV.read("analysis/vips/vip_list.txt",DataFrame) |> Matrix{String}
 
 alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt",gene_list=vips_list)
 CSV.write("analysis/vips/sfs.tsv",DataFrame(sfs,:auto),delim='\t',header=false)
@@ -41,7 +41,7 @@ CSV.write("analysis/vips/div.tsv",DataFrame(permutedims(divergence),:auto),delim
 
  - Non-VIPs dataset
 ```julia
-nonvips_list = CSV.read("analysis/nonvips/nonvip_list.txt",DataFrame) |> Array
+nonvips_list = CSV.read("analysis/nonvips/nonvip_list.txt",DataFrame) |> Matrix{String}
 
 alpha, sfs, divergence = Analytical.parse_sfs(sample_size = 661, data = "analysis/tgp.txt",gene_list=nonvips_list)
 CSV.write("analysis/nonvips/sfs.tsv",DataFrame(sfs,:auto),delim='\t',header=false)

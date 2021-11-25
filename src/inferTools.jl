@@ -21,7 +21,7 @@ Function to parse polymorphism and divergence by subset of genes. The input data
  - `Array{Float64,1}`: Synonymous and non-synonymous divergence counts
  - 
 """
-function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Matrix{String15}}=nothing,sfs_columns::Array{Int64,1}=[3,5],div_columns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
+function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any}=nothing,sfs_columns::Array{Int64,1}=[3,5],div_columns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
 
 	g(x) = parse.(Float64,x[2:end-1])
 	
