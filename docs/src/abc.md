@@ -22,7 +22,6 @@ We used R to estimate the Maximum-A-Posteriori (MAP) from posterior distribution
 If you will perform MAP estimates and plot using our module, be sure you have installed R and the following packages: ggplot2 and data.table, locfit. 
 
 ```julia
-Analytical.source_plot_map_R(script="analysis/script.jl")
 tgpmap = Analytical.plot_map(analysis_folder="analysis/");
 DataFrames.describe(tgpmap)
 ```
