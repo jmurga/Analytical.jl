@@ -1,238 +1,392 @@
-using Fire, Distributed
-
-"
-	julia abcmk_cli.jl rates --samples 661 --gamNeg -1000,-200 --gL 1,10 --gH 400,1000 --rho 0.001 --theta 0.001 --solutions 1000000 --output rates.jld2 --dac 1,2,4,5,10,20,50,100,200,400,500,661,925,1000  --nthreads 7
-
-Function to solve fixation and polymorphic rates analitically. The function will create N random models from prior values. Use the arguments to defined the input range for each parameter.
-
-If rho and/or theta are set to nothing, the function will input random values given the range 0.0005:0.0005:0.01. Otherwise you can fix the values.
-If gL is set to nothing, the function will not account the role of the weakly selected alleles in the estimation.
-
-The function returns a HDF5 file containing models solved and rates. The rates will be used to compute summary statistics required at ABC.
-
-Please check the documentation to get more info about models parameters or detailed arguments description https://jmurga.github.io/Analytical.jl/dev/cli/ to check model
-"
-@main function rates(;ne::Int64=1000, samples::Int64=500, gamNeg::String="-1000,-200", gL::String="5,10", gH::String="400,1000",dac::String="2,4,5,10,20,50,200,500,700",shape::Float64=0.184,rho::String="nothing",theta::String="nothing",solutions::Int64=100000,output::String="/home/jmurga/rates.jld2",scheduler::String="local",nthreads::Int64=1)
-
-	tmpNeg    = parse.(Int,split(gamNeg,","))
-	tmpStrong = parse.(Int,split(gH,","))
-	dac       = parse.(Int,split(dac,","))
-
-	if (gL == "nothing")
-		tmpWeak = nothing
-	else
-		tmpWeak = parse.(Int,split(gL,","))
-	end
+using ArgParse, Distributed
 
 
-	if (rho == "nothing")
-		rho = nothing
-	else
-		rho = parse(Float64,rho)
-	end
+function parse_cli(args)
+    settings = ArgParseSettings("ABC-MK CLI")
 
-	if (theta == "nothing")
-		theta = nothing
-	else
-		theta = parse(Float64,theta)
-	end
+    @add_arg_table! settings begin
+        # CMD 1
+        "rates", "R"
+            help = "Function to solve fixation and polymorphic rates analitically. The function will create N random models from prior values. Use the arguments to defined the input range for each parameter.\nIf rho and/or theta are set to nothing, the function will input random values given the range 0.0005:0.0005:0.01. Otherwise you can fix the values.\nIf gL is set to nothing, the function will not account the role of the weakly selected alleles in the estimation.\nThe function returns a HDF5 file containing models solved and rates. The rates will be used to compute summary statistics required at ABC.\nPlease check the documentation to get more info about models parameters or detailed arguments description https://jmurga.github.io/Analytical.jl/dev/cli/ to check model
+            "
+            action = :command
+        # CMD 2
+        "parse_data", "P"
+            help = "Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. The function returns files containing raw polymorphic and divergence data, parsed SFS and parsed divegence required to estimate summary statistics. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli/"
+            action = :command
+        # CMD 3
+        "summaries", "S"
+            help = "Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. The function returns files containing raw polymorphic and divergence data, parsed SFS and parsed divegence required to estimate summary statistics. Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli/"
+            action = :command
+        # CMD 4
+        "inference", "I"
+            help = "ABCreg inference. The function returns posterior distributions from ABC inference. Each posterior file contains information about alpha_w, alpha_s, alpha, gamNeg and shape parameter. The number of posterior distributions will depend on the number of bootstrap replicas. Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
+            action = :command
+        
+    end
 
-	if scheduler == "slurm"
-		@eval using ClusterManagers
-		@eval addprocs_slurm($nthreads)
-	elseif scheduler == "htcondor"
-		@eval using ClusterManagers
-		@eval addprocs_htc($nthreads)
-	else
-		@eval addprocs($nthreads)
-	end
-	
-	@eval @everywhere using Analytical, ParallelUtilities
-	@eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
+    add_arg_table!(settings["rates"],
+        ["--pop_size"],
+        Dict(
+            :help => "Population size",
+            :arg_type => Int64,
+            :default => 1000
+        ),
+        ["--sample_size"],
+        Dict(
+            :help => "Sample size",
+            :arg_type => Int64,
+            :required => true
+        ),
+        ["--dac"],
+        Dict(
+            :help => "Derived Allele Count",
+            :arg_type => String,
+            :required => true
+        ),
+        ["--gam_neg"],
+        Dict(
+            :help => "Selection coefficient for deleterious alleles",
+            :arg_type => String,
+            :required => true
+        ),
+        ["--positive_strong"],
+        Dict(
+            :help => "Selection coefficient for strongly beneficial alleles",
+            :arg_type => String,
+            :required => true
+        ),
+        ["--positive_weak"],
+        Dict(
+            :help => "Selection coefficient for weakly beneficial alleles",
+            :arg_type => String,
+            :required => true
+        ),
+        ["--shape"],
+        Dict(
+            :help => "Shape value modeling Gamma distribution for deleterious alleles",
+            :arg_type => Float64,
+            :default => 0.184
+        ),
+        ["--rho"],
+        Dict(
+            :help => "Recombination rate",
+            :arg_type => Float64,
+            :default => 0.001
+        ),
+        ["--theta"],
+        Dict(
+            :help => "Mutation rate on coding locus",
+            :arg_type => Float64,
+            :default => 0.001
+        ),
+        ["--solutions"],
+        Dict(
+            :help => "Mutation rate on coding locus",
+            :arg_type => Int64,
+            :default => 100_000
+        ),
+        ["--output"],
+        Dict(
+            :help => "Output file",
+            :arg_type => String,
+            :default => "rates.jld2"
+        ),
+        ["--scheduler"],
+        Dict(
+            :help => "Select scheduler manager",
+            :arg_type => String,
+            :default => "local"
+        ),
+        ["--nthreads"],
+        Dict(
+            :help => "Select number of threads to parallelize",
+            :arg_type => Int64,
+            :default => 1
+        ),
+    )
 
-	@eval convoluted_samples = Analytical.binomial_dict()
-	@eval Analytical.binomOp!($adap,$convoluted_samples.bn);
-	@eval Analytical.rates(param = $adap,convoluted_samples=$convoluted_samples,gH=$tmpStrong[1]:$tmpStrong[2],gL=$tmpWeak[1]:$tmpWeak[2],gamNeg=$tmpNeg[1]:$tmpNeg[2],iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output,scheduler=$scheduler);
+    add_arg_table!(settings["parse_data"],
+        "folder",
+        Dict(
+            :help => "a positional argument",
+            :required => true,
+            :arg_type => String
+        ),
+        ["--dataset","-d"],
+        Dict(
+            :help => "a positional argument",
+            :default => "tgp",
+            :arg_type => String
+        ),
+        ["--gene_list","-g"],
+        Dict(
+            :help => "a positional argument",
+            :arg_type => Union{Bool,String},
+            :default => false
+        ),
+        ["--bins","-b"],
+        Dict(
+            :help => "a positional argument",
+            :arg_type => Union{Bool,Int64},
+            :default => false
+        )
+    )
 
-	for i in workers()
-		rmprocs(i)
-	end
+    add_arg_table!(settings["summaries"],
+        "folder",
+        Dict(
+            :help => "Folder path containing SFS and divergence files to run the analysis",
+            :required => true,
+            :arg_type => String
+        ),
+        ["--rates"],
+        Dict(
+            :help => "H5 file containing precomputed rates",
+            :required => true,
+            :arg_type => String
+        ),       
+        ["--sample_size"],
+        Dict(
+            :help => "Sample size",
+            :required => true,
+            :arg_type => Int64
+        ),
+        ["--dac"],
+        Dict(
+            :help => "Derived allele count",
+            :required => true,
+            :arg_type => String
+        ),
+        ["--summstat_size"],
+        Dict(
+            :help => "Define number of summary estatistic to perform ABC",
+            :required => true,
+            :arg_type => Int64
+        ),
+        ["--bootstrap"],
+        Dict(
+            :help => "Allow bootstrap following polyDFE manual",
+            :arg_type => Bool,
+            :default => false
+        ),
+        ["--replicas"],
+        Dict(
+            :help => "Number of bootstrap replicas",
+            :arg_type => Int64,
+            :default => 1
+        ),
+        ["--nthreads"],
+        Dict(
+            :help => "Select scheduler manager",
+            :arg_type => Int64,
+            :default => 1
+        ),
+        ["--scheduler"],
+        Dict(
+            :help => "Select scheduler manager",
+            :arg_type => String,
+            :default => "local"
+        )
+    )
+    add_arg_table!(settings["inference"],
+        "folder",
+        Dict(
+            :help => "Folder path containing SFS and divergence files to run the analysis",
+            :required => true,
+            :arg_type => String
+        ),
+        ["--S"],
+        Dict(
+            :help => "Define number of summary estatistic to perform ABC",
+            :required => true,
+            :arg_type => Int64
+        ),
+        ["--tol"],
+        Dict(
+            :help => "Tolerance",
+            :required => true,
+            :arg_type => Float64
+        ),
+        ["--abcreg"],
+        Dict(
+            :help => "ABCreg static binary",
+            :required => true,
+            :arg_type => String
+        ),
+        ["--nthreads"],
+        Dict(
+            :help => "Select scheduler manager",
+            :arg_type => Int64,
+            :default => 1
+        ),
+        ["--scheduler"],
+        Dict(
+            :help => "Select scheduler manager",
+            :arg_type => String,
+            :default => "local"
+        )
+    )
+
+    return parse_args(settings)
 end
 
+cli = parse_cli(ARGS)
 
-"
-	julia abcmk_cli.jl joinRates --analysis_folder --output
-"
-@main function joinRates(;analysis_folder::String="<folder>",samples::Int64=661,output::String="<name>")
+for cmd in keys(cli)
+    if(cmd == "parse_data")
 
-	@eval using JLD2, CSV ,DataFrames, OrderedCollections
+        @eval using Analytical, DataFrames, CSV
+        
+        folder = cli[cmd]["folder"]
 
-	searchdir(path) = filter(x->occursin("jld2",x), readdir(path))
-	files = analysis_folder .* "/" .* searchdir(analysis_folder)
+        run(`mkdir -p $folder`)
 
-	j = jldopen.(files)
-	
-	models = []
-	n = []
-	s = []
-	dsdn = []
-	dac = j[1]["1000/" * string(samples)]["dac"]
+        dataset = lowercase(cli[cmd]["dataset"])
+        data    = folder * "/" * dataset * ".txt"
 
-	for i in eachindex(files)
-		tmp = j[i]["1000/" * string(samples)]
+        @eval download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/"* $dataset * ".txt",$data)
 
-		push!(models,tmp["models"])
-		push!(n,tmp["neut"])
-		push!(s,tmp["sel"])
-		push!(dsdn,tmp["dsdn"])
+        # Check if bins or gene_list are defined
+        gene_list = cli[cmd]["gene_list"]
+        @eval if $gene_list != false
+            @eval gList = CSV.read($gene_list,DataFrame,header=false) |> Array
+        else
+            @eval gList = nothing
+        end
 
-	end
+        bins = cli[cmd]["bins"]
 
-	neut = OrderedDict{Int,Array}()
-	sel = OrderedDict{Int,Array}()
-	o(x,k) = x[k]
-	for x in keys(n[1])
-		neut[x] = vcat(o.(n,x)...)
-		sel[x] = vcat(o.(s,x)...)
-	end
-	models = vcat(models...)
-	dsdn = vcat(dsdn...)
+        @eval if $bins != 0
+            @eval bins_size = $bins
+        else
+            bins_size = nothing
+        end
 
-	# Writting HDF5 file
-	JLD2.jldopen(output, "a+") do file
-		file[string(1000)* "/" * string(samples) * "/models"] = models;
-		file[string(1000)* "/" * string(samples) * "/neut"]   = neut;
-		file[string(1000)* "/" * string(samples) * "/sel"]    = sel;
-		file[string(1000)* "/" * string(samples) * "/dsdn"]   = dsdn;
-		file[string(1000)* "/" * string(samples) * "/dac"]    = dac;
-	end;
+        # Parsing TGP data
+        if dataset == "tgp"
+            @eval α,sfs, divergence = Analytical.parse_sfs(sample_size=661,data=$data,gene_list=$gList,bins=$bins_size)
+        elseif occursin("zi",dataset)
+            @eval α,sfs, divergence = Analytical.parse_sfs(sample_size=154,data=$data,gene_list=$gList,bins=$bins_size,isolines=true)
+        elseif occursin("ral",dataset)
+            @eval α,sfs, divergence = Analytical.parse_sfs(sample_size=160,data=$data,gene_list=$gList,bins=$bins_size,isolines=true)
+        end
+        # Writting data to folder
+        @eval sName = $folder * "/sfs.tsv"
+        @eval dName = $folder * "/div.tsv"
 
-	rm.(files)
+        @eval CSV.write($sName,DataFrame($sfs,:auto),delim='\t',header=false)
+        @eval CSV.write($dName,DataFrame($divergence',:auto),delim='\t',header=false)
+    elseif (cmd == "rates")
+
+        neg    = parse.(Int,split(cli[cmd]["gam_neg"],":"))
+        strong = parse.(Int,split(cli[cmd]["positive_strong"],":"))
+        
+        if (cli[cmd]["positive_weak"] == false)
+            weak = nothing
+        else
+            weak = parse.(Int,split(cli[cmd]["positive_weak"],":"))
+        end
+
+        dac = parse.(Int,split(cli[cmd]["dac"],","))
+
+
+        if (cli[cmd]["rho"] == false)
+            rho = nothing
+        else
+            rho = cli[cmd]["rho"]
+        end
+
+        if (cli[cmd]["theta"] == "nothing")
+            theta = nothing
+        else
+            theta = cli[cmd]["theta"]
+        end
+
+        scheduler = cli[cmd]["scheduler"];nthreads = cli[cmd]["nthreads"]
+        if scheduler == "slurm"
+            @eval using ClusterManagers
+            @eval addprocs_slurm($nthreads)
+        elseif scheduler == "htcondor"
+            @eval using ClusterManagers
+            @eval addprocs_htc($nthreads)
+        else
+            @eval addprocs($nthreads)
+        end
+        
+        ne = cli[cmd]["pop_size"];samples= cli[cmd]["sample_size"];shape = cli[cmd]["shape"]
+        @eval @everywhere using Analytical, ParallelUtilities
+        @eval adap = Analytical.parameters(N=$ne,n=$samples,dac=$dac,al=$shape)
+
+        @eval cnv = Analytical.binomial_dict()
+        @eval Analytical.binomOp!($adap,$cnv.bn);
+
+        solutions = cli[cmd]["solutions"]; output = cli[cmd]["output"]
+        @eval Analytical.rates(param = $adap,convoluted_samples=$cnv,gH=$strong[1]:$strong[2],gL=$weak[1]:$weak[2],gamNeg=$neg[1]:$neg[2],iterations = $solutions,rho=$rho,theta=$theta,shape=$adap.al,output=$output,scheduler=$scheduler);
+
+        for i in workers()
+            rmprocs(i)
+        end
+    elseif (cmd == "summaries")
+
+        scheduler = cli[cmd]["scheduler"];nthreads = cli[cmd]["nthreads"];
+
+        if scheduler == "slurm"
+            @eval using ClusterManagers
+            @eval addprocs_slurm($nthreads)
+        elseif scheduler == "htcondor"
+            @eval using ClusterManagers
+            @eval addprocs_htc($nthreads)
+        else
+            @eval addprocs($nthreads)
+        end
+
+        samples       = cli[cmd]["sample_size"]
+        dac           = parse.(Int,split(cli[cmd]["dac"],","))
+        bootstrap     = cli[cmd]["bootstrap"]
+        replicas      = cli[cmd]["replicas"]
+        rates         = cli[cmd]["rates"]
+        summstat_size = cli[cmd]["summstat_size"]
+        folder        = cli[cmd]["folder"]
+
+        @eval  using JLD2, DataFrames, CSV, ProgressMeter
+        @eval @everywhere using  Analytical, ParallelUtilities
+        @eval adap    = Analytical.parameters(n=$samples,dac = $dac)
+
+        @eval if ($bootstrap == true)
+            @eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$folder,summstat_size=$summstat_size,replicas=$replicas,bootstrap=true)
+        else
+            @eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$folder,summstat_size=$summstat_size,replicas=$replicas,bootstrap=false)
+        end
+
+        for i in workers()
+            rmprocs(i)
+        end
+    elseif (cmd == "inference")
+
+        scheduler = cli[cmd]["scheduler"]
+        nthreads = cli[cmd]["nthreads"]
+        folder   = cli[cmd]["folder"]
+        S        = cli[cmd]["S"]
+        tol      = cli[cmd]["tol"]
+        abcreg   = cli[cmd]["abcreg"]
+
+        if scheduler == "slurm"
+            @eval using ClusterManagers
+            @eval addprocs_slurm($nthreads)
+        elseif scheduler == "htcondor"
+            @eval using ClusterManagers
+            @eval addprocs_htc($nthreads)
+        else
+            @eval addprocs($nthreads)
+        end
+        
+        @eval @everywhere using Analytical,ParallelUtilities
+
+        @eval Analytical.ABCreg(analysis_folder=$folder,S=$S,tol=$tol,abcreg=$abcreg)
+
+        for i in workers()
+            rmprocs(i)
+        end
+    end
 end
-
-
-"
-	julia abcmk_cli.jl parseData --analysis_folder analysis/ --gene_list analysis/dnaVipsList.txt
-
-Function to parse polymorphic and divergence data from Uricchio et. al (2019) and Murga-Moreno et al (2019). Please input a path to create a new analysis folder. You can filter the dataset using a file containing a list of Ensembl IDs. 
-
-The function returns files containing raw polymorphic and divergence data, parsed SFS and parsed divegence required to estimate summary statistics.	
-
-Please check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli/
-"
-@main function parseData(;analysis_folder::String="<folder>",dataset::String="tgp",gene_list::String="false",bins::String="false")
-	
-	@eval using Analytical, DataFrames, CSV
-
-	run(`mkdir -p $analysis_folder`)
-
-	dataset = lowercase(dataset)
-	data    = analysis_folder * "/" * dataset * ".txt"
-	
-	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/data/"* dataset * ".txt",data)
-
-	# Check if bins or genelist are defined
-	@eval if $gene_list != "false"
-		@eval gList = CSV.read($gene_list,DataFrame,header=false) |> Array
-	else
-		gList = nothing
-	end
-
-	@eval if $bins != "false"
-		@eval binsSize = parse(Int,$bins)
-	else
-		binsSize = nothing
-	end
-
-	# Parsing TGP data
-	if dataset == "tgp"
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=661,data=$data,gene_list=$gList,bins=$binsSize)
-	elseif occursin("zi",dataset)
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=154,data=$data,gene_list=$gList,bins=$binsSize,isolines=true)
-	elseif occursin("ral",dataset)
-		@eval α,sfs, divergence = Analytical.parseSfs(sampleSize=160,data=$data,gene_list=$gList,bins=$binsSize,isolines=true)
-	end
-	# Writting data to folder
-	@eval sName = $analysis_folder * "/sfs.tsv"
-	@eval dName = $analysis_folder * "/div.tsv"
-
-	@eval CSV.write($sName,DataFrame($sfs,:auto),delim='\t',header=false)
-	@eval CSV.write($dName,DataFrame($divergence',:auto),delim='\t',header=false)
-end
-
-"
-	julia abcmk_cli.jl summaries --analysis_folder analysis/ --rates analysis/rates.jld2 --samples 661 --dac 2,4,5,10,20,50,200,661,925 --summstatSize 1000000 --nthreads 7
-
-Estimate summary statistics from analytical rates. You must provide a path containing the parsed SFS and divergence file.
-
-The function returns files containing bootstrapped datasets (alphas.txt) and summary statistics (summstat.txt)
-
-Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli"
-@main function summaries(;analysis_folder::String="<folder>",rates::String="rates.jld2",ne::Int64=1000, samples::Int64=500,dac::String="2,4,5,10,20,50,200,500,700",summstatSize::Int64=100000,replicas::Int64=100,bootstrap::String="true",scheduler::String="local")
-	
-
-	if scheduler == "slurm"
-		@eval using ClusterManagers
-		@eval addprocs_slurm($nthreads)
-	elseif scheduler == "htcondor"
-		@eval using ClusterManagers
-		@eval addprocs_htc($nthreads)
-	else
-		@eval addprocs($nthreads)
-	end
-	
-	@eval  using Analytical, JLD2, DataFrames, CSV, ProgressMeter
-	
-	@eval adap      = Analytical.parameters(N=$ne,n=$samples,dac =parse.(Int,split($dac,",")))
-
-	@eval if $bootstrap == "true"
-		@eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$analysis_folder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=true)
-	else
-		@eval summstat  = Analytical.summary_statistics(param=$adap,h5_file=$rates,analysis_folder=$analysis_folder,summstatSize=$summstatSize,replicas=$replicas,bootstrap=false)
-	end
-
-	for i in workers()
-		rmprocs(i)
-	end
-end
-
-"ABCreg inference.
-
-The function returns posterior distributions from ABC inference. Each posterior file contains information about alpha_w, alpha_s, alpha, gamNeg and shape parameter. The number of posterior distributions will depend on the number of bootstrap replicas.
-
-Check the documentation to get more info https://jmurga.github.io/Analytical.jl/dev/cli
-"
-@main function abcInference(;folder::String="<folder>",S::Int64=9,tol::Float64=0.01,ABCreg::String="/home/jmurga/ABCreg/src/reg",nthreads::Int64=8,scheduler::String="local")
-	
-
-	if scheduler == "slurm"
-		@eval using ClusterManagers
-		@eval addprocs_slurm($nthreads)
-	elseif scheduler == "htcondor"
-		@eval using ClusterManagers
-		@eval addprocs_htc($nthreads)
-	else
-		@eval addprocs($nthreads)
-	end
-	
-	@eval using Analytical
-	@eval Analytical.ABCreg(analysis_folder=$folder,S=$S,tol=$tol,abcreg=$ABCreg)
-
-	for i in workers()
-		rmprocs(i)
-	end
-end
-
-#="Plot Maximum a posterior distribution"
-@main function plotMap(;analysis_folder::String="<folder>")
-	try
-		@eval using Analytical, RCall, GZip, DataFrames, CSV
-		
-		@eval Analytical.sourcePlotMapR(script=$analysis_folder)
-		@eval Analytical.plotMap(analysis_folder=$analysis_folder)
-		@eval RCall.endEmbeddedR()
-	catch
-		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
-	end
-end=#
-
