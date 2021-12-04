@@ -22,13 +22,13 @@ Expected rate of neutral allele frequency reduce by backgrou	nd selection. The s
 """
 function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
 
-	NN2 = convert(Int64,ceil(param.NN*param.B))
+	NN2::Int64 = convert(Int64,ceil(param.NN*param.B))
 	# Allocating variables
 
 	neutralSfs(i::Int64) = 1.0/(i)
 
-	x = collect(0:NN2)
-	solvedNeutralSfs = neutralSfs.(x)
+	x::Vector{Int64} = collect(0:NN2)
+	solvedNeutralSfs::Vector{Float64} = neutralSfs.(x)
 	replace!(solvedNeutralSfs, Inf => 0.0)
 
 	# subsetDict = get(param.bn,param.B,1)

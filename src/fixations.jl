@@ -105,7 +105,6 @@ Expected positive fixations rate reduced due to the impact of background selecti
 """
 function fixPosSim(param::parameters,gamma::Int64,ppos::Float64)
 
-
 	redPlus = phiReduction(param,gamma)
 
 	# Non-synonymous * positive alleles probability * B reduction * fixation probility

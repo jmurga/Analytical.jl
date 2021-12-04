@@ -1,4 +1,4 @@
-using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, GZip, ParallelUtilities, StatsBase, RCall
+using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, ParallelUtilities, StatsBase, RCall
 
 # Analytical solutions
 import Roots: find_zero
@@ -18,14 +18,14 @@ import Random: randstring
 import LsqFit: curve_fit, confidence_interval
 import HypothesisTests: pvalue,FisherExactTest
 
-include("parameters.jl")
-include("fixations.jl")
-include("polymorphism.jl")
-include("summaryStatistics.jl")
-include("rates.jl")
-include("inferTools.jl")
-include("readFasta.jl")
-include("methods.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/parameters.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/fixations.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/polymorphism.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/summaryStatistics.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/rates.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/inferTools.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/readFasta.jl")
+include("/home/jmurga/.julia/dev/Analytical/src/methods.jl")
 
 
 function solve(param::parameters,convoluted_samples::binomial_dict,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
@@ -318,9 +318,9 @@ function rates_threads(;param::parameters,
     end;
 end
 
-@time df = rates_threads(param = adap,convoluted_samples=convoluted_samples,gH=200:2000,gL=1:10,gamNeg=-2000:-200,iterations = 10^3,shape=adap.al,output="/home/jmurga/rates_threads.jld2");rm("/home/jmurga/rates_threads.jld2")
+@time df = rates_threads(param = param,convoluted_samples=convoluted_samples,gH=200:2000,gL=1:10,gamNeg=-2000:-200,iterations = 10^3,shape=adap.al,output="/home/jmurga/rates_threads.jld2");rm("/home/jmurga/rates_threads.jld2")
 
-@time df = Analytical.rates(param = adap,convoluted_samples=convoluted_samples,gH=200:2000,gL=1:10,gamNeg=-2000:-200,iterations = 10^2,shape=adap.al,output="/home/jmurga/rates_distributed.jld2");rm("/home/jmurga/rates_distributed.jld2")
+@time df = Analytical.rates(param = param,convoluted_samples=convoluted_samples,gH=200:2000,gL=1:10,gamNeg=-2000:-200,iterations = 10^2,shape=adap.al,output="/home/jmurga/rates_distributed.jld2");rm("/home/jmurga/rates_distributed.jld2")
 
 ######Sequential
 

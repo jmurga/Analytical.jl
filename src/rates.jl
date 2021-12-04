@@ -24,6 +24,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
 """
 function rates(;param::parameters,
 				convoluted_samples::binomial_dict,
+				α::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}=0.1:0.01:0.9,
 				gH::S,
 				gL::S,
 				gamNeg::S,
@@ -46,7 +47,7 @@ function rates(;param::parameters,
 	end
 
 	# Random α values
-	nTot    = rand(0.1:0.01:0.9,iterations)
+	nTot    = rand(α,iterations)
 	
 	# Defining αW. It is possible to solve non-accounting for weak fixations
 	if isnothing(gL)
@@ -92,15 +93,16 @@ function rates(;param::parameters,
 	end
 	
 	# Estimations to distributed workers
-	if scheduler == "local"
+	@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);	
+	#=if scheduler == "local"
 		println(scheduler)
-		@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+		@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
 		#=@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, θᵣ, ρ);=#
-	else
-		println(scheduler)
-		@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+	#=else
+		println(scheduler)=#
+		#=@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
 		#=@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, θᵣ, ρ);=#
-	end
+	#=end=#
 
 	# Remove the workers to free memory resources
 	#=for i in workers()
@@ -330,14 +332,12 @@ function rates_threads(;param::parameters,
 
     out = zeros(iterations,32,size(param.B_bins,1));
 
-    @showprogress for (j,val) in enumerate(reverse(param.B_bins))
-        tmp = e[e[:,4] .== val,:]
-        for i in 1:iterations
-            Base.Threads.@spawn begin
-               @inbounds out[i,:,j] = r(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
-            end
-        end
-    end
+	@showprogress for (j,val) in enumerate(reverse(param.B_bins))
+	    tmp = e[e[:,4] .== val,:]
+	     Threads.@threads for i in 1:iterations
+	           out[i,:,j] = r(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
+	    end
+	end
 
     df = vcat([@view out[:,:,i] for i=1:size(out,3)]...);
 

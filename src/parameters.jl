@@ -238,7 +238,7 @@ function phiReduction(param::parameters,gammaValue::Int64)
 end
 
 """
-	analyticalAlpha(param, convolutedSamples)
+	analytical_alpha(param, convolutedSamples)
 
 Analytical α(x) estimation. Solve α(x) generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
@@ -252,7 +252,7 @@ Analytical α(x) estimation. Solve α(x) generally. We used the expected rates o
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analyticalAlpha(;param::parameters,convolutedSamples::binomial_dict)
+function analytical_alpha(;param::parameters,convoluted_samples::binomial_dict)
 
 	################################################################
 		# Solve the model similarly to original python mktest  #	
@@ -298,7 +298,7 @@ function analyticalAlpha(;param::parameters,convolutedSamples::binomial_dict)
 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
 
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	tmp = cumulativeSfs(hcat(neut,selH,selL,selN),false)
+	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false)
 
 	neut, selH, selL, selN = splitColumns(tmp)
 	sel = (selH+selL)+selN
