@@ -248,6 +248,7 @@ end
 ###########################
 function rates_threads(;param::parameters,
                 convoluted_samples::binomial_dict,
+				α::Array{Float64}=[0.1,0.9], 
                 gH::S,
                 gL::S,
                 gamNeg::S,
@@ -270,7 +271,7 @@ function rates_threads(;param::parameters,
     end
 
     # Random α values
-    nTot    = rand(0.1:0.01:0.9,iterations)
+    nTot    = rand(α[1]:0.01:α[2],iterations)
     
     # Defining αW. It is possible to solve non-accounting for weak fixations
     if isnothing(gL)
@@ -330,7 +331,8 @@ function rates_threads(;param::parameters,
     b = repeat(param.B_bins,iterations);
     e = hcat(x,b);
 
-    out = zeros(iterations,32,size(param.B_bins,1));
+    out = zeros(iterations,(size(param.dac,1) * 2) + 14,size(param.B_bins,1));
+	
 
 	@showprogress for (j,val) in enumerate(reverse(param.B_bins))
 	    tmp = e[e[:,4] .== val,:]

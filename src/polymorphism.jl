@@ -199,13 +199,13 @@ function DiscSFSSelNeg(param::parameters,ppos::Float64)
 end
 
 """
-	cumulative_sfs(sfsTemp)
+	cumulative_sfs(sfs_tmp)
 
 Changing SFS considering all values above a frequency *x*. The original asymptotic-MK approach takes Pn(x) and Ps(x) as the number of polymorphic sites at frequency *x* rather than above *x*, but this approach scales poorly as sample size increases. We define the polymorphic spectrum as stated above since these quantities trivially have the same asymptote but are less affected by changing sample size.
 """
-function cumulative_sfs(sfsTemp::Array,freqs::Bool=true)
+function cumulative_sfs(sfs_tmp::Array,freqs::Bool=true)
 
-	out      = Array{Float64}(undef, size(sfsTemp,1),size(sfsTemp,2))
+	out      = Array{Float64}(undef, size(sfs_tmp,1),size(sfs_tmp,2))
 
 	if freqs
 		idx = 2
@@ -213,12 +213,12 @@ function cumulative_sfs(sfsTemp::Array,freqs::Bool=true)
 		idx = 1
 	end
 
-	out[1,idx:end] = sum(sfsTemp[:,idx:end],dims=1)
+	out[1,idx:end] = sum(sfs_tmp[:,idx:end],dims=1)
 
-	@simd for i in 2:(size(sfsTemp)[1])
+	@simd for i in 2:(size(sfs_tmp)[1])
 
-		#=app = view(out,i-1,:) .- view(sfsTemp,i-1,:)=#
-		app = out[i-1,idx:end] .- sfsTemp[i-1,idx:end]
+		#=app = view(out,i-1,:) .- view(sfs_tmp,i-1,:)=#
+		app = out[i-1,idx:end] .- sfs_tmp[i-1,idx:end]
 
 		if sum(app) > 0.0
 			out[i,idx:end] = app
@@ -228,31 +228,33 @@ function cumulative_sfs(sfsTemp::Array,freqs::Bool=true)
 	end
 
 	if freqs
-		out[:,1] = sfsTemp[:,1]
+		out[:,1] = sfs_tmp[:,1]
 	end
 	
 	return out
 end
 
 """
-	reduce_sfs(sfsTemp,bins)
+	reduce_sfs(sfs_tmp,bins)
 
-Function to reduce the SFS into N bins.
+Function to bin the SFS into a sample of N individuals.
 """
-function reduce_sfs(sfsTemp::Array,bins::Int64)
+function reduce_sfs(sfs_tmp::Array,bins::Int64)
 
-	freq  = collect(0:(size(sfsTemp,1)-1))/size(sfsTemp,1)
-	h1    = StatsBase.fit(StatsBase.Histogram,freq,0:(1/(bins-1)):1)
-	xmap1 = StatsBase.binindex.(Ref(h1), freq)
-
-	tmp = hcat(sfsTemp,xmap1)
-	out = Array{Float64}(undef,bins-1 ,size(sfsTemp,2))
-	vIter =  convert(Array,unique(xmap1)')
-	@simd for i = eachindex(vIter)
-		@inbounds out[i,2:end] = sum(tmp[tmp[:,end] .== i,2:end-1],dims=1)
+	n   = (bins*2) - 1 
+	f   = sfs_tmp[:,1]
+	sfs = sfs_tmp[:,2:end]
+	
+	b    = collect(1/n:1/n:1)
+	inds = searchsortedfirst.(Ref(b), f)
+	out  = zeros((n,size(sfs_tmp,2)))
+	out[:,1] = unique(inds)
+	sfs_grouped = hcat(inds,sfs)
+	
+	for i in unique(inds)
+		out[out[:,1] .== i,2:end] = sum(sfs_grouped[sfs_grouped[:,1] .== i,2:end],dims=1)
 	end
+	out[:,1] = b
 
-	out[:,1] = collect(1:(bins-1)) ./ bins
-
-	return (out)
+	return(out)
 end
