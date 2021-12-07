@@ -91,7 +91,7 @@ function Br(param::parameters,theta::Float64)
 	μ::Float64     = theta/(2.0*param.NN)
 	r::Float64     = ρ/(2.0*param.NN)
 
-	out::Float64  = ℯ^(-4*μ*param.Lf/(2*param.Lf*r+t))
+	out::Float64   = ℯ^(-4*μ*param.Lf/(2*param.Lf*r+t))
 	return out
 end
 

@@ -230,11 +230,16 @@ function summary_statistics(;param::parameters,h5_file::String,analysis_folder::
 	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
 	expectedValues = fltInf.(expectedValues)
 	expectedValues = fltNan.(expectedValues)
-	expectedValues = map(x -> x[(x[:,3] .> 0 ) .& (x[:,3] .<1 ),:],expectedValues)
+	#=expectedValues = map(x -> x[(x[:,3] .> 0) .& (x[:,3] .<1 ),:],expectedValues)=#
+	expectedValues = map(x -> x[(x[:,3] .< 1),:],expectedValues)
 	
 	# Writting ABCreg input
-	#=w(vcat(α...), analysis_folder * "/alphas.txt");
-	w(expectedValues, analysis_folder * "/summstat.txt");=#
+	#=@inbounds @sync for i in eachindex(α)
+		Base.Threads.@spawn begin
+			w(α,analysis_folder * "/alphas_" * string(i) * ".txt")
+			w(expectedValues,  analysis_folder * "/summstat_" * string(i) * ".txt")
+		end
+	end=#
 	progress_map(w,α, analysis_folder * "/alphas_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs_files,1),desc="Writting α "));
 	progress_pmap(w,expectedValues,  analysis_folder * "/summstat_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs,1),desc="Writting summaries "));
 

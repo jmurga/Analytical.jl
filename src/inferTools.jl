@@ -104,7 +104,7 @@ function ABCreg(;analysis_folder::String,S::Int64,tol::Float64,abcreg::String)
 	r(aFile,sumFile,out);=#
 
 	# List alphas and summstat files
-	aFile   = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
+	aFile     = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
 	sumFile   = filter(x -> occursin("summstat",x), readdir(analysis_folder,join=true));
 
 	# Creating output names

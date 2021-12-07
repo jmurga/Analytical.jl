@@ -18,7 +18,7 @@ module Analytical
 
 	# MK-approaches
 	import LsqFit: curve_fit, confidence_interval
-	import HypothesisTests: pvalue,FisherExactTest
+	import HypothesisTests: pvalue, FisherExactTest
 
 	include("parameters.jl")
 	include("fixations.jl")
