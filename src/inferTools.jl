@@ -169,7 +169,7 @@ end
 """
 function source_plot_map_R(;script::String)
 
-	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",script)
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plot_map_r.jl",script)
 
 	try
 		include(script)
