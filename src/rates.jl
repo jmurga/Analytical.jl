@@ -24,7 +24,7 @@ If gL is set to ```nothing```, the function will not account the role of the wea
 """
 function rates(;param::parameters,
 				convoluted_samples::binomial_dict,
-				α::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}=0.1:0.01:0.9,
+				α::Array{Float64}=[0.1,0.9],
 				gH::S,
 				gL::S,
 				gamNeg::S,
@@ -47,7 +47,7 @@ function rates(;param::parameters,
 	end
 
 	# Random α values
-	nTot    = rand(α,iterations)
+	nTot    = rand(α[1]:0.01:α[2],iterations)
 	
 	# Defining αW. It is possible to solve non-accounting for weak fixations
 	if isnothing(gL)
@@ -93,7 +93,7 @@ function rates(;param::parameters,
 	end
 	
 	# Estimations to distributed workers
-	@time out = ParallelUtilities.pmapbatch( iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);	
+	@time out = ParallelUtilities.pmapbatch(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);	
 	#=if scheduler == "local"
 		println(scheduler)
 		@time out = Distributed.pmap(iterRates,nParam, nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);=#
@@ -105,9 +105,9 @@ function rates(;param::parameters,
 	#=end=#
 
 	# Remove the workers to free memory resources
-	#=for i in workers()
+	for i in workers()
 		rmprocs(i)
-	end=#
+	end
 
 	# Reducing output array
 	df = vcat(out...)
@@ -176,7 +176,7 @@ function iterRates(param::parameters,convoluted_samples::binomial_dict,alTot::Fl
 	setPpos!(param)
 
 	# Allocate array to solve the model for all B values
-	r = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14)
+	analytical_rates = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14)
 	for j in eachindex(param.B_bins)
 		# Set B value
 		param.B = param.B_bins[j]
@@ -188,7 +188,7 @@ function iterRates(param::parameters,convoluted_samples::binomial_dict,alTot::Fl
 		catch e
 			zeros(size(param.dac,1) * 2 + 14)'
 		end
-		@inbounds r[j,:] = tmp
+		@inbounds analytical_rates[j,:] = tmp
 	end
 
 	return r
@@ -336,8 +336,8 @@ function rates_threads(;param::parameters,
 
 	@showprogress for (j,val) in enumerate(reverse(param.B_bins))
 		tmp = e[e[:,4] .== val,:]
-		 Threads.@threads for i in 1:iterations
-			   out[i,:,j] = r(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
+		Threads.@threads for i in 1:iterations
+			out[i,:,j] = r(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
 		end
 	end
 
