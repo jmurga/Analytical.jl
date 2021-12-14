@@ -1,6 +1,6 @@
 module Analytical
 
-	using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, ParallelUtilities, StatsBase, RCall
+	using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, ParallelUtilities, StatsBase
 
 	# Analytical solutions
 	import Roots: find_zero

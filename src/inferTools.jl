@@ -162,21 +162,28 @@ function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},
 	return(s,d,α,map(x -> x[:,2:end],scumu))
 end
 
+
+function install_r()
+
+		@eval using Pkg
+		const ENV["R_HOME"]="*"
+
+		@eval Pkg.add("Conda")
+
+		@eval using Conda
+		@eval Conda.add("r-base",channel="conda-forge")
+		@eval Conda.add(["r-locfit","r-ggplot2","r-data.table","r-r.utils"],channel="conda-forge")
+
+		@eval Pkg.add("RCall")
+end
 """
 	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called *plot_map which used R to 
 		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
 #=function source_plot_map_R(;script::String)=#
 function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
-#=	try
-		using RCall, CSV, DataFrames, GZip
-	catch
-		using Pkg
-		Pkg.add.(["RCall", "CSV", "DataFrames", "GZip"]);
-	end=#
 
 	try
-		#=@eval using RCall=#
 		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
 
 		out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
@@ -188,7 +195,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		flt(x)       = x[x[:,4] .> 0,:]
 		posteriors   = flt.(open.(out))
 
-		R"""getmap <- function(df){
+		@eval R"""getmap <- function(df){
 				temp = as.data.frame(df)
 				d <-locfit(~temp[,1],temp);
 				map<-temp[,1][which.max(predict(d,newdata=temp))]
@@ -209,7 +216,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			gam          = maxp[:,4:end]
 		end
 
-		R"""al = as.data.table($al)
+		@eval R"""al = as.data.table($al)
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
@@ -225,13 +232,6 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		return(maxp)
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
+		install_r()
 	end
-
-	#=	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plot_map_r.jl",script)
-
-	try
-		include(script)
-	catch
-		"Please be sure you installed RCall, R and abc library in your system. Check our documentation if you have any installation problem: https://jmurga.github.io/Analytical.jl/dev/"
-	end=#
 end
