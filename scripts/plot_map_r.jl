@@ -1,9 +1,13 @@
-try
-	using RCall, CSV, DataFrames, GZip
-catch
-	using Pkg
-	Pkg.add.(["RCall", "CSV", "DataFrames", "GZip"]);
-end
+using Pkg
+ENV["R_HOME"]="*"
+
+Pkg.add("Conda")
+
+using Conda
+Conda.add("r-base",channel="conda-forge")
+Conda.add(["r-locfit","r-ggplot2","r-data.table","r-r.utils"],channel="conda-forge")
+
+Pkg.add("RCall")
 
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
@@ -11,7 +15,6 @@ end
 function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
-		@eval using RCall
 		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
 
 		out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
@@ -23,12 +26,12 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		flt(x)       = x[x[:,4] .> 0,:]
 		posteriors   = flt.(open.(out))
 
-		R"""getmap <- function(df){
+		@eval R"""getmap <- function(df){
 				temp = as.data.frame(df)
 				d <-locfit(~temp[,1],temp);
 				map<-temp[,1][which.max(predict(d,newdata=temp))]
 			}"""
-		#getmap(x)    = rcopy(R"""matrix(apply($x,2,getmap),nrow=1)""")
+
 		getmap(x)    = rcopy(R"""suppressWarnings(matrix(apply($x,2,getmap),nrow=1))""")
 		
 		if !weak
@@ -44,7 +47,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			gam          = maxp[:,4:end]
 		end
 
-		R"""al = as.data.table($al)
+		@eval R"""al = as.data.table($al)
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
@@ -60,5 +63,6 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		return(maxp)
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
+		install_r()
 	end
 end

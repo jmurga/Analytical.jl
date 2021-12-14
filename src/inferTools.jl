@@ -163,76 +163,17 @@ function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},
 end
 
 
-function install_r()
-
-		@eval using Pkg
-		const ENV["R_HOME"]="*"
-
-		@eval Pkg.add("Conda")
-
-		@eval using Conda
-		@eval Conda.add("r-base",channel="conda-forge")
-		@eval Conda.add(["r-locfit","r-ggplot2","r-data.table","r-r.utils"],channel="conda-forge")
-
-		@eval Pkg.add("RCall")
-end
 """
 	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called *plot_map which used R to 
 		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
-#=function source_plot_map_R(;script::String)=#
-#=function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
+function source_plot_map_R(;script::String)
+
+	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plotMapR.jl",script)
 
 	try
-		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
-
-		out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
-		out          = filter(x -> !occursin(".1.",x),out)
-
-		open(x)      = Array(CSV.read(x,DataFrame,header=false))
-
-		# Control outlier inference. 2Nes non negative values
-		flt(x)       = x[x[:,4] .> 0,:]
-		posteriors   = flt.(open.(out))
-
-		@eval R"""getmap <- function(df){
-				temp = as.data.frame(df)
-				d <-locfit(~temp[,1],temp);
-				map<-temp[,1][which.max(predict(d,newdata=temp))]
-			}"""
-
-		getmap(x)    = rcopy(R"""suppressWarnings(matrix(apply($x,2,getmap),nrow=1))""")
-		
-		if !weak
-			posteriors = [posteriors[i][:,3:end] for i in eachindex(posteriors)]
-			tmp          = getmap.(posteriors)
-			maxp         = DataFrame(vcat(tmp...),[:a,:gamNeg,:shape])
-			al           = maxp[:,1:1]
-			gam          = maxp[:,2:end]
-		else
-			tmp          = getmap.(posteriors)
-			maxp         = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
-			al           = maxp[:,1:3]
-			gam          = maxp[:,4:end]
-		end
-
-		@eval R"""al = as.data.table($al)
-			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
-			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
-
-
-			dal = suppressWarnings(data.table::melt(al))
-			pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
-			suppressWarnings(ggsave(pal,filename=paste0($analysis_folder,'/map.png'),dpi=600))
-			"""
-		CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
-
-		#=RCall.endEmbeddedR();=#
-
-		return(maxp)
+		include(script)
 	catch
-		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
-		install_r()
+		"Please be sure you installed RCall, R and abc library in your system. Check our documentation if you have any installation problem: https://jmurga.github.io/Analytical.jl/dev/"
 	end
 end
-=#
