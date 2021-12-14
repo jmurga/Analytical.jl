@@ -181,7 +181,7 @@ end
 		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
 #=function source_plot_map_R(;script::String)=#
-function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
+#=function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
 		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
@@ -235,3 +235,4 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		install_r()
 	end
 end
+=#
