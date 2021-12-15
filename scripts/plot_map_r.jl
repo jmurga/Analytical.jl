@@ -1,13 +1,19 @@
-using Pkg
-ENV["R_HOME"]="*"
 
-Pkg.add("Conda")
+try
+	using RCall
+catch
+	using Pkg
+	ENV["R_HOME"]="*"
 
-using Conda
-Conda.add("r-base",channel="conda-forge")
-Conda.add(["r-locfit","r-ggplot2","r-data.table","r-r.utils"],channel="conda-forge")
+	Pkg.add("Conda")
 
-Pkg.add("RCall")
+	using Conda
+	Conda.add("r-base",channel="conda-forge")
+	Conda.add(["r-locfit","r-ggplot2","r-data.table","r-r.utils"],channel="conda-forge")
+
+	Pkg.add("RCall")
+
+end
 
 """
 	Estimating and plotting MAP using locfit and ggplot2 in R. It assume your folder contains the posterior estimated through ABCreg
