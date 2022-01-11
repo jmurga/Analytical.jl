@@ -66,9 +66,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 				pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
 			}
 			suppressWarnings(ggsave(pal,filename=paste0($analysis_folder,'/map.png'),dpi=600))
-			
 			"""
-			}
 		CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
 
 		return(maxp)
@@ -76,4 +74,3 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
 	end
 end
-
