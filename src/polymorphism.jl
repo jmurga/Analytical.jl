@@ -20,7 +20,7 @@ Expected rate of neutral allele frequency reduce by backgrou	nd selection. The s
 # Return:
  - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
-function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
+function DiscSFSNeutDown(param::parameters)
 
 	NN2::Int64 = convert(Int64,ceil(param.NN*param.B))
 	# Allocating variables
@@ -31,9 +31,9 @@ function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64}
 	solvedNeutralSfs::Vector{Float64} = neutralSfs.(x)
 	replace!(solvedNeutralSfs, Inf => 0.0)
 
-	# subsetDict = get(param.bn,param.B,1)
+	# subsetDict = get(param.binom,param.B,1)
 	# subsetDict = binom
-	out::Array{Float64,1} = param.B * (param.thetaMidNeutral) * 0.25 * (binom*solvedNeutralSfs)
+	out::Array{Float64,1} = param.B * (param.thetaMidNeutral) * 0.25 * (param.binom[param.B]*solvedNeutralSfs)
 	#=out::Array{Float64,1} = param.B .* (param.θᵣ) .*0.25 .* (binom*solvedNeutralSfs)=#
 	return out
 end
@@ -52,7 +52,7 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
+function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
@@ -81,17 +81,16 @@ function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64,bin
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
 
-		# subsetDict = get(param.bn,param.B,1)
+		# subsetDict = get(param.binom,param.B,1)
 		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solvedPositiveSfs)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (binom*solvedPositiveSfs)
-		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solvedPositiveSfs)=#
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solvedPositiveSfs)
 
 	end
 
 	return out
 end
 
-function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
+function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64)
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
@@ -107,14 +106,15 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64,
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
 		gammaCorrected = gammaValue*param.B
-		gammaExp1::Quadmath.Float128 = exp(Quadmath.Float128(gammaCorrected*2))
+		gammaExp1::Quadmath.Float128 = exp(
+			Quadmath.Float128(gammaCorrected*2))
 		gammaExp2::Quadmath.Float128 = exp(Quadmath.Float128(gammaCorrected*-2))
 
 		positiveSfs(i::Float64,g1::Quadmath.Float128=gammaExp1,g2::Quadmath.Float128=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 		# Allocating outputs
 		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solvedPositiveSfs, NaN => 0.0)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (binom*solvedPositiveSfs)
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solvedPositiveSfs)
 		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solvedPositiveSfs)=#
 
 	end
@@ -167,10 +167,10 @@ Expected rate of positive selected allele frequency reduce by background selecti
 # Return:
  - `Array{Float64}`: expected negative selected alleles frequencies.
 """
-function DiscSFSSelNegDown(param::parameters,ppos::Float64,binom::SparseMatrixCSC{Float64,Int64})
-	# subsetDict = get(param.bn,param.B,1)
+function DiscSFSSelNegDown(param::parameters,ppos::Float64)
+	# subsetDict = get(param.binom,param.B,1)
 	solvedNegative = DiscSFSSelNeg(param,ppos)
-	out = param.B .* (param.thetaMidNeutral) .* 0.75 .* (binom*solvedNegative)
+	out = param.B .* (param.thetaMidNeutral) .* 0.75 .* (param.binom[param.B]*solvedNegative)
 	#=out = param.B .* (param.θᵣ) .* 0.75 .* (binom*solvedNegative)=#
 
 	return out

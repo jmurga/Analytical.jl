@@ -22,19 +22,19 @@ Divergence sampling from Poisson distribution. The expected neutral and selected
 """
 function poisson_fixation(;empirical_values::Array, λds::Array, λdn::Array,λweak::Array,λstrong::Array)
 
-    ds            = @. λds / (λds + λdn) * empirical_values
-    dn            = @. λdn / (λds + λdn) * empirical_values
-    dn_weak         = @. λweak / (λds + λdn) * empirical_values
-    dn_strong       = @. λstrong / (λds + λdn) * empirical_values
+    ds             = @. λds / (λds + λdn) * empirical_values
+    dn             = @. λdn / (λds + λdn) * empirical_values
+    dn_weak        = @. λweak / (λds + λdn) * empirical_values
+    dn_strong      = @. λstrong / (λds + λdn) * empirical_values
 
     sampled_Ds     = pois_rand.(ds)
     sampled_Dn     = pois_rand.(dn)
     sampled_weak   = pois_rand.(dn_weak)
     sampled_strong = pois_rand.(dn_strong)
 
-    alphas        = @. [sampled_weak/sampled_Dn sampled_strong/sampled_Dn (sampled_weak+sampled_strong)/sampled_Dn]
+    alphas         = @. [sampled_weak/sampled_Dn sampled_strong/sampled_Dn (sampled_weak+sampled_strong)/sampled_Dn]
 
-	out = alphas,sampled_Dn, sampled_Ds
+	out            = alphas,sampled_Dn, sampled_Ds
 	return out
 end
 
@@ -63,7 +63,7 @@ The success rate managing the Poisson distribution by the observed count each fr
 """
 function poisson_polymorphism(;empirical_values::Array, λps::Array, λpn::Array,pol::Array)
 
-	# Neutral λ;
+	# Neutral λ;156948
 	λ1 = @. λps / (λps + λpn) * empirical_values'
 	# Selected λ;
 	λ2 = @. λpn / (λps + λpn) * empirical_values'
@@ -133,8 +133,8 @@ function sampling_from_rates(afs::Vector,divergence::Vector,observed::Matrix,m::
 
 	ds             = d[:,1]
 	dn             = d[:,2]
-	dn_weak          = d[:,3]
-	dn_strong        = d[:,4]
+	dn_weak        = d[:,3]
+	dn_strong      = d[:,4]
 	gn             = abs.(m[:,4])
 	sh             = round.(m[:,end-1],digits=5)
 
@@ -144,32 +144,32 @@ function sampling_from_rates(afs::Vector,divergence::Vector,observed::Matrix,m::
 	alphas, expDn, expDs = poisson_fixation(empirical_values=divergence,λds=ds,λdn=dn,λweak=dn_weak,λstrong=dn_strong)
 	expPn, expPs         = poisson_polymorphism(empirical_values=afs,λps=nt,λpn=sl,pol=p)
 	
-	#=θ_pn = @. observed[1,1] / (expPn[1,:]);
-	θ_ps = @. observed[1,2] / (expPs[1,:]);
+	θ_pn = @. observed[1,1] / (expPn[:,1]);
+	θ_ps = @. observed[1,2] / (expPs[:,1]);
 
 	r_pn = ones(size(expPn));
 	r_ps = ones(size(expPs));
-	for j = 2:size(dac,1)
-		r_pn[j,:] .= @. (observed[j,1]) / (expPn[j,:]);
-		r_pn[j,:] .= @. r_pn[j,:] / θ_pn;
+	for j=2:size(dac,1)
+		@.  r_pn[:,j] = (observed[j,1]) / (expPn[:,j]);
+		@. r_pn[:,j] = r_pn[:,j] / θ_pn;
 		
-		r_ps[j,:] .= @. (observed[j,2]) / (expPs[j,:]);
-		r_ps[j,:] .= @. r_ps[j,:] / θ_ps;
+		@. r_ps[:,j] = (observed[j,2]) / (expPs[:,j]);
+		@. r_ps[:,j] = r_ps[:,j] / θ_ps;
 	end
 
 	expPn_rj = zeros(size(expPn))
 	expPs_rj = zeros(size(expPs))
 
-	expPn_rj[1,:] = @. expPn[1,:] * θ_pn;
-	expPs_rj[1,:] = @. expPs[1,:] * θ_ps;
+	expPn_rj[:,1] = @. expPn[:,1] * θ_pn;
+	expPs_rj[:,1] = @. expPs[:,1] * θ_ps;
 	for j = 2:size(dac,1)
-		expPn_rj[j,:] = @. expPn[j,:] * θ_pn * r_pn[j,:];
-		expPs_rj[j,:] = @. expPs[j,:] * θ_ps * r_ps[j,:];
-	end=#
+		@. expPn_rj[:,j] =  expPn[:,j] * θ_pn * r_pn[:,j];
+		@. expPs_rj[:,j] =  expPs[:,j] * θ_ps * r_ps[:,j];
+	end
 
 	## Alpha from expected values. Used as summary statistics
-	α_x = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
-	#=α_x = @. round(1 - ((expDs/expDn) * (expPn_rj/expPs_rj)'),digits=5)=#
+    α_x    = @. round(1 - ((expDs/expDn) * (expPn/expPs)),digits=5)
+    α_x_rj	 = @. round(1 - ((expDs/expDn) * (expPn_rj/expPs_rj)),digits=5)
 
 
 	expected_values = hcat(round.(alphas,digits=5),gn,sh,α_x)
@@ -195,8 +195,8 @@ Estimate summary statistics using observed data and analytical rates. *analysis_
 function summary_statistics(;param::parameters,h5_file::String,analysis_folder::String,summstat_size::Int64,replicas::Int64=1,bootstrap::Bool=false)
 
 	#Opening files
-    sfs_files        = filter(x -> occursin("sfs",x), readdir(analysis_folder,join=true));
-    divergence_files = filter(x -> occursin("div",x), readdir(analysis_folder,join=true));
+	sfs_files        = filter(x -> occursin("sfs",x), readdir(analysis_folder,join=true));
+	divergence_files = filter(x -> occursin("div",x), readdir(analysis_folder,join=true));
 
 	sfs,divergence,α,observed = open_sfs_div(sfs_files,divergence_files,param.dac,replicas,bootstrap);
 

@@ -30,7 +30,6 @@ end
 
 """
 	imputedMK(sfs,divergence,m,cutoff)
-
 Function to estimate the asmpytotic value of α(x).
 
 # Arguments

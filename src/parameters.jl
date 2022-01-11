@@ -52,6 +52,8 @@ Mutable structure containing the variables required to solve the analytical appr
 	nn::Int64 = 2*n
 	θᵣ::Array{Float64,1} = fill(thetaMidNeutral,nn-1)
 	dac::Array{Int64,1} = [2,4,5,10,20,50,200,500,700]
+
+	binom::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
 end
 
 """
@@ -61,9 +63,9 @@ Mutable structure containing the downsampled SFS.
  - `bn::Dict`: SparseMatrixCSC containing the binomial convolution
 
 """
-@with_kw mutable struct binomial_dict
+#=@with_kw mutable struct binomial_dict
 	bn::Dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()
-end
+end=#
 #=const binomial_dict = Dict{Float64,SparseMatrixCSC{Float64,Int64}}()=#
 
 ################################
@@ -142,12 +144,13 @@ function setPpos!(param::parameters)
 
 	pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
-	if pposL < 0.0
+	#=if pposL < 0.0
 		 pposL = 0.0
 	end
+	
 	if pposH < 0.0
 		 pposH = 0.0
-	end
+	end=#
 
 	param.pposL,param.pposH = pposL, pposH
 
@@ -160,18 +163,18 @@ Binomial convolution to sample the allele frequencies probabilites depending on 
 
 # Arguments
  - `param::parameters`
- - `convolutedSamples::binomial_dict`
+ - `convoluted_samples::binomial_dict`
 
 # Returns
  - `Array{Float64,2}`: convoluted SFS for each B value defined in the model (param.B_bins). The estimations are saved at *convolutedBn.bn*.
 """
-function binomOp!(param::parameters,convolutedBn::Dict)
+function binomOp!(param::parameters)
 
 	#=bn = Dict(param.B_bins[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.B_bins))=#
 
-	for bVal in param.B_bins
+	for b_val in param.B_bins
 
-		NN2          = convert(Int64,ceil(param.NN*bVal))
+		NN2          = convert(Int64,ceil(param.NN*b_val))
 		samples      = collect(1:(param.nn-1))
 		pSize        = collect(0:NN2)
 		samplesFreqs = permutedims(pSize/NN2)
@@ -184,8 +187,8 @@ function binomOp!(param::parameters,convolutedBn::Dict)
 
 		out  = pdf.(z,samples)
 		out  = round.(out,digits=10)
-		outS = SparseArrays.dropzeros(SparseArrays.sparse(out))
-		convolutedBn[bVal] = outS
+		out_S = SparseArrays.dropzeros(SparseArrays.sparse(out))
+		param.binom[b_val] = out_S
 		# param.bn[bVal] = outS
 		#=param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.25*(outS*neutralSfs),digits=10)=#
 
@@ -238,7 +241,7 @@ function phiReduction(param::parameters,gammaValue::Int64)
 end
 
 """
-	analytical_alpha(param, convolutedSamples)
+	analytical_alpha(param, convoluted_samples)
 
 Analytical α(x) estimation. Solve α(x) generally. We used the expected rates of divergence and polymorphism to approach the asympotic value accouting for background selection, weakly and strong positive selection. α(x) can be estimated taking into account the role of positive selected alleles or not. In this way we explore the role of linkage to deleterious alleles in the coding region.
 
@@ -248,11 +251,11 @@ Analytical α(x) estimation. Solve α(x) generally. We used the expected rates o
 
 # Arguments
  - `param::parameters`
- - `convolutedSamples::binomial_dict`
+ - `convoluted_samples::binomial_dict`
 # Returns
  - `Array{Float64,1}` α(x).
 """
-function analytical_alpha(;param::parameters,convoluted_samples::binomial_dict)
+function analytical_alpha(;param::parameters)
 
 	################################################################
 		# Solve the model similarly to original python mktest  #	
@@ -286,16 +289,16 @@ function analytical_alpha(;param::parameters,convoluted_samples::binomial_dict)
 	dn = fNeg + fPosL + fPosH
 
 	## Polymorphism
-	neut = DiscSFSNeutDown(param,convolutedSamples.bn[param.B])
+	neut = DiscSFSNeutDown(param)
 
-	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
-		DiscSFSSelPosDownArb(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+	selH = if isinf(exp(param.gH * 2))
+		DiscSFSSelPosDownArb(param,param.gH,param.pposH,)
 	else
-		DiscSFSSelPosDown(param,param.gH,param.pposH,convolutedSamples.bn[param.B])
+		DiscSFSSelPosDown(param,param.gH,param.pposH)
 	end
 
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL,convolutedSamples.bn[param.B])	
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL,convolutedSamples.bn[param.B])
+	selL = DiscSFSSelPosDown(param,param.gL,param.pposL)	
+	selN = DiscSFSSelNegDown(param,param.pposH+param.pposL)
 
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
 	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false)

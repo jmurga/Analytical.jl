@@ -1,5 +1,4 @@
-
-try
+	try
 	using RCall
 catch
 	using Pkg
@@ -13,6 +12,7 @@ catch
 
 	Pkg.add("RCall")
 
+	using RCall
 end
 
 """
@@ -21,7 +21,7 @@ end
 function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
 
 	try
-		@eval R"""library(ggplot2);library(locfit);library(data.table)"""
+		R"""library(ggplot2);library(locfit);library(data.table)"""
 
 		out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
 		out          = filter(x -> !occursin(".1.",x),out)
@@ -32,7 +32,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		flt(x)       = x[x[:,4] .> 0,:]
 		posteriors   = flt.(open.(out))
 
-		@eval R"""getmap <- function(df){
+		R"""getmap <- function(df){
 				temp = as.data.frame(df)
 				d <-locfit(~temp[,1],temp);
 				map<-temp[,1][which.max(predict(d,newdata=temp))]
@@ -53,7 +53,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			gam          = maxp[:,4:end]
 		end
 
-		@eval R"""al = as.data.table($al)
+		R"""al = as.data.table($al)
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
@@ -69,6 +69,5 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 		return(maxp)
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
-		install_r()
 	end
 end
