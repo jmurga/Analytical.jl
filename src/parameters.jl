@@ -144,13 +144,13 @@ function setPpos!(param::parameters)
 
 	pposL,pposH = nlsolve(f!,[0.0; 0.0]).zero
 
-	#=if pposL < 0.0
+	if pposL < 0.0
 		 pposL = 0.0
 	end
 	
 	if pposH < 0.0
 		 pposH = 0.0
-	end=#
+	end
 
 	param.pposL,param.pposH = pposL, pposH
 
