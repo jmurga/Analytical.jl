@@ -167,7 +167,7 @@ end
 	Function to download and source plotMap function. We do not include at part of the module to avoid external dependecies. Once the function is execute properly you will have a function called *plot_map which used R to 
 		estimate and plot the Maximum A Posterior following ABCreg example. It uses locfit and ggplot2 libraries.
 """
-function source_plot_map_R(;script::String)
+function source_plot_map_r(;script::String)
 
 	download("https://raw.githubusercontent.com/jmurga/Analytical.jl/master/scripts/plot_map_r.jl",script)
 
