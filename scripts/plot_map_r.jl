@@ -53,19 +53,24 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			gam          = maxp[:,4:end]
 		end
 
-		R"""al = as.data.table($al)
+		@rput al
+		@rput posteriors
+		@rput analysis_folder
+		@rput title
+
+		R"""al = as.data.table(al)
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
 			if(nrow(al) == 1){
-				tmp = as.data.table($posteriors[1])
+				tmp = as.data.table(posteriors[1])
 				dal = suppressWarnings(data.table::melt(tmp[,1:3]))
-				pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
+				pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle(title) + xlab(expression(alpha)) + ylab("")
 			}else{
 				dal = suppressWarnings(data.table::melt(al))
-				pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
+				pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle(title) + xlab(expression(alpha)) + ylab(""))
 			}
-			suppressWarnings(ggsave(pal,filename=paste0($analysis_folder,'/map.png'),dpi=600))
+			suppressWarnings(ggsave(pal,filename=paste0(analysis_folder,'/map.png'),dpi=600))
 			"""
 		CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
 
