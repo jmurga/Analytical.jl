@@ -57,17 +57,23 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
 			clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
 
-
-			dal = suppressWarnings(data.table::melt(al))
-			pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
+			if(nrow(al) == 1){
+				tmp = as.data.table($posteriors[1])
+				dal = suppressWarnings(data.table::melt(tmp[,1:3]))
+				pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab("")
+			}else{
+				dal = suppressWarnings(data.table::melt(al))
+				pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle($title) + xlab(expression(alpha)) + ylab(""))
+			}
 			suppressWarnings(ggsave(pal,filename=paste0($analysis_folder,'/map.png'),dpi=600))
+			
 			"""
+			}
 		CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
-
-		#=RCall.endEmbeddedR();=#
 
 		return(maxp)
 	catch
 		println("Please install R, ggplot2, data.table and locfit in your system before execute this function")
 	end
 end
+
