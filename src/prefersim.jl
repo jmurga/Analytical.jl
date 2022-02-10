@@ -166,7 +166,7 @@ function drift_sel!(mutation_list::LinkedList{mutation},r::Ptr{gsl_rng},N::Float
 	end
 end
 
-function burnin(param::recipe,r::Ptr{gsl_rng},)
+function burnin(param::recipe,r::Ptr{gsl_rng})
 
 	@unpack N,θ,s,h,dfe,param_one,param_two,s_mult,n_anc,trajectories,relax = param;
 
@@ -187,7 +187,7 @@ function burnin(param::recipe,r::Ptr{gsl_rng},)
 		number_of_mutations += res;
 		age = n_size * 10;
 		
-		add_mutation!(m,Float64(n_size),h,sel,res,j/n_size,dfe,param_one,param_two,s_mult[1],n_anc,age,trajectories,relax);
+		add_mutation!(m,Float64(n_size),r,h,sel,res,j/n_size,dfe,param_one,param_two,s_mult[1],n_anc,age,trajectories,relax);
 		append!(mutation_list,m);
 	end
 	return(mutation_list);
