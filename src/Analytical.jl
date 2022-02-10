@@ -38,6 +38,6 @@ module Analytical
 	include("inferTools.jl")
 	include("readFasta.jl")
 	include("methods.jl")
-	# include("prefersim.jl")
+	include("prefersim.jl")
 
 end
