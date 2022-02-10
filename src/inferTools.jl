@@ -110,9 +110,9 @@ function ABCreg(;analysis_folder::String,S::Int64,tol::Float64,abcreg::String)
 	# Creating output names
 	out = analysis_folder .* "/out_" .* string.(1:size(aFile,1))
 
-	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`);
+	abc(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`);
 
-	progress_pmap(r,aFile,sumFile,out);
+	progress_pmap(abc,aFile,sumFile,out);
 	
 end
 
