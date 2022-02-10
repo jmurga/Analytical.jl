@@ -3,7 +3,7 @@ module Analytical
 	using SparseArrays, Distributed, Conda, GSL
 
 	import ProgressMeter: @showprogress, progress_pmap, progress_map, Progress
-	import StatsBase: sample
+	import StatsBase: sample, mean
 	import Quadmath: Float128
 	import ParallelUtilities: pmapbatch
 	import StatsBase: sample
