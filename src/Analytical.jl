@@ -1,6 +1,6 @@
 module Analytical
 
-	using SparseArrays, Distributed, Conda
+	using SparseArrays, Distributed, Conda, GSL
 
 	import ProgressMeter: @showprogress, progress_pmap, progress_map, Progress
 	import StatsBase: sample
