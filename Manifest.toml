@@ -181,6 +181,18 @@ version = "0.10.23"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[deps.GSL]]
+deps = ["GSL_jll", "Libdl", "Markdown"]
+git-tree-sha1 = "3ebd07d519f5ec318d5bc1b4971e2472e14bd1f0"
+uuid = "92c85e6c-cbff-5e0c-80f7-495c94daaecd"
+version = "1.0.1"
+
+[[deps.GSL_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "9a6d2b6c33aa7061654d2f1b31d9f7e1c2bd2dbc"
+uuid = "1b77fbbe-d8ee-58f0-85f9-836ddc23a7a4"
+version = "2.7.1+0"
+
 [[deps.GZip]]
 deps = ["Libdl"]
 git-tree-sha1 = "039be665faf0b8ae36e089cd694233f5dee3f7d6"

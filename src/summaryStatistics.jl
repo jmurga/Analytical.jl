@@ -234,26 +234,22 @@ function summary_statistics(;param::parameters,h5_file::String,analysis_folder::
 	# Controling outlier cases
 	expected_values = pmapbatch(filter_expected,expected_values);
 
-	nuisance =  [[1.16  0.62  0.32  0.04  1.  1.  1. 1.  1.  1.],[1.08  0.7   0.2   0.41  1.51  1.3   1.18  1.01  0.94  1.04],[1.16  0.62  0.32  0.04  1.11  1.12  1.03  0.92  0.93  1.02],[0.76  0.91  1.44  1.98  0.22  0.46  0.58  0.7  0.77  1.01],[0.8   1.03  1.91  3.02  1.6   0.45  0.16  0.05  0.14  0.26]];
+	# nuisance =  [[1.16  0.62  0.32  0.04  1.  1.  1. 1.  1.  1.],[1.08  0.7   0.2   0.41  1.51  1.3   1.18  1.01  0.94  1.04],[1.16  0.62  0.32  0.04  1.11  1.12  1.03  0.92  0.93  1.02],[0.76  0.91  1.44  1.98  0.22  0.46  0.58  0.7  0.77  1.01],[0.8   1.03  1.91  3.02  1.6   0.45  0.16  0.05  0.14  0.26]];
 
-	expected_values = progress_pmap(y -> vcat(y,vcat(map(x-> nuisance_alpha(y,x),nuisance)...)),expected_values)
+	# expected_values = progress_pmap(y -> vcat(y,vcat(map(x-> nuisance_alpha(y,x),nuisance)...)),expected_values)
 
-	flt_b(x) = any(x .> 1)
-	flt = pmapbatch(y -> .!mapslices(flt_b,y[:,6:end],dims=2)[:,1],expected_values)
+	# flt_b(x) = any(x .> 1)
+	# flt = pmapbatch(y -> .!mapslices(flt_b,y[:,6:end],dims=2)[:,1],expected_values)
 
-	flt_v = (x,y) -> @view x[y,:]
+	# flt_v = (x,y) -> @view x[y,:]
 
-	expected_values = pmapbatch(flt_v,expected_values,flt)
+	# expected_values = pmapbatch(flt_v,expected_values,flt)
 
 	w(x,name) = write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	progress_map(w, α, analysis_folder * "/alphas_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs_files,1),desc="Writting α "));
 	
 	progress_pmap(w, expected_values,  analysis_folder * "/summstat_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs,1),desc="Writting summaries "));
-
-	# ABCreg(analysis_folder=analysis_folder,S=size(param.dac,1),tol=0.025,abcreg="/home/jmurga/ABCreg/src/reg");
-	# a,b = plot_map(analysis_folder=analysis_folder);
-	# b
 
 	return(expected_values)
 end
@@ -267,13 +263,13 @@ function filter_expected(x::Matrix{Float64})
 	return(x)
 end
 
-function nuisance_alpha(a::Matrix{Float64},b::Matrix{Float64})
+# function nuisance_alpha(a::Matrix{Float64},b::Matrix{Float64})
 
-		tmp_param = @view a[:,1:5];
-		tmp_summs = @view a[:,6:end];
+# 		tmp_param = @view a[:,1:5];
+# 		tmp_summs = @view a[:,6:end];
 
-		tmp = round.(tmp_summs .* b,digits=5)
+# 		tmp = round.(tmp_summs .* b,digits=5)
 
-		out = hcat(tmp_param,tmp);
-		return(out)
-end
+# 		out = hcat(tmp_param,tmp);
+# 		return(out)
+# end

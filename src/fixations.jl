@@ -19,7 +19,7 @@ Expected neutral fixations rate reduce by B value.
 
 """
 function fixNeut(param::parameters)
-	@unpack B,NN
+	@unpack B,NN = param;
 	# Synonymous probabilty * (fixation probabilty corrected by BGS value)
 	out::Float64 = 0.25*(1.0/(B*NN))
 	return out
