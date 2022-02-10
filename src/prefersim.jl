@@ -1,5 +1,5 @@
-const T   = gsl_rng_default;
-const r_d = rng_alloc(T);
+const T = gsl_rng_default;
+const r = rng_alloc(T);
 
 @with_kw struct recipe
 	epochs::Array{Int64,1} = [1000]
@@ -103,7 +103,7 @@ function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64
 			s = s;
 		elseif dfe == "gamma"
 			##/Use this for gamma distribution in Boyko 2008:
-			gamma = ran_gamma(r_d, param_one, param_two * s_mult);
+			gamma = ran_gamma(r, param_one, param_two * s_mult);
 			# note, this is scale for a Nanc=1000, using the boyko params
 			s = - gamma / (n_anc * 2);
 		end
@@ -116,6 +116,22 @@ function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64
 			i = findfirst(isequal(count_mut),trajectories);
 			@printf(io, "%d\t%lf\n", trajectories[i], (1.0/N));
 		end
+	end
+end
+
+function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64,s::Float64,θ::Float64,freq::Float64,age::Float64) 
+
+	num_mut::Float64 = ran_poisson(r,θ/2.0)
+	count_mut::Int64 = length(mutation_list)
+
+	for x::Int64=1:num_mut
+
+		s = s;
+
+        count_mut += 1;
+        mut        = mutation(frequency = freq, h = h, s = s*2, count_samp = 0.0, age = age, num = count_mut, type=1)
+		push!(mutation_list,mut);
+
 	end
 end
 
@@ -236,7 +252,7 @@ function sfs(mutation_list::LinkedList{mutation},sample_size)
 
 			h           = item.h;
 			#samp_count = rand(Binomial(sample_size,freq));
-			samp_count = ran_binomial(r_d,freq,sample_size);
+			samp_count = ran_binomial(r,freq,sample_size);
 			samp_freq = samp_count/sample_size;
 			if (samp_freq > 0 && samp_freq < 1.0)
 				mut[i] = samp_freq
