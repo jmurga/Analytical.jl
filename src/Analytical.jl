@@ -1,6 +1,7 @@
 module Analytical
 
-	using SparseArrays, Distributed, Conda
+	using SparseArrays, Distributed, Conda, GSL
+	
 	import ProgressMeter: @showprogress, progress_pmap, progress_map, Progress
 	import StatsBase: sample
 	import Quadmath: Float128
@@ -25,7 +26,6 @@ module Analytical
 	
 	import LinkedLists: LinkedList
 	import Printf: @printf
-	import GSL: gsl_rng_default, rng_alloc, ran_binomial, ran_gamma, ran_binomial_pdf, ran_poisson, rng_set
 	import QuadGK: quadgk
 	import StaticArrays: SVector
 
