@@ -19,8 +19,9 @@ Expected neutral fixations rate reduce by B value.
 
 """
 function fixNeut(param::parameters)
+	@unpack B,NN
 	# Synonymous probabilty * (fixation probabilty corrected by BGS value)
-	out::Float64 = 0.25*(1.0/(param.B*param.NN))
+	out::Float64 = 0.25*(1.0/(B*NN))
 	return out
 end
 
@@ -43,8 +44,9 @@ Expected fixation rate from negative DFE.
 
 """
 function fixNegB(param::parameters,ppos::Float64)
+	@unpack al, B, be, N = param;
 	# Non-synonymous proportion * negative alleles probability * fixation probability from gamma distribution
-	out::Float64 = 0.75*(1-ppos)*(2^(-param.al))*(param.B^(-param.al))*(param.be^param.al)*(-zeta(param.al,1.0+param.be/(2.0*param.B))+zeta(param.al,0.5*(2-1.0/(param.N*param.B)+param.be/param.B)))
+	out::Float64 = 0.75*(1-ppos)*(2^(-al))*(B^(-al))*(be^al)*(-zeta(al,1.0+be/(2.0*B))+zeta(al,0.5*(2-1.0/(N*B)+be/B)))
 	return out
 end
 
@@ -67,8 +69,9 @@ Expected positive fixation rate.
 """
 function pFix(param::parameters,gam::Int64)
 
+	@unpack NN = param;
 	# Fixation probability
-	s::Float64    = gam/(param.NN)
+	s::Float64    = gam/(NN)
 	pfix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gam))
 
 	# Correcting pFix for large s following Uricchio et al. 2014

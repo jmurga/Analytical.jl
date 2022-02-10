@@ -1,24 +1,34 @@
 module Analytical
 
-	using Parameters, SparseArrays, Distributed, CSV, JLD2, DataFrames, ProgressMeter, Quadmath, ParallelUtilities, StatsBase, Conda
-
-	# Analytical solutions
+	using SparseArrays, Distributed, Conda
+	import ProgressMeter: @showprogress, progress_pmap, progress_map, Progress
+	import StatsBase: sample
+	import Quadmath: Float128
+	import ParallelUtilities: pmapbatch
+	import StatsBase: sample
+	import DataFrames: DataFrame
+	import CSV: read,write
+	import JLD2: jldopen
+	import Parameters:  @with_kw, @unpack, @pack!
 	import Roots: find_zero
 	import NLsolve: nlsolve
 	import SpecialFunctions: polygamma, zeta
 	import PoissonRandom: pois_rand
 	import Distributions: Binomial, pdf
-
-	# Parse data
 	import GZip: open
 	import Parsers: parse
 	import OrderedCollections: OrderedDict
 	import FastaIO: readfasta
 	import Random: randstring
-
-	# MK-approaches
 	import LsqFit: curve_fit, confidence_interval
 	import HypothesisTests: pvalue, FisherExactTest
+	
+	import LinkedLists: LinkedList
+	import Printf: @printf
+	import GSL: gsl_rng_default, rng_alloc, ran_binomial, ran_gamma, ran_binomial_pdf, ran_poisson, rng_set
+	import QuadGK: quadgk
+	import StaticArrays: SVector
+
 
 	include("parameters.jl")
 	include("fixations.jl")
@@ -28,5 +38,6 @@ module Analytical
 	include("inferTools.jl")
 	include("readFasta.jl")
 	include("methods.jl")
+	include("prefersim.jl")
 
 end

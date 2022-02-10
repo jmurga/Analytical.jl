@@ -24,19 +24,23 @@ If gL is set to ```nothing```, the function will not account the role of the wea
 function rates(;param::parameters,
 				α::Array{Float64}=[0.1,0.9],
 				gH::S,
-				gL::S,
+				gL::Union{S,Nothing},
 				gamNeg::S,
 				theta::Union{Float64,Nothing}=0.001,
 				rho::Union{Float64,Nothing}=0.001,
 				shape::Float64=0.184,
 				iterations::Int64,
 				output::String,
-				scheduler::String="local") where S <: Union{Array{Int64,1},UnitRange{Int64},Nothing}
+				scheduler::String="local") where S <: Union{Array{Int64,1},UnitRange{Int64}}
+	
+	@unpack NN, nn, N, n, B_bins, n, al, dac = param;
+
+	bn = binomOp!(NN,nn,B_bins);
 	
 	# Iterations = models to solve
 	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
-	fac     = rand(-2:0.05:2,iterations)
-	afac    = @. param.al*(2^fac)
+	fac     = rand(-1:0.05:1,iterations)
+	afac    = @. round(al*(2^fac),digits=3)
 	
 	# Deleting shape > 1. Negative alpha_x values
 	idx = findall(afac .> 1)
@@ -61,8 +65,6 @@ function rates(;param::parameters,
 		ngl     = rand(repeat(gL,iterations),iterations);
 	end
 
-	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
-	nParam  = [param for i in 1:iterations];
 	#=nBinom  = [convoluted_samples for i in 1:iterations];=#
 	
 	# Random strong selection coefficients
@@ -90,8 +92,12 @@ function rates(;param::parameters,
 		ρ = rand(0.0005:0.0005:0.05,iterations)
 	end
 	
+	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
+	nParam  = parameters[parameters(n=n,gamNeg=ngamNeg[i],gL=ngl[i],gH=ngh[i],alTot=nTot[i],alLow=nLow[i],al=afac[i],be=abs(afac[i]/ngamNeg[i]),thetaMidNeutral=θ[i],rho=ρ[i],binom=bn) for i in 1:iterations];
+
 	# Estimations to distributed workers
-	@time out = ParallelUtilities.pmapbatch(iter_rates,nParam, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+	# out = pmapbatch(iter_rates,nParam, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+	out = pmapbatch(iter_rates,nParam);
 
 	# Remove the workers to free memory resources
 	#=if(nworkers() > 1)
@@ -101,32 +107,32 @@ function rates(;param::parameters,
 	end=#
 
 	# Reducing output array
-	df = vcat(out...)
+	df = vcat(out...);
 	
 	# Saving models and rates
-	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ])
-	neut   = df[:,9:(8+size(param.dac,1))]
-	sel    = df[:,(9+size(param.dac,1)):(8+size(param.dac,1)*2)]
-	dsdn   = Array(df[:,(end-5):end-2])
+	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gamNeg,:gL,:gH,:al,:ρ]);
+	neut   = df[:,9:(8+size(dac,1))];
+	sel    = df[:,(9+size(dac,1)):(8+size(dac,1)*2)];
+	dsdn   = Array(df[:,(end-5):end-2]);
 
-	sum_pol = df[:,end-1:end]
+	sum_pol = df[:,end-1:end];
 
 	# Saving multiple summary statistics
-	n = OrderedDict{Int,Array}()
-	s = OrderedDict{Int,Array}()
-	for i in eachindex(param.dac)
-		n[param.dac[i]] = neut[:,i]
-		s[param.dac[i]] = sel[:,i]
-	end
+	nt = OrderedDict{Int,Array}();
+	sl = OrderedDict{Int,Array}();
+	for i in eachindex(dac)
+		nt[dac[i]] = neut[:,i]
+		sl[dac[i]] = sel[:,i]
+	end;
 
 	# Writting HDF5 file
-	JLD2.jldopen(output, "a+") do file
-		file[string(param.N)* "/" * string(param.n) * "/models"] = models;
-		file[string(param.N)* "/" * string(param.n) * "/neut"]   = n;
-		file[string(param.N)* "/" * string(param.n) * "/sel"]    = s;
-		file[string(param.N)* "/" * string(param.n) * "/dsdn"]   = dsdn;
-		file[string(param.N)* "/" * string(param.n) * "/pol"]    = sum_pol;
-		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac;
+	jldopen(output, "a+") do file
+		file[string(N)* "/" * string(n) * "/models"] = models;
+		file[string(N)* "/" * string(n) * "/neut"]   = nt;
+		file[string(N)* "/" * string(n) * "/sel"]    = sl;
+		file[string(N)* "/" * string(n) * "/dsdn"]   = dsdn;
+		file[string(N)* "/" * string(n) * "/pol"]    = sum_pol;
+		file[string(N)* "/" * string(n) * "/dac"]    = dac;
 	end;
 end
 
@@ -149,17 +155,17 @@ Estimating rates given a model for all B range.
 # Output
  - `Array{Float64,2}`
 """
-function iter_rates(param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)
+function iter_rates(param::parameters)
 
 	# Creating model to solve
 	# Γ distribution
-	param.al    = afac; param.be = abs(afac/gamNeg); param.gamNeg = gamNeg
+	# param.al    = afac; param.be = abs(afac/gamNeg); param.gamNeg = gamNeg
 	# α, αW
-	param.alLow = alLow; param.alTot = alTot;
-	# Positive selection coefficients
-	param.gH    = gH;param.gL = gL
-	# Mutation rate and recomb
-	param.thetaMidNeutral = θ; param.rho = ρ
+	# param.alLow = alLow; param.alTot = alTot;
+	# # Positive selection coefficients
+	# param.gH    = gH;param.gL = gL
+	# # Mutation rate and recomb
+	# param.thetaMidNeutral = θ; param.rho = ρ
 	#=param.thetaMidNeutral = θ; param.θᵣ .= θᵣ; param.rho = ρ=#
 	# Solving θ on non-coding region and probabilites to get α value without BGS
 	param.B = 0.999
@@ -201,38 +207,39 @@ function getting_rates(param::parameters)
 	################################################
 	# Subset rates accounting for positive alleles #
 	################################################
+	@unpack B, pposL, pposH, gL, gH, dac, B,alLow,alTot,gamNeg,gL,gH,al,thetaMidNeutral = param;
 
 	# Fixation
-	fN       = param.B*fixNeut(param)
-	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL)
-	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL)
-	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH)
+	fN       = param.B*fixNeut(param);
+	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL);
+	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL);
+	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH);
 
-	ds       = fN
-	dn       = fNeg + fPosL + fPosH
+	ds       = fN;
+	dn       = fNeg + fPosL + fPosH;
 
 	# Polymorphism
-	neut::Array{Float64,1} = DiscSFSNeutDown(param)
-	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
-		DiscSFSSelPosDownArb(param,param.gH,param.pposH)
+	neut::Array{Float64,1} = DiscSFSNeutDown(param);
+	selH::Array{Float64,1} = if isinf(exp(param.gH * 2));
+		DiscSFSSelPosDownArb(param,param.gH,param.pposH);
 	else
-		DiscSFSSelPosDown(param,param.gH,param.pposH)
+		DiscSFSSelPosDown(param,param.gH,param.pposH);
 	end
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL)
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL)
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL);
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL);
 	
 	# Cumulative rates
-	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false)
+	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false);
 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	neut, selH, selL, selN = splitColumns(tmp)
-	sel = (selH+selL)+selN
+	neut, selH, selL, selN = splitColumns(tmp);
+	sel = (selH+selL)+selN;
 
 	##########
 	# Output #
 	##########
-	analyticalValues::Array{Float64,2} = vcat(param.B,param.alLow,param.alTot,param.gamNeg,param.gL,param.gH,param.al,param.thetaMidNeutral,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,neut[1],sel[1])'
+	analytical_values::Array{Float64,2} = vcat(B,alLow,alTot,gamNeg,gL,gH,al,thetaMidNeutral,neut[dac],sel[dac],ds,dn,fPosL,fPosH,neut[1],sel[1])'
 
-	return (analyticalValues)
+	return (analytical_values)
 end
 
 
@@ -324,7 +331,7 @@ function rates_threads(;param::parameters,
 	out = zeros(iterations,(size(param.dac,1) * 2) + 14,size(param.B_bins,1));
 	
 
-	@showprogress for (j,val) in enumerate(reverse(param.B_bins))
+	for (j,val) in enumerate(reverse(param.B_bins))
 		tmp = e[e[:,4] .== val,:]
 		Threads.@threads for i in 1:iterations
 			out[i,:,j] = r(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
@@ -359,7 +366,6 @@ function rates_threads(;param::parameters,
 		file[string(param.N)* "/" * string(param.n) * "/pol"]   = sum_pol;
 		file[string(param.N)* "/" * string(param.n) * "/dac"]    = param.dac;
 	end;
-
 end
 
 function solve(param::parameters,alTot::Float64,alLow::Float64,gH::Int64,gL::Int64,gamNeg::Int64,afac::Float64,θ::Float64,ρ::Float64)

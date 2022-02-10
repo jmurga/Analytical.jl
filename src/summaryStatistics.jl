@@ -194,6 +194,14 @@ Estimate summary statistics using observed data and analytical rates. *analysis_
 """
 function summary_statistics(;param::parameters,h5_file::String,analysis_folder::String,summstat_size::Int64,replicas::Int64=1,bootstrap::Bool=false)
 
+	param = parameters(n=50,dac=[1,2,4,5,10,20,25,30,50,70]);
+	analysis_folder="/home/jmurga/test/simulations/prueba/";
+	# h5_file="/home/jmurga/test/simulations/prueba/prueba.jld2";
+	h5_file="/home/jmurga/test/simulations/rates.jld2";
+	replicas=1;
+	bootstrap=true;
+	summstat_size=10^5
+
 	#Opening files
 	sfs_files        = filter(x -> occursin("sfs",x), readdir(analysis_folder,join=true));
 	divergence_files = filter(x -> occursin("div",x), readdir(analysis_folder,join=true));
@@ -201,47 +209,71 @@ function summary_statistics(;param::parameters,h5_file::String,analysis_folder::
 	sfs,divergence,α,observed = open_sfs_div(sfs_files,divergence_files,param.dac,replicas,bootstrap);
 
 	#Open rates
-	h5    = jldopen(h5_file)
-	tmp   = h5[string(param.N) * "/" * string(param.n)]
+	h5    = jldopen(h5_file);
+	h5_subset   = h5[string(param.N) * "/" * string(param.n)];
 
 	#Subset index
-	idx    = sample(1:size(tmp["models"],1),summstat_size,replace=false)
-	models = Array(view(tmp["models"],idx,:));
-	dsdn   = Array(view(tmp["dsdn"],idx,:));
-	pol    = Array(view(tmp["pol"],idx,:));
+	idx    = sample(1:size(h5_subset["models"],1),summstat_size,replace=false);
+	models = Array(view(h5_subset["models"],idx,:));
+	dsdn   = Array(view(h5_subset["dsdn"],idx,:));
+	pol    = Array(view(h5_subset["pol"],idx,:));
 
 	# Filtering polymorphic rate by dac
-	n    = hcat(map(x -> view(tmp["neut"][x],:),param.dac)...);
-	s    = hcat(map(x -> view(tmp["sel"][x],:),param.dac)...);
+	n    = hcat(map(x -> view(h5_subset["neut"][x],:),param.dac)...);
+	s    = hcat(map(x -> view(h5_subset["sel"][x],:),param.dac)...);
 	neut = Array(view(n,idx,:));
 	sel  = Array(view(s,idx,:));
 
 	#Making summaries
 	f(afs,divergence,observed,m=models,nt=neut,sl=sel,d=dsdn,p=pol,dac=param.dac) = sampling_from_rates(afs,divergence,observed,m,nt,sl,d,p,dac);
+	
+	expected_values = [hcat(models[:,1:5],@. round(1 - (dsdn[:,1]/dsdn[:,2] * sel/neut),digits=5))]
 
-	#expectedValues = f.(sfs,divergence,observed);
-	expectedValues = progress_pmap(f,sfs,divergence,observed;progress= Progress(size(sfs,1),desc="Sampling P and D "));
-
-	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
+	expected_values = progress_pmap(f,sfs,divergence,observed;progress = Progress(size(sfs,1),desc="Sampling αₓ "));
 
 	# Controling outlier cases
-	fltInf(e) = replace!(e, -Inf=>NaN)
-	expectedValues = fltInf.(expectedValues)
-	fltNan(e) = e[vec(.!any(isnan.(e),dims=2)),:]
-	expectedValues = fltInf.(expectedValues)
-	expectedValues = fltNan.(expectedValues)
-	#=expectedValues = map(x -> x[(x[:,3] .> 0) .& (x[:,3] .<1 ),:],expectedValues)=#
-	expectedValues = map(x -> x[(x[:,3] .< 1),:],expectedValues)
-	
-	# Writting ABCreg input
-	#=@inbounds @sync for i in eachindex(α)
-		Base.Threads.@spawn begin
-			w(α,analysis_folder * "/alphas_" * string(i) * ".txt")
-			w(expectedValues,  analysis_folder * "/summstat_" * string(i) * ".txt")
-		end
-	end=#
-	progress_map(w,α, analysis_folder * "/alphas_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs_files,1),desc="Writting α "));
-	progress_pmap(w,expectedValues,  analysis_folder * "/summstat_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs,1),desc="Writting summaries "));
+	expected_values = pmapbatch(filter_expected,expected_values);
 
-	return(expectedValues)
+	nuisance =  [[1.16  0.62  0.32  0.04  1.  1.  1. 1.  1.  1.],[1.08  0.7   0.2   0.41  1.51  1.3   1.18  1.01  0.94  1.04],[1.16  0.62  0.32  0.04  1.11  1.12  1.03  0.92  0.93  1.02],[0.76  0.91  1.44  1.98  0.22  0.46  0.58  0.7  0.77  1.01],[0.8   1.03  1.91  3.02  1.6   0.45  0.16  0.05  0.14  0.26]];
+
+	expected_values = progress_pmap(y -> vcat(y,vcat(map(x-> nuisance_alpha(y,x),nuisance)...)),expected_values)
+
+	flt_b(x) = any(x .> 1)
+	flt = pmapbatch(y -> .!mapslices(flt_b,y[:,6:end],dims=2)[:,1],expected_values)
+
+	flt_v = (x,y) -> @view x[y,:]
+
+	expected_values = pmapbatch(flt_v,expected_values,flt)
+
+	w(x,name) = write(name,DataFrame(x,:auto),delim='\t',header=false);
+
+	progress_map(w, α, analysis_folder * "/alphas_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs_files,1),desc="Writting α "));
+	
+	progress_pmap(w, expected_values,  analysis_folder * "/summstat_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs,1),desc="Writting summaries "));
+
+	# ABCreg(analysis_folder=analysis_folder,S=size(param.dac,1),tol=0.025,abcreg="/home/jmurga/ABCreg/src/reg");
+	# a,b = plot_map(analysis_folder=analysis_folder);
+	# b
+
+	return(expected_values)
+end
+
+function filter_expected(x::Matrix{Float64})
+	
+	replace!(x, -Inf=>NaN)
+	x = x[vec(.!any(isnan.(x),dims=2)),:]
+	x = x[(x[:,3] .< 1),:]
+
+	return(x)
+end
+
+function nuisance_alpha(a::Matrix{Float64},b::Matrix{Float64})
+
+		tmp_param = @view a[:,1:5];
+		tmp_summs = @view a[:,6:end];
+
+		tmp = round.(tmp_summs .* b,digits=5)
+
+		out = hcat(tmp_param,tmp);
+		return(out)
 end

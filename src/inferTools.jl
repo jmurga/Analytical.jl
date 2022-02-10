@@ -33,7 +33,7 @@ function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any
 	
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
 
-	df   = CSV.read(data,header=false,delim='\t',DataFrame)
+	df   = read(data,header=false,delim='\t',DataFrame)
 
 	if(!isnothing(gene_list))
 		df =  vcat([ df[df[:,1] .==i,:]  for i in gene_list]...);
@@ -110,9 +110,10 @@ function ABCreg(;analysis_folder::String,S::Int64,tol::Float64,abcreg::String)
 	# Creating output names
 	out = analysis_folder .* "/out_" .* string.(1:size(aFile,1))
 
-	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
+	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`);
 
-	progress_pmap(r,aFile,sumFile,out);	
+	progress_pmap(r,aFile,sumFile,out);
+	
 end
 
 """
@@ -121,8 +122,8 @@ end
 function bootstrap_data(sfs_files::Array{Float64,2},divergence_files::Array{Float64,2},replicas::Int64,output_folder::String)
 	
 	# Open Data
-	sfs        = Array(CSV.read(sfs_files,DataFrame))
-	divergence = fill(Array(CSV.read(divergence_files,DataFrame)),replicas)
+	sfs        = Array(read(sfs_files,DataFrame))
+	divergence = fill(Array(read(divergence_files,DataFrame)),replicas)
 	scumu      = fill(cumulative_sfs(sfs[:,2:end]),replicas)
 
 	# Bootstraping
@@ -134,15 +135,15 @@ function bootstrap_data(sfs_files::Array{Float64,2},divergence_files::Array{Floa
 	outDiv = @. output * "div" * string(1:replicas) * ".tsv"
 	for i  = 1:replicas
 		tmp = hcat(sfs[:,1],bootstrap[i])
-		CSV.write(out,DataFrame(tmp),header=false)
-		CSV.write(out,DataFrame(divergence[i]),header=false)
+		write(out,DataFrame(tmp),header=false)
+		write(out,DataFrame(divergence[i]),header=false)
 	end
 end
 
 function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
 
-	sfs = Array.(CSV.read.(x,DataFrame,header=false))
-	divergence = Array.(CSV.read.(y,DataFrame,header=false))
+	sfs = Array.(read.(x,DataFrame,header=false))
+	divergence = Array.(read.(y,DataFrame,header=false))
 
 	if bootstrap
 		sfs = repeat(sfs,replicas)
@@ -176,4 +177,64 @@ function source_plot_map_r(;script::String)
 	catch
 		"Please be sure you installed RCall, R and abc library in your system. Check our documentation if you have any installation problem: https://jmurga.github.io/Analytical.jl/dev/"
 	end
+end
+
+function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Posteriors")
+
+
+	try
+		@eval @rimport locfit 
+		@eval @rimport ggplot2
+	catch
+		println("here")
+	end
+
+	out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
+	out          = filter(x -> !occursin(".1.",x),out)
+
+	open(x)      = Array(read(x,DataFrame,header=false))
+
+	# Control outlier inference. 2Nes non negative values
+	flt(x)       = x[x[:,4] .> 0,:]
+	posteriors   = flt.(open.(out));
+	
+	
+	if !weak
+		posteriors = [posteriors[i][:,3:end] for i in eachindex(posteriors)]
+		tmp          = mapslices.(mean,posteriors,dims=1);
+		maxp         = DataFrame(vcat(tmp...),[:a,:gamNeg,:shape])
+		al           = maxp[:,1:1]
+		gam          = maxp[:,2:end]
+	else
+		tmp          = mapslices.(mean,posteriors,dims=1);
+		maxp         = DataFrame(vcat(tmp...),[:aw,:as,:a,:gamNeg,:shape])
+		al           = maxp[:,1:3]
+		gam          = maxp[:,4:end]
+	end
+
+
+
+	# @rput al
+	# @rput title
+	# @rput posteriors
+	# @rput analysis_folder
+
+	# R"""al = as.data.table(al)
+	# 		lbls = if(ncol(al) > 1){c(expression(paste('Posterior ',alpha[w])), expression(paste('Posterior ',alpha[s])),expression(paste('Posterior ',alpha)))}else{c(expression(paste('Posterior ',alpha)))}
+	# 		clrs = if(ncol(al) > 1){c('#30504f', '#e2bd9a', '#ab2710')}else{c('#ab2710')}
+
+	# 		if(nrow(al) == 1){
+	# 			tmp = as.data.table(posteriors[1])
+	# 			dal = suppressWarnings(data.table::melt(tmp[,1:3]))
+	# 			pal = ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle(title) + xlab(expression(alpha)) + ylab("")
+	# 		}else{
+	# 			dal = suppressWarnings(data.table::melt(al))
+	# 			pal = suppressWarnings(ggplot(dal) + geom_density(aes(x=value,fill=variable),alpha=0.75) + scale_fill_manual('Posterior distribution',values=clrs ,labels=lbls) + theme_bw() + ggtitle(title) + xlab(expression(alpha)) + ylab(""))
+	# 		}
+	# 		suppressWarnings(ggsave(pal,filename=paste0(analysis_folder,'/map.png'),dpi=600))
+	# 		"""
+
+	write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
+
+	return(posteriors,maxp)
 end

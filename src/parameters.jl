@@ -1,8 +1,6 @@
 ################################
 ####### Define parameters ######
 ################################
-import Parameters: @with_kw
-
 """
 Mutable structure containing the variables required to solve the analytical approach. All the functions are solve using the internal values of the structure. You should declare a mutable structure to the perform the analytical estimations.
 
@@ -88,12 +86,14 @@ Expected reduction in nucleotide diversity. Explored at [Charlesworth B., 1994](
 """
 function Br(param::parameters,theta::Float64)
 
-	ρ::Float64     = param.rho
-	t::Float64     = -1.0*param.gamNeg/(param.NN+0.0)
-	μ::Float64     = theta/(2.0*param.NN)
-	r::Float64     = ρ/(2.0*param.NN)
+	@unpack rho, gamNeg, NN, NN, NN, Lf, Lf = param;
 
-	out::Float64   = ℯ^(-4*μ*param.Lf/(2*param.Lf*r+t))
+	ρ::Float64     = rho
+	t::Float64     = -1.0*gamNeg/(NN+0.0)
+	μ::Float64     = theta/(2.0*NN)
+	r::Float64     = ρ/(2.0*NN)
+
+	out::Float64   = ℯ^(-4*μ*Lf/(2*Lf*r+t))
 	return out
 end
 
@@ -108,12 +108,13 @@ Find the optimum mutation given the expected reduction in nucleotide diversity (
 """
 function setThetaF!(param::parameters)
 
-	i(θ,p=param) = Br(p,θ) - p.B
-	thetaF       = find_zero(i,0.0)
-	param.thetaF = thetaF
+	@unpack B = param
+	i(θ,p=param,b=B) = Br(p,θ) - B;
+	thetaF           = find_zero(i,0.0);
+	@pack! param    = thetaF;
 end
 
-function alphaExpSimLow(param::parameters,pposL::Float64,pposH::Float64)
+function alphaExpSimLow(param::parameters)
 	return fixPosSim(param,param.gL,0.5*pposL)/(fixPosSim(param,param.gL,0.5*pposL)+fixPosSim(param,param.gH,0.5*pposH) + fixNegB(param,0.5*pposL+0.5*pposH))
 end
 
@@ -122,7 +123,6 @@ function alphaExpSimTot(param::parameters,pposL::Float64,pposH::Float64)
 end
 
 function solvEqns(param,config)
-
 	pposL,pposH = config
 	return (alphaExpSimTot(param,pposL,pposH)-param.alTot,alphaExpSimLow(param,pposL,pposH)-param.alLow)
 end
@@ -152,9 +152,9 @@ function setPpos!(param::parameters)
 		 pposH = 0.0
 	end
 
-	param.pposL,param.pposH = pposL, pposH
+	@pack! param = pposL, pposH;
 
- end
+end
 
 """
 	binomOp(param)
@@ -170,7 +170,7 @@ Binomial convolution to sample the allele frequencies probabilites depending on 
 """
 function binomOp!(param::parameters)
 
-	#=bn = Dict(param.B_bins[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.B_bins))=#
+	# bn = Dict(param.B_bins[i] => spzeros(param.nn+1,param.NN) for i in 1:length(param.B_bins))
 
 	for b_val in param.B_bins
 
@@ -189,12 +189,38 @@ function binomOp!(param::parameters)
 		out  = round.(out,digits=10)
 		out_S = SparseArrays.dropzeros(SparseArrays.sparse(out))
 		param.binom[b_val] = out_S
-		# param.bn[bVal] = outS
+		# bn[b_val] = out_S
 		#=param.neut[bVal] = round.(param.B*(param.thetaMidNeutral)*0.25*(outS*neutralSfs),digits=10)=#
 
 	end
 end
 
+function binomOp!(NN::Int64,nn::Int64,B_bins::Vector{Float64})
+
+	bn = Dict(B_bins[i] => spzeros(nn+1,NN) for i in 1:length(B_bins))
+
+	for b_val in B_bins
+
+		NN2          = convert(Int64,ceil(NN*b_val))
+		samples      = collect(1:(nn-1))
+		pSize        = collect(0:NN2)
+		samplesFreqs = permutedims(pSize/NN2)
+		neutralSfs   = @. 1/pSize
+		replace!(neutralSfs, Inf => 0.0)
+
+
+		f(x,y=param.nn) = Binomial(y,x)
+		z    = f.(samplesFreqs)
+
+		out  = pdf.(z,samples)
+		out  = round.(out,digits=10)
+		out_S = SparseArrays.dropzeros(SparseArrays.sparse(out))
+		
+		bn[b_val] = out_S
+
+	end
+	return(bn)
+end
 
 """
 

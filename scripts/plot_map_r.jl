@@ -1,5 +1,6 @@
 try
 	using RCall
+	R"""library(locfit);library(ggplot2)"""
 catch
 	using Pkg
 	ENV["R_HOME"]="*"
@@ -25,7 +26,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 	out = filter(x -> occursin("post",x), readdir(analysis_folder,join=true))
 	out          = filter(x -> !occursin(".1.",x),out)
 
-	open(x)      = Array(CSV.read(x,DataFrame,header=false))
+	open(x)      = Array(read(x,DataFrame,header=false))
 
 	# Control outlier inference. 2Nes non negative values
 	flt(x)       = x[x[:,4] .> 0,:]
@@ -72,7 +73,7 @@ function plot_map(;analysis_folder::String,weak::Bool=true,title::String="Poster
 			suppressWarnings(ggsave(pal,filename=paste0(analysis_folder,'/map.png'),dpi=600))
 			"""
 
-	CSV.write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
+	write(analysis_folder * "/map.tsv",maxp,delim='\t',header=true)
 
-	return(maxp)
+	return(posteriors,maxp)
 end

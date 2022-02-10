@@ -39,65 +39,27 @@ function DiscSFSNeutDown(param::parameters)
 end
 
 ############Positive############
-# Variable gamma in function changed to gammaValue to avoid problem with exported SpecialFunctions.gamma
+# Variable gamma in function changed to gamma_value to avoid problem with exported SpecialFunctions.gamma
 """
 
-	DiscSFSSelPosDown(gammaValue,ppos)
+	DiscSFSSelPosDown(gamma_value,ppos)
 
 Expected rate of positive selected allele frequency reduce by background selection. The spectrum depends on the number of individuals.
 
 # Arguments
- - `gammaValue::Int64`: selection strength.
+ - `gamma_value::Int64`: selection strength.
  - `ppos::Float64`: positive selected alleles probabilty.
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-function DiscSFSSelPosDown(param::parameters,gammaValue::Int64,ppos::Float64)
+function DiscSFSSelPosDown(param::parameters,gamma_value::Int64,ppos::Float64)
 
 	if ppos == 0.0
 		out = zeros(Float64,param.nn + 1)
 		out = out[2:end-1]
 	else
 
-		redPlus = phiReduction(param,gammaValue)
-
-		# Solving sfs
-		NN2 = convert(Int64,ceil(param.NN*param.B))
-		xa1  = collect(0:NN2)
-		xa2  = xa1/(NN2)
-
-		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gammaCorrected = gammaValue*param.B
-
-		gammaExp1 = exp(gammaCorrected*2)
-		gammaExp2 = exp(gammaCorrected*-2)
-
-		positiveSfs(i::Float64,g1::Float64=gammaExp1,g2::Float64=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
-
-		# Original
-		# ppos*0.5*(ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
-
-		# Allocating outputs
-		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
-		replace!(solvedPositiveSfs, NaN => 0.0)
-
-		# subsetDict = get(param.binom,param.B,1)
-		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solvedPositiveSfs)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solvedPositiveSfs)
-
-	end
-
-	return out
-end
-
-function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64)
-
-	if ppos == 0.0
-		out = zeros(Float64,param.nn + 1)
-		out = out[2:end-1]
-	else
-
-		redPlus = phiReduction(param,gammaValue)
+		redPlus = phiReduction(param,gamma_value)
 
 		# Solving sfs
 		NN2  = convert(Int64,ceil(param.NN*param.B))
@@ -105,40 +67,77 @@ function DiscSFSSelPosDownArb(param::parameters,gammaValue::Int64,ppos::Float64)
 		xa2  = xa1/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gammaCorrected = gammaValue*param.B
-		gammaExp1::Quadmath.Float128 = exp(
-			Quadmath.Float128(gammaCorrected*2))
-		gammaExp2::Quadmath.Float128 = exp(Quadmath.Float128(gammaCorrected*-2))
+		gamma_corrected = gamma_value*param.B
 
-		positiveSfs(i::Float64,g1::Quadmath.Float128=gammaExp1,g2::Quadmath.Float128=gammaExp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		gamma_exp1 = exp(gamma_corrected*2)
+		gamma_exp2 = exp(gamma_corrected*-2)
+
+		positive_sfs(i::Float64,g1::Float64=gamma_exp1,g2::Float64=gamma_exp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+
+		# Original
+		# ppos*0.5*(ℯ^(2*gamma_corrected)*(1-ℯ^(-2.0*gamma_corrected*(1.0-i)))/((ℯ^(2*gamma_corrected)-1.0)*i*(1.0-i)))
+
 		# Allocating outputs
-		solvedPositiveSfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
-		replace!(solvedPositiveSfs, NaN => 0.0)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solvedPositiveSfs)
-		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solvedPositiveSfs)=#
+		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positive_sfs.(xa2))
+		replace!(solved_positive_sfs, NaN => 0.0)
+
+		# subsetDict = get(param.binom,param.B,1)
+		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solved_positive_sfs)
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solved_positive_sfs)
 
 	end
 
 	return out
 end
 
-# function DiscSFSSelPosDown(gammaValue::Int64,ppos::Float64)
+function DiscSFSSelPosDownArb(param::parameters,gamma_value::Int64,ppos::Float64)
+
+	if ppos == 0.0
+		out = zeros(Float64,param.nn + 1)
+		out = out[2:end-1]
+	else
+
+		redPlus = phiReduction(param,gamma_value)
+
+		# Solving sfs
+		NN2  = convert(Int64,ceil(param.NN*param.B))
+		xa1  = collect(0:NN2)
+		xa2  = xa1/(NN2)
+
+		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
+		gamma_corrected = gamma_value*param.B
+		gamma_exp1::Float128 = exp(Float128(gamma_corrected*2))
+		gamma_exp2::Float128 = exp(Float128(gamma_corrected*-2))
+
+		positive_sfs(i::Float64,g1::Float128=gamma_exp1,g2::Float128=gamma_exp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		# Allocating outputs
+		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positive_sfs.(xa2))
+		replace!(solved_positive_sfs, NaN => 0.0)
+		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solved_positive_sfs)
+		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solved_positive_sfs)=#
+
+	end
+
+	return out
+end
+
+# function DiscSFSSelPosDown(gamma_value::Int64,ppos::Float64)
 
 # 	if ppos == 0.0
 # 		out = zeros(Float64,adap.nn + 1)
 # 	else
 
-# 		redPlus = phiReduction(gammaValue)
+# 		redPlus = phiReduction(gamma_value)
 
 # 		# Solving sfs
 # 		NN2 = convert(Int64,ceil(adap.NN*adap.B))
 # 		xa  = collect(0:NN2)
 # 		xa  = xa/(NN2)
 
-		# function positiveSfs(i,gammaCorrected=gammaValue*adap.B,ppos=ppos)
+		# function positiveSfs(i,gamma_corrected=gamma_value*adap.B,ppos=ppos)
 		# 	if i > 0 && i < 1.0
 		# 		return ppos*0.5*(
-		# 			ℯ^(2*gammaCorrected)*(1-ℯ^(-2.0*gammaCorrected*(1.0-i)))/((ℯ^(2*gammaCorrected)-1.0)*i*(1.0-i)))
+		# 			ℯ^(2*gamma_corrected)*(1-ℯ^(-2.0*gamma_corrected*(1.0-i)))/((ℯ^(2*gamma_corrected)-1.0)*i*(1.0-i)))
 		# 	end
 		# 	return 0.0
 		# end
@@ -147,9 +146,9 @@ end
 # 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
 # 		out              = Array{Float64}(undef,NN2 + 1)
 
-# 		solvedPositiveSfs = (1.0/(NN2)) * (xa .|> positiveSfs)
-# 		replace!(solvedPositiveSfs, NaN => 0.0)
-# 		out               = (adap.thetaMidNeutral)*redPlus*0.75*(adap.bn[adap.B]*solvedPositiveSfs)
+# 		solved_positive_sfs = (1.0/(NN2)) * (xa .|> positiveSfs)
+# 		replace!(solved_positive_sfs, NaN => 0.0)
+# 		out               = (adap.thetaMidNeutral)*redPlus*0.75*(adap.bn[adap.B]*solved_positive_sfs)
 # 	end
 
 # 	return view(out,2:lastindex(out)-1,:)
