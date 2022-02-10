@@ -90,19 +90,8 @@ Performing ABC inference using ABCreg. Please, be sure your analysis_folder cont
 Files containing posterior distributions from ABCreg
 
 """
-function ABCreg(;analysis_folder::String,S::Int64,tol::Float64,abcreg::String)
+function ABCreg(;analysis_folder::String,P::Int64,S::Int64,tol::Float64,abcreg::String)
 	
-	#=# List alphas and summstat files
-    aFile   = analysis_folder * "/alphas.txt"
-    sumFile = analysis_folder * "/summstat.txt"
-
-	# Creating output names
-	out = analysis_folder * "/out"
-
-	r(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`)
-
-	r(aFile,sumFile,out);=#
-
 	# List alphas and summstat files
 	aFile     = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
 	sumFile   = filter(x -> occursin("summstat",x), readdir(analysis_folder,join=true));

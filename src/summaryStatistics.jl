@@ -194,13 +194,13 @@ Estimate summary statistics using observed data and analytical rates. *analysis_
 """
 function summary_statistics(;param::parameters,h5_file::String,analysis_folder::String,summstat_size::Int64,replicas::Int64=1,bootstrap::Bool=false)
 
-	param = parameters(n=50,dac=[1,2,4,5,10,20,25,30,50,70]);
-	analysis_folder="/home/jmurga/test/simulations/prueba/";
-	# h5_file="/home/jmurga/test/simulations/prueba/prueba.jld2";
-	h5_file="/home/jmurga/test/simulations/rates.jld2";
-	replicas=1;
-	bootstrap=true;
-	summstat_size=10^5
+	# param = parameters(n=50,dac=[1,2,4,5,10,20,25,30,50,70]);
+	# analysis_folder="/home/jmurga/test/simulations/prueba/";
+	# # h5_file="/home/jmurga/test/simulations/prueba/prueba.jld2";
+	# h5_file="/home/jmurga/test/simulations/rates.jld2";
+	# replicas=1;
+	# bootstrap=true;
+	# summstat_size=10^5
 
 	#Opening files
 	sfs_files        = filter(x -> occursin("sfs",x), readdir(analysis_folder,join=true));
