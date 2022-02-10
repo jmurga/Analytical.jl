@@ -1,6 +1,3 @@
-const T = gsl_rng_default;
-const r = rng_alloc(T);
-
 @with_kw struct recipe
 	epochs::Array{Int64,1} = [1000]
 	N::Array{Int64,1} = [8000]
@@ -92,7 +89,7 @@ function freq_inbreed(sel::Float64,freq::Float64,h::Float64,F::Float64)
 	return (((1.0 - s) * (freq * freq + F * freq * (1.0 - freq))) + ((1.0 - h * s) * freq * (1.0 - freq) * (1.0 - F))) / (((1.0 - freq) * (1.0 - freq) + (1.0 - freq) * F * freq) + ((1.0 - h * s) * 2.0 * freq * (1.0 - freq) * (1.0 - F)) + ((1.0 - s) * (freq * freq + F * freq * (1.0 - freq))))
 end
 
-function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64,s::Float64,θ::Float64,freq::Float64,dfe::String,param_one::Float64,param_two::Float64,s_mult::Float64,n_anc::Int64,age::Int64,trajectories::Array{Int64,1},relax::Bool=false) 
+function add_mutation!(mutation_list::LinkedList{mutation},r::Ptr{gsl_rng},N::Float64,h::Float64,s::Float64,θ::Float64,freq::Float64,dfe::String,param_one::Float64,param_two::Float64,s_mult::Float64,n_anc::Int64,age::Int64,trajectories::Array{Int64,1},relax::Bool=false) 
 
 	num_mut::Float64 = ran_poisson(r,θ/2.0)
 	count_mut::Int64 = length(mutation_list)
@@ -119,23 +116,7 @@ function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64
 	end
 end
 
-function add_mutation!(mutation_list::LinkedList{mutation},N::Float64,h::Float64,s::Float64,θ::Float64,freq::Float64,age::Float64) 
-
-	num_mut::Float64 = ran_poisson(r,θ/2.0)
-	count_mut::Int64 = length(mutation_list)
-
-	for x::Int64=1:num_mut
-
-		s = s;
-
-        count_mut += 1;
-        mut        = mutation(frequency = freq, h = h, s = s*2, count_samp = 0.0, age = age, num = count_mut, type=1)
-		push!(mutation_list,mut);
-
-	end
-end
-
-function drift_sel!(mutation_list::LinkedList{mutation},N::Float64,F::Float64,trajectories::Array{Int64,1})
+function drift_sel!(mutation_list::LinkedList{mutation},r::Ptr{gsl_rng},N::Float64,F::Float64,trajectories::Array{Int64,1})
 
 	l = 0;
 	f = 0;
@@ -185,7 +166,7 @@ function drift_sel!(mutation_list::LinkedList{mutation},N::Float64,F::Float64,tr
 	end
 end
 
-function burnin(param::recipe)
+function burnin(param::recipe,r::Ptr{gsl_rng},)
 
 	@unpack N,θ,s,h,dfe,param_one,param_two,s_mult,n_anc,trajectories,relax = param;
 
@@ -231,7 +212,7 @@ function f_of_q_lambda(x::Float64,j::Int64,N_burnin::Int64,sample_size::Int64,po
 	return  f;
 end
 
-function sfs(mutation_list::LinkedList{mutation},sample_size)
+function sfs(mutation_list::LinkedList{mutation},r::Ptr{gsl_rng},sample_size::Int64)
 
 	if(!isempty(mutation_list))
 
@@ -302,6 +283,9 @@ function simulate(param::recipe, sample_size::Int64)
 	end
 	
 	# set seed before start
+	T = gsl_rng_default;
+	r = rng_alloc(T);
+
 	rng_set(r, seed)
 
 	epochs = SVector{length(epochs)}(epochs)
@@ -329,7 +313,7 @@ function simulate(param::recipe, sample_size::Int64)
 
 	if !burnin_period
 		# mutation_list = burnin(mutation_list,param);
-		mutation_list = burnin(param);
+		mutation_list = burnin(param,r);
 	else
 		mutation_list = LinkedList{mutation}();
 	end;
@@ -357,8 +341,8 @@ function simulate(param::recipe, sample_size::Int64)
 				# Add age to previous epochs generations
 				age = g + epochs[e];
 			end
-			x, y    = drift_sel!(mutation_list,N_F,F[e],trajectories);
-			add_mutation!(mutation_list,N_F,h,s,θ,1.0/N[e],dfe,param_one,param_two,s_mult,n_anc,age,trajectories,relax);
+			x, y    = drift_sel!(mutation_list,r,N_F,F[e],trajectories);
+			add_mutation!(mutation_list,r,N_F,h,s,θ,1.0/N[e],dfe,param_one,param_two,s_mult,n_anc,age,trajectories,relax);
 			l = l + x;
 			f = f + y;
 		end
@@ -373,7 +357,7 @@ function simulate(param::recipe, sample_size::Int64)
 		close(io)
 	end
 
-	out = sfs(mutation_list,sample_size)
+	out = sfs(mutation_list,r,sample_size);
 
 	return(out,hcat(l,f))
 end
