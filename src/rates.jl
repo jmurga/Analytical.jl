@@ -93,7 +93,7 @@ function rates(;param::parameters,
 	end
 	
 	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
-	n_param  = parameters[parameters(n=n,gamNeg=ngamNeg[i],gL=ngl[i],gH=ngh[i],alTot=nTot[i],alLow=nLow[i],al=afac[i],be=abs(afac[i]/ngamNeg[i]),thetaMidNeutral=θ[i],rho=ρ[i],binom=bn) for i in 1:iterations];
+	n_param  = Analytical.parameters[Analytical.parameters(n=n,gamNeg=ngamNeg[i],gL=ngl[i],gH=ngh[i],alTot=nTot[i],alLow=nLow[i],al=afac[i],be=abs(afac[i]/ngamNeg[i]),thetaMidNeutral=θ[i],rho=ρ[i],binom=bn,dac=dac) for i in 1:iterations];
 
 	# Estimations to distributed workers
 	# out = pmapbatch(iter_rates,n_param, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
