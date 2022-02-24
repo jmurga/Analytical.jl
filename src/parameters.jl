@@ -209,7 +209,7 @@ function binomOp!(NN::Int64,nn::Int64,B_bins::Vector{Float64})
 		replace!(neutralSfs, Inf => 0.0)
 
 
-		f(x,y=param.nn) = Binomial(y,x)
+		f(x,y=nn) = Binomial(y,x)
 		z    = f.(samplesFreqs)
 
 		out  = pdf.(z,samples)
