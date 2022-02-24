@@ -1,6 +1,6 @@
 try
 	using RCall
-	R"""library(locfit);library(ggplot2)"""
+	R.eval("library(locfit);library(ggplot2)")
 catch
 	using Pkg
 	ENV["R_HOME"]="*"
