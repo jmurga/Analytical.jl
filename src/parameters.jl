@@ -114,7 +114,7 @@ function setThetaF!(param::parameters)
 	@pack! param    = thetaF;
 end
 
-function alphaExpSimLow(param::parameters)
+function alphaExpSimLow(param::parameters,pposL::Float64,pposH::Float64)
 	return fixPosSim(param,param.gL,0.5*pposL)/(fixPosSim(param,param.gL,0.5*pposL)+fixPosSim(param,param.gH,0.5*pposH) + fixNegB(param,0.5*pposL+0.5*pposH))
 end
 

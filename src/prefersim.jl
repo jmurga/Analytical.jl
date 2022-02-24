@@ -174,22 +174,21 @@ function burnin(param::recipe,r::Ptr{gsl_rng})
 	s_size = N[1]-1;
 	sel    = s[1];
 
-	# theoretical_sfs     = zeros(n_size,2);
+	theoretical_sfs     = zeros(n_size,2);
 	number_of_mutations = 0;
 	
 	mutation_list = LinkedList{mutation}()
 
-	f(x,j) = f_of_q_lambda(x,j,n_size,s_size,sel,θ*2)
-	@inbounds for j::Int64=2:n_size
+	f(x=Float64,j=Int64) = f_of_q_lambda(x,j,n_size,s_size,sel,θ*2)
+	@time @inbounds for j::Int64=2:n_size
 		m = LinkedList{mutation}()
 		
 		res,err = quadgk(x->f(x,j),0,1)
-		number_of_mutations += res;
 		age = n_size * 10;
-		
-		add_mutation!(m,r,Float64(n_size),h,sel,res,j/n_size,dfe,param_one,param_two,s_mult[1],n_anc,age,trajectories,relax);
-		append!(mutation_list,m);
+		add_mutation!(mutation_list,r,Float64(n_size),h,s,θ,j/n_size,dfe,param_one,param_two,sel,n_anc,age,trajectories,relax);
+		# append!(mutation_list,m);
 	end
+
 	return(mutation_list);
 end
 

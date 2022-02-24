@@ -93,11 +93,11 @@ function rates(;param::parameters,
 	end
 	
 	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
-	nParam  = parameters[parameters(n=n,gamNeg=ngamNeg[i],gL=ngl[i],gH=ngh[i],alTot=nTot[i],alLow=nLow[i],al=afac[i],be=abs(afac[i]/ngamNeg[i]),thetaMidNeutral=θ[i],rho=ρ[i],binom=bn) for i in 1:iterations];
+	n_param  = parameters[parameters(n=n,gamNeg=ngamNeg[i],gL=ngl[i],gH=ngh[i],alTot=nTot[i],alLow=nLow[i],al=afac[i],be=abs(afac[i]/ngamNeg[i]),thetaMidNeutral=θ[i],rho=ρ[i],binom=bn) for i in 1:iterations];
 
 	# Estimations to distributed workers
-	# out = pmapbatch(iter_rates,nParam, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
-	out = pmapbatch(iter_rates,nParam);
+	# out = pmapbatch(iter_rates,n_param, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ);
+	out = pmapbatch(iter_rates,n_param);
 
 	# Remove the workers to free memory resources
 	#=if(nworkers() > 1)
@@ -210,23 +210,23 @@ function getting_rates(param::parameters)
 	@unpack B, pposL, pposH, gL, gH, dac, B,alLow,alTot,gamNeg,gL,gH,al,thetaMidNeutral = param;
 
 	# Fixation
-	fN       = param.B*fixNeut(param);
-	fNeg     = param.B*fixNegB(param,0.5*param.pposH+0.5*param.pposL);
-	fPosL    = fixPosSim(param,param.gL,0.5*param.pposL);
-	fPosH    = fixPosSim(param,param.gH,0.5*param.pposH);
+	fN       = B*fixNeut(param);
+	fNeg     = B*fixNegB(param,0.5*pposH+0.5*pposL);
+	fPosL    = fixPosSim(param,gL,0.5*pposL);
+	fPosH    = fixPosSim(param,gH,0.5*pposH);
 
 	ds       = fN;
 	dn       = fNeg + fPosL + fPosH;
 
 	# Polymorphism
 	neut::Array{Float64,1} = DiscSFSNeutDown(param);
-	selH::Array{Float64,1} = if isinf(exp(param.gH * 2));
-		DiscSFSSelPosDownArb(param,param.gH,param.pposH);
+	selH::Array{Float64,1} = if isinf(exp(gH * 2));
+		DiscSFSSelPosDownArb(param,gH,pposH);
 	else
-		DiscSFSSelPosDown(param,param.gH,param.pposH);
+		DiscSFSSelPosDown(param,gH,pposH);
 	end
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.pposL);
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.pposH+param.pposL);
+	selL::Array{Float64,1} = DiscSFSSelPosDown(param,gL,pposL);
+	selN::Array{Float64,1} = DiscSFSSelNegDown(param,pposH+pposL);
 	
 	# Cumulative rates
 	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false);
@@ -285,7 +285,7 @@ end
 # 	end
 
 # 	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
-# 	nParam  = [param for i in 1:iterations];
+# 	n_param  = [param for i in 1:iterations];
 # 	#=nBinom  = [convoluted_samples for i in 1:iterations];=#
 	
 # 	# Random strong selection coefficients
@@ -321,7 +321,7 @@ end
 # 		end
 # 	end    
 	
-# 	#y = ThreadsX.map(solve, nParam,nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ)
+# 	#y = ThreadsX.map(solve, n_param,nBinom, nTot, nLow, ngh, ngl, ngamNeg, afac, θ, ρ)
 
 # 	x = repeat(x, outer = [size(param.B_bins,1), 1, 1]);
 # 	x = vcat([ @view x[:,:,i] for i=1:iterations]...);
@@ -334,7 +334,7 @@ end
 # 	for (j,val) in enumerate(reverse(param.B_bins))
 # 		tmp = e[e[:,4] .== val,:]
 # 		Threads.@threads for i in 1:iterations
-# 			out[i,:,j] = r_solve(nParam[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
+# 			out[i,:,j] = r_solve(n_param[i],nBinom[i], nTot[i], nLow[i], ngh[i], ngl[i], ngamNeg[i], afac[i], θ[i], ρ[i],tmp[i,:]);
 # 		end
 # 	end
 
