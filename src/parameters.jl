@@ -20,7 +20,7 @@ Mutable structure containing the variables required to solve the analytical appr
  - `ppos_h::Float64`: Fixation probabily of strongly beneficial alleles
  - `N::Int64`: Population size
  - `n::Int64`: Sample size
- - `flaking_length::Int64`: Flanking region length
+ - `flanking_length::Int64`: Flanking region length
  - `rho::Float64`: Recombination rate
  - `TE::Float64`
 
@@ -42,7 +42,7 @@ Mutable structure containing the variables required to solve the analytical appr
 	ppos_h::Float64            = 0.001
 	N::Int64                   = 1000
 	n::Int64                   = 500
-	flaking_length::Int64      = 2*10^5
+	flanking_length::Int64      = 2*10^5
 	ρ::Float64                 = 0.001
 	TE::Float64                = 5.0
 	diploid::Bool              = false
@@ -90,7 +90,7 @@ function Br(param::parameters,theta::Float64)
 	μ::Float64     = theta/(2.0*param.NN)
 	r::Float64     = ρ/(2.0*param.NN)
 
-	out::Float64  = ℯ^(-4*μ*param.flaking_length/(2*param.flaking_length*r+t))
+	out::Float64  = ℯ^(-4*μ*param.flanking_length/(2*param.flanking_length*r+t))
 	return out
 end
 
@@ -250,7 +250,7 @@ function Φ(param::parameters,gammaValue::Int64)
 	s::Float64 = gammaValue/(param.NN*1.0)
 
 	Ψ0::Float64 = polygamma(1,(s+S)/r)
-	Ψ1::Float64 = polygamma(1,(r+param.flaking_length*r+s+S)/r)
+	Ψ1::Float64 = polygamma(1,(r+param.flanking_length*r+s+S)/r)
 	CC::Float64 = 1.0
 
 	out::Float64 = (ℯ^(-2.0*S*μ*(Ψ0-Ψ1)/(r^2)))
