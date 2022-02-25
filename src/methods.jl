@@ -8,24 +8,23 @@ Function to estimate the asmpytotic value of α(x).
 # Returns
  - `Array{Float64,2}`: Array of array containing asymptotic values, lower confidence interval, higher confidence interval
 """
-function amk(alphaValues::Array{Float64,1})
+function amk(α_x::Array{Float64,1})
 
 	# Model
 	asymp_fit(x,p) = @. p[1] + p[2]*exp(-x*p[3])
 
 	# Fit values
-	fitted1    = curve_fit(asymp_fit,collect(1:size(alphaValues,1)),alphaValues,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
-	fitted2    = curve_fit(asymp_fit,collect(1:size(alphaValues,1)),alphaValues,fitted1.param)
-	asymp      = asymp_fit(size(alphaValues,1),fitted2.param)
+	fitted1    = curve_fit(asymp_fit,collect(1:size(α_x,1)),α_x,[-1.0,-1.0,1.0];lower=[-1.0,-1.0,1.0],upper=[1.0, 1.0, 10.0])
+	fitted2    = curve_fit(asymp_fit,collect(1:size(α_x,1)),α_x,fitted1.param)
+	asymp      = asymp_fit(size(α_x,1),fitted2.param)
 
-	ciLow, ciHigh   = try
+	ci_low, ci_high   = try
 		confidence_interval(fitted2)[1][1],LsqFit.confidence_interval(fitted2)[1][2]
 	catch err
 		(0.0,0.0)
 	end
 
-	return asymp,[ciLow,ciHigh],fitted2.param
-	# return asymp
+	return asymp,[ci_low,ci_high],fitted2.param
 end
 
 """
@@ -48,27 +47,27 @@ function impMK(;sfs::Array,divergence::Array,m::T,cutoff::Float64=0.15) where {T
 	
 	deleterious = 0
 	### Estimating slightly deleterious with pn/ps ratio
-	fltLow = (sfs[:, 1] .<= cutoff)
-	pnLow   = sum(sfs[fltLow,2])
-	psLow   = sum(sfs[fltLow,3])
+	flt_low        = (sfs[:, 1] .<= cutoff)
+	pn_low         = sum(sfs[flt_low,2])
+	ps_low         = sum(sfs[flt_low,3])
 
-	fltInter = (sfs[:, 1] .>= cutoff) .& (sfs[:, 1] .<= 1)
-	pnInter = sum(sfs[fltInter,2])
-	psInter = sum(sfs[fltInter,3])
+	flt_inter      = (sfs[:, 1] .>= cutoff) .& (sfs[:, 1] .<= 1)
+	pn_inter       = sum(sfs[flt_inter,2])
+	ps_inter       = sum(sfs[flt_inter,3])
 
-	ratioPs       = psLow / psInter
-	deleterious   = pnLow - (pnInter * ratioPs)
+	ratio_ps       = ps_low / ps_inter
+	deleterious    = pn_low - (pn_inter * ratio_ps)
 
 	if deleterious > pn
 		deleterious = 0
-		pnNeutral = round(pn - deleterious,digits=3)
+		pn_neutral  = round(pn - deleterious,digits=3)
 	else
-		pnNeutral = round(pn - deleterious,digits=3)
+		pn_neutral = round(pn - deleterious,digits=3)
 	end
 	# output['alpha'] = 1 - (((pn - deleterious) / ps) * (ds / dn))
-	output["alpha"] = round(1 - ((pnNeutral/ps) * (ds / dn)),digits=3)
+	output["alpha"]  = round(1 - ((pn_neutral/ps) * (ds / dn)),digits=3)
 	#  method = :minlike same results R, python two.sides
-	output["pvalue"] = pvalue(FisherExactTest(Int(ps),Int(ceil(pnNeutral)),Int(ds),Int(dn)))
+	output["pvalue"] = pvalue(FisherExactTest(Int(ps),Int(ceil(pn_neutral)),Int(ds),Int(dn)))
 
 
 	if (!isnothing(m))
@@ -76,17 +75,15 @@ function impMK(;sfs::Array,divergence::Array,m::T,cutoff::Float64=0.15) where {T
 		mn = m[1]; ms = m[2]
 		# ## Estimation of b: weakly deleterious
 		output["b"] = (deleterious / ps) * (ms / mn)
-
 		## Estimation of f: neutral sites
-		output["f"] = (ms * pnNeutral) / (mn * ps)
+		output["f"] = (ms * pn_neutral) / (mn * ps)
 
 		## Estimation of d, strongly deleterious sites
 		output["d"] = 1 - (output["f"] + output["b"])
 
-		ka      = dn / mn
-		ks       = ds / ms
+		ka                 = dn / mn
+		ks                 = ds / ms
 		output["omega"]    = ka/ ks
-
 
 		# Omega A and Omega D
 		output["omegaA"] = output["omega"] * output["alpha"]
@@ -118,24 +115,23 @@ function fwwMK(;sfs::Array,divergence::Array,m::T,cutoff::Float64=0.15) where {T
 	
 	deleterious = 0
 	### Estimating slightly deleterious with pn/ps ratio
-	fltInter = (sfs[:, 1] .>= cutoff) .& (sfs[:, 1] .<= 1)
-	pnInter = sum(sfs[fltInter,2])
-	psInter = sum(sfs[fltInter,3])
+	flt_inter = (sfs[:, 1] .>= cutoff) .& (sfs[:, 1] .<= 1)
+	pn_inter  = sum(sfs[flt_inter,2])
+	ps_inter  = sum(sfs[flt_inter,3])
 
 
 	# output['alpha'] = 1 - (((pn - deleterious) / ps) * (ds / dn))
-	output["alpha"] = round(1 - ((pnInter/psInter) * (ds / dn)),digits=3)
+	output["alpha"]  = round(1 - ((pn_inter/ps_inter) * (ds / dn)),digits=3)
 	#  method = :minlike same results R, python two.sides
-	output["pvalue"] = pvalue(FisherExactTest(Int(psInter),Int(ceil(pnInter)),Int(ds),Int(dn)))
+	output["pvalue"] = pvalue(FisherExactTest(Int(ps_inter),Int(ceil(pn_inter)),Int(ds),Int(dn)))
 
 
 	if (!isnothing(m))
 
 		mn = m[1]; ms = m[2]
-		ka      = dn / mn
-		ks       = ds / ms
+		ka                 = dn / mn
+		ks                 = ds / ms
 		output["omega"]    = ka/ ks
-
 
 		# Omega A and Omega D
 		output["omegaA"] = output["omega"] * output["alpha"]
@@ -172,11 +168,9 @@ function standardMK(;sfs::Array,divergence::Array,m::T=nothing) where {T<:Union{
 	if (!isnothing(m))
 
 		mn = m[1]; ms = m[2]
-
-		ka      = dn / mn
-		ks       = ds / ms
-		output["omega"]    = ka/ ks
-
+		ka              = dn / mn
+		ks              = ds / ms
+		output["omega"] = ka/ ks
 
 		# Omega A and Omega D
 		output["omegaA"] = output["omega"] * output["alpha"]

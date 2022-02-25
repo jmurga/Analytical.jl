@@ -86,30 +86,6 @@ function poisson_polymorphism(;empirical_values::Array, λps::Array, λpn::Array
 end
 
 """
-	sampledAlpha(observedValues,λds, λdn)
-
-Ouput the expected values from the Poisson sampling process. Please check [`poisson_fixation`](@ref) and [`poisson_polymorphism`](@ref) to understand the samplingn process. α(x) is estimated through the expected values of Dn, Ds, Pn and Ps.
-
-# Arguments
- - `param::parameters`: Array containing the total observed divergence.
- - `d::Array`: observed divergence.
- - `afs::Array`: observed polymorphism.
- - ` λdiv::Array{Float64,2}`: expected fixations rate.
- - ` λdiv::Array{Float64,2}`: expected site frequency spectrum rates.
-# Returns
-αS,expDn,expDs,expPn,expPs,ssAlpha
- - `Array{Int64,2}` containing α(x) values.
- - `Array{Int64,1}` expected non-synonymous divergence.
- - `Array{Int64,1}` expected synonymous divergence.
- - `Array{Int64,1}` expected non-synonymous polymorphism.
- - `Array{Int64,1}` expected synonymous polymorphism.
- - `Array{Int64,1}` expected synonymous polymorphism.
- - `Array{Int64,1}` expected synonymous polymorphism.
- - `Array{Int64,2}` containing α(x) binned values.
-
-"""
-
-"""
 
 	Ouput the expected values from the Poisson sampling process. Please check [`poisson_fixation`](@ref) and [`poisson_polymorphism`](@ref) to understand the samplingn process. α(x) is estimated through the expected values of Dn, Ds, Pn and Ps.
 

@@ -23,8 +23,8 @@ Function to parse polymorphism and divergence by subset of genes. The input data
 """
 function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any}=nothing,sfs_columns::Array{Int64,1}=[3,5],div_columns::Array{Int64,1}=[6,7],bins::Union{Nothing,Int64}=nothing,isolines::Bool=false)
 
+
 	g(x) = parse.(Float64,x[2:end-1])
-	
 	if isolines
 		s = sample_size
 	else
@@ -32,7 +32,6 @@ function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any
 	end
 	
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
-
 	df   = read(data,header=false,delim='\t',DataFrame)
 
 	if(!isnothing(gene_list))
@@ -47,10 +46,8 @@ function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any
 	end=#
 	
 	tmp  = split.(df[:,sfs_columns], ",")
-
 	pn   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,1] .|> g),digits=4) |> countmap))
 	ps   = sort!(OrderedDict(round.(reduce(vcat,tmp[:,2] .|> g),digits=4) |> countmap))
-
 	# Dn, Ds, Pn, Ps, sfs
 	Dn           = sum(df[:,div_columns[1]])
 	Ds           = sum(df[:,div_columns[2]])
@@ -93,15 +90,15 @@ Files containing posterior distributions from ABCreg
 function ABCreg(;analysis_folder::String,P::Int64,S::Int64,tol::Float64,abcreg::String)
 	
 	# List alphas and summstat files
-	aFile     = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
-	sumFile   = filter(x -> occursin("summstat",x), readdir(analysis_folder,join=true));
+	a_file     = filter(x -> occursin("alphas",x), readdir(analysis_folder,join=true));
+	sum_file   = filter(x -> occursin("summstat",x), readdir(analysis_folder,join=true));
 
 	# Creating output names
-	out = analysis_folder .* "/out_" .* string.(1:size(aFile,1))
+	out = analysis_folder .* "/out_" .* string.(1:size(a_file,1))
 
 	abc(a,s,o,abcreg=abcreg,S=S,tol=tol) = run(`$abcreg -d $a -p $s -P 5 -S $S -t $tol -b $o`);
 
-	progress_pmap(abc,aFile,sumFile,out);
+	progress_pmap(abc,a_file,sum_file,out);
 	
 end
 
@@ -131,23 +128,22 @@ end
 
 function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
 
-	sfs = Array.(read.(x,DataFrame,header=false))
+	sfs        = Array.(read.(x,DataFrame,header=false))
 	divergence = Array.(read.(y,DataFrame,header=false))
 
 	if bootstrap
-		sfs = repeat(sfs,replicas)
-		divergence = repeat(divergence,replicas)
-		pr(x) = hcat(x[:,1],pois_rand.(x[:,2:end]))
+		sfs         = repeat(sfs,replicas)
+		divergence  = repeat(divergence,replicas)
+		pr(x)       = hcat(x[:,1],pois_rand.(x[:,2:end]))
 		sfs[2:end] .= pr.(sfs[2:end])
 	end
 
-	scumu = cumulative_sfs.(sfs)
-	f(x,d=dac) = sum(x[:,2:3],dims=2)[d]
-	s = f.(scumu)
-
-	d = [[sum(divergence[i][1:2])] for i in eachindex(divergence)]
+	scumu         = cumulative_sfs.(sfs)
+	f(x,d=dac)    = sum(x[:,2:3],dims=2)[d]
+	s             = f.(scumu)
+	d             = [[sum(divergence[i][1:2])] for i in eachindex(divergence)]
 	al(a,b,c=dac) = @. round(1 - (b[2]/b[1] * a[:,2]/a[:,3])[c],digits=5)
-	α = permutedims.(al.(scumu,divergence))
+	α             = permutedims.(al.(scumu,divergence))
 
 	return(s,d,α,map(x -> x[:,2:end],scumu))
 end

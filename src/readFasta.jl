@@ -1,4 +1,4 @@
-function sequencesToMatrix(samples::Int64,l::Int64,sequences::Array{Tuple{String,String},1})
+function sequences_to_matrix(samples::Int64,l::Int64,sequences::Array{Tuple{String,String},1})
 
 	matrix = Array{Char}(undef,samples + 2,l)
 
@@ -54,7 +54,7 @@ function degeneracy(data::String,codonDict::String)
 	return degen
 end
 
-function iterFastaMatrix(sequenceMatrix::Array{Char,2})
+function iter_fasta_matrix(sequenceMatrix::Array{Char,2})
 
 	# output = DataFrame([Float64,Int64,String],[:daf,:div,:degen])
 	output = Array{Any,2}[]
@@ -112,7 +112,7 @@ function iterFastaMatrix(sequenceMatrix::Array{Char,2})
 	return reduce(vcat,output)
 end
 
-function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
+function format_sfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 
 	freq = OrderedDict(round.(collect(1:samples)/samples,digits=5) .=> 0)
 
@@ -130,7 +130,7 @@ function formatSfs(rawSfsOutput::Array{Any,2},samples::Int64,bins::Int64)
 	return(sfs,d)
 end
 
-function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples::Int64,bins::Int64,codonTable::String)
+function usfs_from_fasta(;file::String,reference::String,outgroup::String,samples::Int64,bins::Int64,codonTable::String)
 
 	multiFasta = readfasta(file);
 	ref        = readfasta(reference);
@@ -139,7 +139,7 @@ function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples:
     samples    = size(multiFasta)[1]
     seqLen     = length(ref[1][2])
 
-	multiFastaMatrix = sequencesToMatrix(samples,seqLen,multiFasta);
+	multiFastaMatrix = sequences_to_matrix(samples,seqLen,multiFasta);
 
 	degenCode = collect(degeneracy(ref[1][2],codonTable));
 	multiFastaMatrix[1,:] = degenCode
@@ -148,13 +148,13 @@ function uSfsFromFasta(;file::String,reference::String,outgroup::String,samples:
 	m = multiFastaMatrix[:,(multiFastaMatrix[end,:].!= 'N') .& (multiFastaMatrix[end,:].!= '-')]
 	m = m[:,(m[1,:] .== '4') .| (m[1,:] .=='0')]
 
-	joinedSfsDiv = iterFastaMatrix(m)
+	joinedSfsDiv = iter_fasta_matrix(m)
 
-	sfs, d = formatSfs(joinedSfsDiv,samples,bins)
+	sfs, d = format_sfs(joinedSfsDiv,samples,bins)
 	return sfs,d
 end
 
-function uSfsFromVcf(file::String)
+function u_sfs_from_vcf(file::String)
 
 	reader = VCF.Reader(GzipDecompressorStream(open(file, "r")))
 	output = []

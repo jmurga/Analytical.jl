@@ -20,84 +20,84 @@ Expected rate of neutral allele frequency reduce by backgrou	nd selection. The s
 # Return:
  - `Array{Float64}`: expected rate of neutral alleles frequencies.
 """
-function DiscSFSNeutDown(param::parameters)
+function DiscSFSNeutDown(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
 
-	NN2::Int64 = convert(Int64,ceil(param.NN*param.B))
+	NN2 = convert(Int64,ceil(param.NN*param.B))
+	
 	# Allocating variables
+	neutral_sfs(i::Int64) = 1.0/(i)
 
-	neutralSfs(i::Int64) = 1.0/(i)
+	x = collect(0:NN2)
+	solved_neutral_sfs = neutral_sfs.(x)
+	replace!(solved_neutral_sfs, Inf => 0.0)
 
-	x::Vector{Int64} = collect(0:NN2)
-	solvedNeutralSfs::Vector{Float64} = neutralSfs.(x)
-	replace!(solvedNeutralSfs, Inf => 0.0)
-
-	# subsetDict = get(param.binom,param.B,1)
+	# subsetDict = get(param.bn,param.B,1)
 	# subsetDict = binom
-	out::Array{Float64,1} = param.B * (param.thetaMidNeutral) * 0.25 * (param.binom[param.B]*solvedNeutralSfs)
-	#=out::Array{Float64,1} = param.B .* (param.θᵣ) .*0.25 .* (binom*solvedNeutralSfs)=#
+	out::Array{Float64,1} = param.B * (param.θ_coding) * 0.25 * (binom*solved_neutral_sfs)
+
 	return out
 end
 
 ############Positive############
-# Variable gamma in function changed to gamma_value to avoid problem with exported SpecialFunctions.gamma
+# Variable gamma in function changed to s to avoid problem with exported SpecialFunctions.gamma
 """
 
-	DiscSFSSelPosDown(gamma_value,ppos)
+	DiscSFSSelPosDown(s,p)
 
 Expected rate of positive selected allele frequency reduce by background selection. The spectrum depends on the number of individuals.
 
 # Arguments
- - `gamma_value::Int64`: selection strength.
- - `ppos::Float64`: positive selected alleles probabilty.
+ - `s::Int64`: selection strength.
+ - `p::Float64`: positive selected alleles probabilty.
 # Return:
  - `Array{Float64}`: expected positive selected alleles frequencies.
 """
-function DiscSFSSelPosDown(param::parameters,gamma_value::Int64,ppos::Float64)
+function DiscSFSSelPosDown(param::parameters,s::Int64,p::Float64,binom::SparseMatrixCSC{Float64,Int64})
 
-	if ppos == 0.0
+	if p == 0.0
 		out = zeros(Float64,param.nn + 1)
 		out = out[2:end-1]
 	else
 
-		redPlus = phiReduction(param,gamma_value)
-
 		# Solving sfs
-		NN2  = convert(Int64,ceil(param.NN*param.B))
-		xa1  = collect(0:NN2)
-		xa2  = xa1/(NN2)
+		red_plus = Φ(param,s)
+		NN2      = convert(Int64,ceil(param.NN*param.B))
+		xa1      = collect(0:NN2)
+		xa2      = xa1/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gamma_corrected = gamma_value*param.B
+		s_corrected = s*param.B
 
-		gamma_exp1 = exp(gamma_corrected*2)
-		gamma_exp2 = exp(gamma_corrected*-2)
+		s_exp1 = exp(s_corrected*2)
+		s_exp2 = exp(s_corrected*-2)
 
-		positive_sfs(i::Float64,g1::Float64=gamma_exp1,g2::Float64=gamma_exp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		positiveSfs(i::Float64,g1::Float64=s_exp1,g2::Float64=s_exp2,p::Float64=p) = Float64(p*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 
 		# Original
-		# ppos*0.5*(ℯ^(2*gamma_corrected)*(1-ℯ^(-2.0*gamma_corrected*(1.0-i)))/((ℯ^(2*gamma_corrected)-1.0)*i*(1.0-i)))
+		# p*0.5*(ℯ^(2*s_corrected)*(1-ℯ^(-2.0*s_corrected*(1.0-i)))/((ℯ^(2*s_corrected)-1.0)*i*(1.0-i)))
 
 		# Allocating outputs
-		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positive_sfs.(xa2))
+		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solved_positive_sfs, NaN => 0.0)
 
-		# subsetDict = get(param.binom,param.B,1)
-		# out               = (param.thetaMidNeutral)*redPlus*0.75*(subsetDict*solved_positive_sfs)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solved_positive_sfs)
+		# subsetDict = get(param.bn,param.B,1)
+		# out               = (param.θ_coding)*red_plus*0.75*(subsetDict*solved_positive_sfs)
+		out::Array{Float64,1} = param.θ_coding * red_plus * 0.75 * (binom*solved_positive_sfs)
+		#=out::Array{Float64,1} = param.θᵣ .* red_plus .* 0.75 .* (binom*solved_positive_sfs)=#
 
 	end
 
 	return out
 end
 
-function DiscSFSSelPosDownArb(param::parameters,gamma_value::Int64,ppos::Float64)
+function DiscSFSSelPosDownArb(param::parameters,s::Int64,p::Float64,binom::SparseMatrixCSC{Float64,Int64})
 
-	if ppos == 0.0
+	if p == 0.0
 		out = zeros(Float64,param.nn + 1)
 		out = out[2:end-1]
 	else
 
-		redPlus = phiReduction(param,gamma_value)
+		red_plus = Φ(param,s)
 
 		# Solving sfs
 		NN2  = convert(Int64,ceil(param.NN*param.B))
@@ -105,97 +105,66 @@ function DiscSFSSelPosDownArb(param::parameters,gamma_value::Int64,ppos::Float64
 		xa2  = xa1/(NN2)
 
 		# Solving float precision performance using exponential rule. Only one BigFloat estimation.
-		gamma_corrected = gamma_value*param.B
-		gamma_exp1::Float128 = exp(Float128(gamma_corrected*2))
-		gamma_exp2::Float128 = exp(Float128(gamma_corrected*-2))
+		s_corrected = s*param.B
+		s_exp1::Quadmath.Float128 = exp(Quadmath.Float128(s_corrected*2))
+		s_exp2::Quadmath.Float128 = exp(Quadmath.Float128(s_corrected*-2))
 
-		positive_sfs(i::Float64,g1::Float128=gamma_exp1,g2::Float128=gamma_exp2,ppos::Float64=ppos) = Float64(ppos*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
+		positiveSfs(i::Float64,g1::Quadmath.Float128=s_exp1,g2::Quadmath.Float128=s_exp2,p::Float64=p) = Float64(p*0.5*(g1*(1- g2^(1.0-i))/((g1-1.0)*i*(1.0-i))))
 		# Allocating outputs
-		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positive_sfs.(xa2))
+		solved_positive_sfs::Array{Float64,1} = (1.0/(NN2)) * (positiveSfs.(xa2))
 		replace!(solved_positive_sfs, NaN => 0.0)
-		out::Array{Float64,1} = param.thetaMidNeutral * redPlus * 0.75 * (param.binom[param.B]*solved_positive_sfs)
-		#=out::Array{Float64,1} = param.θᵣ .* redPlus .* 0.75 .* (binom*solved_positive_sfs)=#
+		out::Array{Float64,1} = param.θ_coding * red_plus * 0.75 * (binom*solved_positive_sfs)
+		#=out::Array{Float64,1} = param.θᵣ .* red_plus .* 0.75 .* (binom*solved_positive_sfs)=#
 
 	end
 
 	return out
 end
 
-# function DiscSFSSelPosDown(gamma_value::Int64,ppos::Float64)
-
-# 	if ppos == 0.0
-# 		out = zeros(Float64,adap.nn + 1)
-# 	else
-
-# 		redPlus = phiReduction(gamma_value)
-
-# 		# Solving sfs
-# 		NN2 = convert(Int64,ceil(adap.NN*adap.B))
-# 		xa  = collect(0:NN2)
-# 		xa  = xa/(NN2)
-
-		# function positiveSfs(i,gamma_corrected=gamma_value*adap.B,ppos=ppos)
-		# 	if i > 0 && i < 1.0
-		# 		return ppos*0.5*(
-		# 			ℯ^(2*gamma_corrected)*(1-ℯ^(-2.0*gamma_corrected*(1.0-i)))/((ℯ^(2*gamma_corrected)-1.0)*i*(1.0-i)))
-		# 	end
-		# 	return 0.0
-		# end
-
-# 		# Allocating outputs
-# 		solvedNeutralSfs = Array{Float64}(undef,NN2 + 1)
-# 		out              = Array{Float64}(undef,NN2 + 1)
-
-# 		solved_positive_sfs = (1.0/(NN2)) * (xa .|> positiveSfs)
-# 		replace!(solved_positive_sfs, NaN => 0.0)
-# 		out               = (adap.thetaMidNeutral)*redPlus*0.75*(adap.bn[adap.B]*solved_positive_sfs)
-# 	end
-
-# 	return view(out,2:lastindex(out)-1,:)
-# end
 
 ######Slightly deleterious######
 """
 
-	DiscSFSSelNegDown(param,ppos)
+	DiscSFSSelNegDown(param,p)
 
 Expected rate of positive selected allele frequency reduce by background selection. Spectrum drawn on a gamma DFE. It depends on the number of individuals.
 
 # Arguments
- - `ppos::Float64`: positive selected alleles probabilty.
+ - `p::Float64`: positive selected alleles probabilty.
 # Return:
  - `Array{Float64}`: expected negative selected alleles frequencies.
 """
-function DiscSFSSelNegDown(param::parameters,ppos::Float64)
-	# subsetDict = get(param.binom,param.B,1)
-	solvedNegative = DiscSFSSelNeg(param,ppos)
-	out = param.B .* (param.thetaMidNeutral) .* 0.75 .* (param.binom[param.B]*solvedNegative)
-	#=out = param.B .* (param.θᵣ) .* 0.75 .* (binom*solvedNegative)=#
+function DiscSFSSelNegDown(param::parameters,p::Float64,binom::SparseMatrixCSC{Float64,Int64})
+
+	# subsetDict = get(param.bn,param.B,1)
+	solved_negative = DiscSFSSelNeg(param,p)
+	out = param.B .* (param.θ_coding) .* 0.75 .* (binom*solved_negative)
 
 	return out
 end
 
-function DiscSFSSelNeg(param::parameters,ppos::Float64)
+function DiscSFSSelNeg(param::parameters,p::Float64)
 
-	beta     = param.be/(1.0*param.B)
+	beta     = param.scale/(1.0*param.B)
 	NN2      = convert(Int64, ceil(param.NN*param.B))
 	xa       = collect(0:NN2)/NN2
 
-	solveZ   = similar(xa)
+	solve_z   = similar(xa)
 
-	z(x::Float64,p::Float64=ppos) = (1.0-p)*(2.0^-param.al)*(beta^param.al)*(-zeta(param.al,x+beta/2.0) + zeta(param.al,(2+beta)/2.0))/((-1.0+x)*x)
+	z(x::Float64,p::Float64=p) = (1.0-p)*(2.0^-param.shape)*(beta^param.shape)*(-zeta(param.shape,x+beta/2.0) + zeta(param.shape,(2+beta)/2.0))/((-1.0+x)*x)
 
-	solveZ   = z.(xa)
+	solve_z   = z.(xa)
 
-	if (solveZ[1] == Inf || isnan(solveZ[1]))
-		solveZ[1] = 0.0
+	if (solve_z[1] == Inf || isnan(solve_z[1]))
+		solve_z[1] = 0.0
 	end
-	if (solveZ[lastindex(solveZ)] == Inf || isnan(solveZ[lastindex(solveZ)]))
-		solveZ[lastindex(solveZ)] = 0.0
+	if (solve_z[lastindex(solve_z)] == Inf || isnan(solve_z[lastindex(solve_z)]))
+		solve_z[lastindex(solve_z)] = 0.0
 	end
 
-	return 1.0/(NN2+0.0).*solveZ
+	return 1.0/(NN2+0.0).*solve_z
 end
+
 
 """
 	cumulative_sfs(sfs_tmp)

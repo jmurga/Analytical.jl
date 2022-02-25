@@ -4,23 +4,23 @@
 
 # E[Dn]  = LT(E[Dn+] + E[Dn-] + E[Dns])
 
-# Neutral fixation corrected by background selection
+# Neutrshape fixation corrected by background selection
 """
 
- - fixNeut()
+ - fix_neut()
 
-Expected neutral fixations rate reduce by B value.
+Expected neutrshape fixations rate reduce by B vshapeue.
 
 ```math
 \\mathbb{E}[D_{s}] = (1 - p_{-} - p_{+}) B \\frac{1}{2N}
 ```
 # Returns
- - `Float64`: expected rate of neutral fixations.
+ - `Float64`: expected rate of neutrshape fixations.
 
 """
-function fixNeut(param::parameters)
+function fix_neut(param::parameters)
 	@unpack B,NN = param;
-	# Synonymous probabilty * (fixation probabilty corrected by BGS value)
+	# Synonymous probabilty * (fixation probabilty corrected by BGS vshapeue)
 	out::Float64 = 0.25*(1.0/(B*NN))
 	return out
 end
@@ -28,31 +28,31 @@ end
 # Negative fixations corrected by background selection
 """
 
-	fixNegB(ppos)
+	fix_neg_b(p)
 
 Expected fixation rate from negative DFE.
 
 ```math
-\\mathbb{E}[D_{n-}] =  p_{-}\\left(2^-\\alpha\\beta^\\alpha\\left(-\\zeta[\\alpha,\\frac{2+\\beta}{2}] + \\zeta[\\alpha,1/2(2-\\frac{1}{N+\\beta})]\\right)\\right)
+\\mathbb{E}[D_{n-}] =  p_{-}\\left(2^-\\shapepha\\scaleta^\\shapepha\\left(-\\zeta[\\shapepha,\\frac{2+\\scaleta}{2}] + \\zeta[\\shapepha,1/2(2-\\frac{1}{N+\\scaleta})]\\right)\\right)
 ```
 
 # Arguments
- - `ppos::Float64`: positive selected alleles probabilty.
+ - `p::Float64`: positive selected alleles probabilty.
 
 # Returns
  - `Float64`: expected rate of fixations from negative DFE.
 
 """
-function fixNegB(param::parameters,ppos::Float64)
-	@unpack al, B, be, N = param;
+function fix_neg_b(param::parameters,p::Float64)
+	@unpack shape, B, scale, N = param;
 	# Non-synonymous proportion * negative alleles probability * fixation probability from gamma distribution
-	out::Float64 = 0.75*(1-ppos)*(2^(-al))*(B^(-al))*(be^al)*(-zeta(al,1.0+be/(2.0*B))+zeta(al,0.5*(2-1.0/(N*B)+be/B)))
+	out::Float64 = 0.75*(1-p)*(2^(-shape))*(B^(-shape))*(scale^shape)*(-zeta(shape,1.0+scale/(2.0*B))+zeta(shape,0.5*(2-1.0/(N*B)+scale/B)))
 	return out
 end
 
 # Positive fixations
 """
-	pFix()
+	p_fix()
 
 Expected positive fixation rate.
 
@@ -61,56 +61,55 @@ Expected positive fixation rate.
 ```
 
 # Arguments
- - `ppos::Float64`: positive selected alleles probabilty.
+ - `p::Float64`: positive selected alleles probabilty.
 
 # Returns
  - `Float64`: expected rate of positive fixation.
 
 """
-function pFix(param::parameters,gam::Int64)
-
-	@unpack NN = param;
+function p_fix(param::parameters,s::Int64)
+	
 	# Fixation probability
-	s::Float64    = gam/(NN)
-	pfix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*gam))
+	# @unpack NN   = param;
+	s::Float64     = s/(param.NN);
+	p_fix::Float64 = (1.0-ℯ^(-2.0*s))/(1.0-ℯ^(-2.0*s));
 
-	# Correcting pFix for large s following Uricchio et al. 2014
+	# Correcting p_fix for large s following Uricchio et shape. 2014
 	if s >= 0.1
-		pfix = ℯ^(-(1.0+s))
-		lim = 0
+		p_fix = ℯ^(-(1.0+s));
+		lim   = 0;
 		while(lim < 200)
-			pfix = ℯ^((1.0+s)*(pfix-1.0))
-			lim  = lim + 1
+			p_fix = ℯ^((1.0+s)*(p_fix-1.0));
+			lim   = lim + 1;
 		end
-		pfix = 1 -pfix
+		p_fix = 1 - p_fix;
 	end
 
-	return pfix
+	return p_fix
 end
 
-# Positive fixations after apply Φ. reduction of positive fixations due deleterious linkage given a value B of background selection
+# Positive fixations after apply Φ. reduction of positive fixations due deleterious linkage given a vshapeue B of background selection
 """
 
-	fixPosSim(gamma,ppos)
+	fixPosSim(gamma,p)
 
-Expected positive fixations rate reduced due to the impact of background selection and linkage. The probabilty of fixation of positively selected alleles is reduced by a factor Φ across all deleterious linked sites [`Analytical.phiReduction`](@ref).
+Expected positive fixations rate reduced due to the impact of background selection and linkage. The probabilty of fixation of positively selected alleles is reduced by a factor Φ across shapel deleterious linked sites [`Anshapeyticshape.phiReduction`](@ref).
 
 ```math
 \\mathbb{E}[D_{n+}] =  \\Phi \\cdot \\mathbb{E}[D_{n+}]
 ```
 
 # Arguments
- - `ppos::Float64`: positive selected alleles probabilty.
+ - `p::Float64`: positive selected alleles probabilty.
 
 # Returns
  - `Float64`: expected rate of positive fixations under background selection
 
 """
-function fixPosSim(param::parameters,gamma::Int64,ppos::Float64)
-
-	redPlus = phiReduction(param,gamma)
+function fix_pos_sim(param::parameters,s::Int64,p::Float64)
 
 	# Non-synonymous * positive alleles probability * B reduction * fixation probility
-	out::Float64 = 0.75*ppos*redPlus*pFix(param,gamma)
+	red_plus     = Φ(param,s)
+	out::Float64 = 0.75*p*red_plus*p_fix(param,s)
 	return out
 end
