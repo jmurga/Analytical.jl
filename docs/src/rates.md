@@ -31,37 +31,37 @@ Note that ```adap``` contains about mutation rate, recombination rates, DFE, BGS
   Parameters
   ≡≡≡≡≡≡≡≡≡≡≡≡
 
-    •  gamNeg::Int64: Selection coefficient for deleterious alleles
+    •  gam_neg::Int64: Selection coefficient for deleterious alleles
 
     •  gL::Int64: Selection coefficient for weakly benefical alleles
 
     •  gH::Int64: Selection coefficient for strongly benefical alleles
 
-    •  alLow::Float64: Proportion of α due to weak selection
+    •  al_low::Float64: Proportion of α due to weak selection
 
-    •  alTot::Float64: α
+    •  al_tot::Float64: α
 
-    •  thetaF::Float64: Mutation rate defining BGS strength
+    •  θ_noncoding::Float64: Mutation rate defining BGS strength
 
-    •  thetaMidNeutral::Float64: Mutation rate on coding region
+    •  θ_coding::Float64: Mutation rate on coding region
 
-    •  al::Float64: DFE shape parameter
+    •  shape::Float64: DFE shape parameter
 
-    •  be::Float64: DFE scale parameter
+    •  scale::Float64: DFE scale parameter
 
     •  B::Float64: BGS strength
 
-    •  bRange::Array{Float64,1}: BGS values to simulate
+    •  B_bins::Array{Float64,1}: BGS values to simulate
 
-    •  pposL::Float64: Fixation probabily of weakly beneficial alleles
+    •  ppos_l::Float64: Fixation probabily of weakly beneficial alleles
 
-    •  pposH::Float64: Fixation probabily of strongly beneficial alleles
+    •  ppos_h::Float64: Fixation probabily of strongly beneficial alleles
 
     •  N::Int64: Population size
 
     •  n::Int64: Sample size
 
-    •  Lf::Int64: Flanking region length
+    •  flanking_length::Int64: Flanking region length
 
     •  rho::Float64: Recombination rate
 
@@ -71,36 +71,9 @@ Note that ```adap``` contains about mutation rate, recombination rates, DFE, BGS
 We will estimate the empirical adaptation rate using TGP data using the estimated DFE parameters at Boyko et al (2008). Nonetheless, shape and scale DFE parameter are flexible in our model.
 
 ```julia
-adap.al = 0.184
-adap.be = abs(0.184/-457)
+adap.shape = 0.184
+adap.scale = abs(0.184/-457)
 ```
-Before to automatize the fixation and polimorphic rates estimation, you must to convolute the binomial distribution to obtain the downsampled SFS
-
-```julia
-Analytical.binomOp!(adap)
-```
-
-Note the ```Analytical.binomOp!``` make inplace estimation at ```adap.binom```given the BGS range defined at ```adap.bRange```
-
-```julia
-@docs Analytical.binomOp!
-
-  binomOp(param)
-
-  Binomial convolution to sample the allele frequencies probabilites depeding on background selection values, and sample size.
-
-  Arguments
-  ≡≡≡≡≡≡≡≡≡≡≡
-
-    •  param::parameters
-
-  Returns
-  ≡≡≡≡≡≡≡≡≡
-
-    •  Array{Float64,2}: convoluted SFS given for each B value defined in the model. Results saved at param.bn.
-
-```
-
 
 Now the variable ```adap``` contains sample size, DAC and DFE information. The function ```Analytical.rates``` will perform the analytical estimation of *N* independent models regarding DFE, BGS, mutation rate, and recombination rate. In the following example, we used the function ```Analytical.rates``` to input the prior distributions. The function will randomize the input values to solve *N* independent estimation regarding our model. 
 
@@ -125,7 +98,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 
     •  gL::Union{Array{Int64,1},Nothing}: Range of weak selection coefficients
 
-    •  gamNeg::Array{Int64,1} : Range of deleterious selection coefficients
+    •  gam_neg::Array{Int64,1} : Range of deleterious selection coefficients
 
     •  theta::Union{Float64,Nothing} : Population-scaled mutation rate on coding region
 
@@ -146,7 +119,7 @@ Now the variable ```adap``` contains sample size, DAC and DFE information. The f
 ```
 
 ```julia
-@time df = Analytical.rates(param = adap,gH=collect(200:2000),gL=collect(1:10),gamNeg=collect(-2000:-200),iterations = 10^5,shape=adap.al,output="analysis/rates.jld2");
+@time df = Analytical.rates(param = adap,gH=200:2000,gL=1:10,gam_neg=-2000:-200,iterations = 10^5,output="analysis/rates.jld2");
 ```
 
 The function will create a HDF5 file containing the solved models, fixation rates, polymorphic rates, and the selected DAC. This information will be used later to estimate summary statistics.

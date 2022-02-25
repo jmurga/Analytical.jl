@@ -221,7 +221,7 @@ function summary_statistics(;param::parameters,h5_file::String,analysis_folder::
 
 	# expected_values = pmapbatch(flt_v,expected_values,flt)
 
-	w(x,name) = write(name,DataFrame(x,:auto),delim='\t',header=false);
+	w(x,name) = CSV.write(name,DataFrame(x,:auto),delim='\t',header=false);
 
 	progress_map(w, α, analysis_folder * "/alphas_" .* string.(1:size(sfs,1)) .* ".txt";progress= Progress(size(sfs_files,1),desc="Writting α "));
 	

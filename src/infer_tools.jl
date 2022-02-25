@@ -32,7 +32,7 @@ function parse_sfs(;sample_size::Int64,data::String,gene_list::Union{Nothing,Any
 	end
 	
 	freq = OrderedDict(round.(collect(1:(s-1))/s,digits=4) .=> 0)
-	df   = read(data,header=false,delim='\t',DataFrame)
+	df   = CSV.read(data,header=false,delim='\t',DataFrame)
 
 	if(!isnothing(gene_list))
 		df =  vcat([ df[df[:,1] .==i,:]  for i in gene_list]...);
@@ -108,8 +108,8 @@ end
 function bootstrap_data(sfs_files::Array{Float64,2},divergence_files::Array{Float64,2},replicas::Int64,output_folder::String)
 	
 	# Open Data
-	sfs        = Array(read(sfs_files,DataFrame))
-	divergence = fill(Array(read(divergence_files,DataFrame)),replicas)
+	sfs        = Array(CSV.read(sfs_files,DataFrame))
+	divergence = fill(Array(CSV.read(divergence_files,DataFrame)),replicas)
 	scumu      = fill(cumulative_sfs(sfs[:,2:end]),replicas)
 
 	# Bootstraping
@@ -121,15 +121,15 @@ function bootstrap_data(sfs_files::Array{Float64,2},divergence_files::Array{Floa
 	outDiv = @. output * "div" * string(1:replicas) * ".tsv"
 	for i  = 1:replicas
 		tmp = hcat(sfs[:,1],bootstrap[i])
-		write(out,DataFrame(tmp),header=false)
-		write(out,DataFrame(divergence[i]),header=false)
+		CSV.write(out,DataFrame(tmp),header=false)
+		CSV.write(out,DataFrame(divergence[i]),header=false)
 	end
 end
 
 function open_sfs_div(x::Array{String,1},y::Array{String,1},dac::Array{Int64,1},replicas::Int64,bootstrap::Bool)
 
-	sfs        = Array.(read.(x,DataFrame,header=false))
-	divergence = Array.(read.(y,DataFrame,header=false))
+	sfs        = Array.(CSV.read.(x,DataFrame,header=false))
+	divergence = Array.(CSV.read.(y,DataFrame,header=false))
 
 	if bootstrap
 		sfs         = repeat(sfs,replicas)

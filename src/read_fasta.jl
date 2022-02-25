@@ -1,28 +1,31 @@
-function sequences_to_matrix(samples::Int64,l::Int64,sequences::Array{Tuple{String,String},1})
+function sequences_to_matrix(f::String)
 
-	matrix = Array{Char}(undef,samples + 2,l)
 
-	deleteIndex = Array{Int8}[]
+	mf = readfasta(f);
+	samples = length(mf)
+	
+	m = Array{Char}(undef,samples + 2,length(mf[1][2]))
 
-	@simd for i in 1:samples
+	delete_index = Array{Int8}[]
+
+	@simd for i=1:samples
 		# Extract each sample sequence
-		# tmp = multiFasta[samples[i]][:].seq
-		tmp = sequences[i][2]
-		@inbounds matrix[i+1,:] = collect(tmp)
-		# if(len(tmp) != seqLen)
-		# 	print('errorAlign')
-		# 	break
-		# if('N' in tmp)
-		# 	deleteIndex.append(i)
-		# else
+		@inbounds m[i+1,:] = collect(mf[i][2])
 	end
-	# matrix = np.delete(matrix,deleteIndex,0)
+	
+	p = []
+	for i in 3:3:size(m,2)
+		push!(p,m[:,i-2:i])
+		break
+	end
+
+	# m = np.delete(m,delete_index,0)
 	return matrix
 end
 
 function degeneracy(data::String,codonDict::String)
 	#degeneracy DICTIONARIES
-	standardDict = Dict{String,String}(
+	standard_dict = Dict{String,String}(
 		"TTT"=> "002", "TTC"=> "002", "TTA"=> "202", "TTG"=> "202",
 		"TCT"=> "004", "TCC"=> "004", "TCA"=> "004", "TCG"=> "004",
 		"TAT"=> "002", "TAC"=> "002", "TAA"=> "022", "TAG"=> "002",
@@ -47,7 +50,7 @@ function degeneracy(data::String,codonDict::String)
 		if ('N' in codon) || ('-' in codon)
 			degen = string(degen,codon)
 		else
-		degen[i] =  standardDict[codon]
+		degen[i] =  standard_dict[codon]
 		end
 	end
 	degen = join(degen)

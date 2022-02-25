@@ -216,172 +216,173 @@ function getting_rates(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
 	return (analytical_values)
 end
 
-
-
 ###########################
 
 ##########################
-function rates_threads(;param::parameters,
-				α::Array{Float64}=[0.1,0.9], 
-				gH::S,
-				gL::S,
-				gam_neg::S,
-				theta::Union{Float64,Nothing}=0.001,
-				rho::Union{Float64,Nothing}=0.001,
-				shape::Float64=0.184,
-				iterations::Int64,
-				output::String) where S <: Union{Array{Int64,1},UnitRange{Int64},Nothing}
+# function rates_threads(;param::parameters,
+# 				α::Array{Float64}=[0.1,0.9], 
+# 				gH::S,
+# 				gL::S,
+# 				gam_neg::S,
+# 				theta::Union{Float64,Nothing}=0.001,
+# 				rho::Union{Float64,Nothing}=0.001,
+# 				shape::Float64=0.184,
+# 				iterations::Int64,
+# 				output::String) where S <: Union{Array{Int64,1},UnitRange{Int64},Nothing}
 	
 
-	# @unpack NN, nn, N, n, B_bins, n, al, dac = param;
+# 	# @unpack NN, nn, N, n, B_bins, n, al, dac = param;
 
-	convoluted_samples = binom_op!(param.NN,param.nn,param.B_bins);
+# 	convoluted_samples = binom_op!(param.NN,param.nn,param.B_bins);
 	
-	# Iterations = models to solve
-	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
-	fac     = rand(-1:0.05:1,iterations)
-	afac    = @. round(al*(2^fac),digits=3)
+# 	# Iterations = models to solve
+# 	# Factor to modify input Γ(shape) parameter. Flexible Γ distribution over negative alleles
+# 	fac     = rand(-1:0.05:1,iterations)
+# 	afac    = @. round(al*(2^fac),digits=3)
 	
-	# Deleting shape > 1. Negative alpha_x values
-	idx = findall(afac .> 1)
-	if !isempty(idx)
-		afac[idx] = rand(afac[afac .< 1],size(idx,1))
-	end
+# 	# Deleting shape > 1. Negative alpha_x values
+# 	idx = findall(afac .> 1)
+# 	if !isempty(idx)
+# 		afac[idx] = rand(afac[afac .< 1],size(idx,1))
+# 	end
 
-	# Random α values
-	n_tot    = rand(α[1]:0.01:α[2],iterations)
+# 	# Random α values
+# 	n_tot    = rand(α[1]:0.01:α[2],iterations)
 	
-	# Defining αW. It is possible to solve non-accounting for weak fixations
-	if isnothing(gL)
-		# Setting αW to 0 for all estimations
-		n_low    = fill(0.0,iterations)
-		# Random strong selection coefficients
-		n_gl     = rand(repeat([1],iterations),iterations);
-	else
-		# Setting αW as proportion of α
-		lfac    = rand(0.0:0.05:0.9,iterations)
-		n_low    = @. n_tot * lfac
-		# Random weak selection coefficients
-		n_gl     = rand(repeat(gL,iterations),iterations);
-	end
+# 	# Defining αW. It is possible to solve non-accounting for weak fixations
+# 	if isnothing(gL)
+# 		# Setting αW to 0 for all estimations
+# 		n_low    = fill(0.0,iterations)
+# 		# Random strong selection coefficients
+# 		n_gl     = rand(repeat([1],iterations),iterations);
+# 	else
+# 		# Setting αW as proportion of α
+# 		lfac    = rand(0.0:0.05:0.9,iterations)
+# 		n_low    = @. n_tot * lfac
+# 		# Random weak selection coefficients
+# 		n_gl     = rand(repeat(gL,iterations),iterations);
+# 	end
 	
-	# Random strong selection coefficients
-	n_gh     = rand(repeat(gH,iterations),iterations);
-	# Random negative selection coefficients
-	n_gam_neg = rand(repeat(gam_neg,iterations),iterations);
+# 	# Random strong selection coefficients
+# 	n_gh     = rand(repeat(gH,iterations),iterations);
+# 	# Random negative selection coefficients
+# 	n_gam_neg = rand(repeat(gam_neg,iterations),iterations);
 
-	if !isnothing(theta)
-		θ = fill(theta,iterations)
-	else
-		θ = rand(0.0005:0.0005:0.01,iterations)
-	end
+# 	if !isnothing(theta)
+# 		θ = fill(theta,iterations)
+# 	else
+# 		θ = rand(0.0005:0.0005:0.01,iterations)
+# 	end
 
-	# Random ρ on coding regions
-	if !isnothing(rho)
-		ρ = fill(rho,iterations)
-	else
-		ρ = rand(0.0005:0.0005:0.05,iterations)
-	end
+# 	# Random ρ on coding regions
+# 	if !isnothing(rho)
+# 		ρ = fill(rho,iterations)
+# 	else
+# 		ρ = rand(0.0005:0.0005:0.05,iterations)
+# 	end
 	
-	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
-	n_param  = parameters[parameters(n=param.n,gam_neg=n_gam_neg[i],gL=n_gl[i],gH=n_gh[i],al_tot=n_tot[i],al_low=n_low[i],shape=afac[i],scale=abs(afac[i]/n_gam_neg[i]),θ_coding=θ[i],ρ=ρ[i],dac=param.dac) for i in 1:iterations];
+# 	# Creating N models to iter in threads. Set N models (paramerters) and sampling probabilites (binomial_dict)
+# 	n_param  = parameters[parameters(n=param.n,gam_neg=n_gam_neg[i],gL=n_gl[i],gH=n_gh[i],al_tot=n_tot[i],al_low=n_low[i],shape=afac[i],scale=abs(afac[i]/n_gam_neg[i]),θ_coding=θ[i],ρ=ρ[i],dac=param.dac) for i in 1:iterations];
 
-	######Parallel; 10^5 -> 62.76"
-	x = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14,iterations);
-	x = Matrix{Float64}[]
-	@inbounds @sync for i=1:iterations
-		Base.Threads.@spawn begin
-			 push!(x,solve(n_param[i]))
-		end
-	end
+# 	######Parallel; 10^5 -> 62.76"
+# 	x = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14,iterations);
+# 	x = Matrix{Float64}[]
+# 	@inbounds @sync for i=1:iterations
+# 		Base.Threads.@spawn begin
+# 			 push!(x,solve(n_param[i]))
+# 		end
+# 	end
 
-	# Reducing output array
-	df = vcat(eachslice(x, dims=3)...)
+# 	# Reducing output array
+# 	df = vcat(eachslice(x, dims=3)...)
 	
-	# Saving models and rates
-	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gam_neg,:gL,:gH,:al,:ρ]);
-	neut   = df[:,9:(8+size(dac,1))];
-	sel    = df[:,(9+size(dac,1)):(8+size(dac,1)*2)];
-	dsdn   = Array(df[:,(end-5):end-2]);
+# 	# Saving models and rates
+# 	models = DataFrame(df[:,1:8],[:B,:alLow,:alTot,:gam_neg,:gL,:gH,:al,:ρ]);
+# 	neut   = df[:,9:(8+size(dac,1))];
+# 	sel    = df[:,(9+size(dac,1)):(8+size(dac,1)*2)];
+# 	dsdn   = Array(df[:,(end-5):end-2]);
 
-	sum_pol = df[:,end-1:end];
+# 	sum_pol = df[:,end-1:end];
 
-	# Saving multiple summary statistics
-	nt = OrderedDict{Int,Array}();
-	sl = OrderedDict{Int,Array}();
-	for i in eachindex(dac)
-		nt[dac[i]] = neut[:,i]
-		sl[dac[i]] = sel[:,i]
-	end;
+# 	# Saving multiple summary statistics
+# 	nt = OrderedDict{Int,Array}();
+# 	sl = OrderedDict{Int,Array}();
+# 	for i in eachindex(dac)
+# 		nt[dac[i]] = neut[:,i]
+# 		sl[dac[i]] = sel[:,i]
+# 	end;
 
-	# Writting HDF5 file
-	jldopen(output, "a+") do file
-		file[string(N)* "/" * string(n) * "/models"] = models;
-		file[string(N)* "/" * string(n) * "/neut"]   = nt;
-		file[string(N)* "/" * string(n) * "/sel"]    = sl;
-		file[string(N)* "/" * string(n) * "/dsdn"]   = dsdn;
-		file[string(N)* "/" * string(n) * "/pol"]    = sum_pol;
-		file[string(N)* "/" * string(n) * "/dac"]    = dac;
-	end;
-end
+# 	# Writting HDF5 file
+# 	jldopen(output, "a+") do file
+# 		file[string(N)* "/" * string(n) * "/models"] = models;
+# 		file[string(N)* "/" * string(n) * "/neut"]   = nt;
+# 		file[string(N)* "/" * string(n) * "/sel"]    = sl;
+# 		file[string(N)* "/" * string(n) * "/dsdn"]   = dsdn;
+# 		file[string(N)* "/" * string(n) * "/pol"]    = sum_pol;
+# 		file[string(N)* "/" * string(n) * "/dac"]    = dac;
+# 	end;
+# end
 
-function solve(param::parameters)
-		# Creating model to solve
-	# Solving θ on non-coding region and probabilites to get α value without BGS
+# function solve(param::parameters,binom::Dict{Float64, SparseMatrixCSC{Float64, Int64}})
+# 		# Creating model to solve
+# 	# Solving θ on non-coding region and probabilites to get α value without BGS
 	
-	analytical_rates = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14)
+# 	analytical_rates = zeros(size(param.B_bins,1),(size(param.dac,1) * 2) + 14)
 
-	param.B = 0.999
-	set_ppos!(param)
+# 	param.B = 0.999
+# 	set_ppos!(param)
 
-	for (i,j) in enumerate(param.B_bins)
-		# Set B value
-		param.B = j
-		# Solve θ non-coding for the B value.
-		set_θ!(param)
-		# Solve model for the B value
-		tmp = try
-			r_solve(param)
-		catch e
-			zeros(size(param.dac,1) * 2 + 14)'
-		end
-		analytical_rates[i,:] = tmp
-	end
-	return(analytical_rates)
-end
+# 	for (i,j) in enumerate(param.B_bins)
+# 		# Set B value
+# 		param.B = j
+# 		# Solve θ non-coding for the B value.
+# 		set_θ!(param)
+# 		# Solve model for the B value
+# 		tmp = try
+# 			r_solve(param,binom[j])
+# 		catch e
+# 			zeros(size(param.dac,1) * 2 + 14)'
+# 		end
+# 		analytical_rates[i,:] = tmp
+# 	end
+# 	return(analytical_rates)
+# end
 
-function r_solve(param::parameters)
-	@unpack B, ppos_l, ppos_h, gL, gH, dac, B,alLow,alTot,gam_neg,gL,gH,al,thetaMidNeutral = param;
+# function r_solve(param::parameters,binom::SparseMatrixCSC{Float64,Int64})
 
-	# Fixation
-	fN       = B*fix_neut(param);
-	fNeg     = B*fix_neg_b(param,0.5*ppos_h+0.5*ppos_l);
-	fPosL    = fix_pos_sim(param,gL,0.5*ppos_l);
-	fPosH    = fix_pos_sim(param,gH,0.5*ppos_h);
+# 	################################################
+# 	# Subset rates accounting for positive alleles #
+# 	################################################
 
-	ds       = fN;
-	dn       = fNeg + fPosL + fPosH;
+# 	# Fixation
+# 	fN       = param.B*fix_neut(param)
+# 	fNeg     = param.B*fix_neg_b(param,0.5*param.ppos_h+0.5*param.ppos_l)
+# 	fPosL    = fix_pos_sim(param,param.gL,0.5*param.ppos_l)
+# 	fPosH    = fix_pos_sim(param,param.gH,0.5*param.ppos_h)
 
-	# Polymorphism
-	neut::Array{Float64,1} = DiscSFSNeutDown(param);
-	selH::Array{Float64,1} = if isinf(exp(gH * 2));
-		DiscSFSSelPosDownArb(param,gH,ppos_h);
-	else
-		DiscSFSSelPosDown(param,gH,ppos_h);
-	end
-	selL::Array{Float64,1} = DiscSFSSelPosDown(param,gL,ppos_l);
-	selN::Array{Float64,1} = DiscSFSSelNegDown(param,ppos_h+ppos_l);
+# 	ds       = fN
+# 	dn       = fNeg + fPosL + fPosH
+
+# 	# Polymorphism
+# 	neut::Array{Float64,1} = DiscSFSNeutDown(param,binom)
+# 	selH::Array{Float64,1} = if isinf(exp(param.gH * 2))
+# 		DiscSFSSelPosDownArb(param,param.gH,param.ppos_h,binom)
+# 	else
+# 		DiscSFSSelPosDown(param,param.gH,param.ppos_h,binom)
+# 	end
+# 	selL::Array{Float64,1} = DiscSFSSelPosDown(param,param.gL,param.ppos_l,binom)
+# 	selN::Array{Float64,1} = DiscSFSSelNegDown(param,param.ppos_h+param.ppos_l,binom)
 	
-	# Cumulative rates
-	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false);
-	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
-	neut, selH, selL, selN = splitColumns(tmp);
-	sel = (selH+selL)+selN;
+# 	# Cumulative rates
+# 	tmp = cumulative_sfs(hcat(neut,selH,selL,selN),false)
+# 	splitColumns(matrix::Array{Float64,2}) = (view(matrix, :, i) for i in 1:size(matrix, 2));
+# 	neut, selH, selL, selN = splitColumns(tmp)
+# 	sel = (selH+selL)+selN
 
-	##########
-	# Output #
-	##########
-	analytical_values::Array{Float64,2} = vcat(B,alLow,alTot,gam_neg,gL,gH,al,thetaMidNeutral,neut[dac],sel[dac],ds,dn,fPosL,fPosH,neut[1],sel[1])'
+# 	##########
+# 	# Output #
+# 	##########
+# 	analytical_values::Array{Float64,2} = vcat(param.B,param.al_low,param.al_tot,param.gam_neg,param.gL,param.gH,param.shape,param.ρ,neut[param.dac],sel[param.dac],ds,dn,fPosL,fPosH,neut[1],sel[1])'
 
-	return (analytical_values)
-end
+# 	return (analytical_values)
+# end
