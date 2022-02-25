@@ -30,10 +30,10 @@ module Analytical
 	include("parameters.jl")
 	include("fixations.jl")
 	include("polymorphism.jl")
-	include("summaryStatistics.jl")
+	include("summary_statistics.jl")
 	include("rates.jl")
-	include("inferTools.jl")
-	include("readFasta.jl")
+	include("infer_tools.jl")
+	include("read_fasta.jl")
 	include("methods.jl")
 	include("prefersim.jl")
 
